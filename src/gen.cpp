@@ -14,11 +14,14 @@
 #include <sstream>
 #include <TF1.h>
 #include <TH1D.h>
+#include <TSpline.h>
+#include <TGraph.h>
 
 #include "DatabasePDG2.h"
 #include "gen.h"
 #include "particle.h"
 #include "const.h"
+#include "interpolation.h"
 
 using namespace std;
 
@@ -194,6 +197,24 @@ void doCalculations(int pid) {
  int nFermiFail = 0; // number of elements where nf>1.0
  int nBadElem = 0;
  double Qx1=0., Qy1=0., Qx2=0., Qy2=0.;
+
+ // This block is needed to import the coefficient csv file from
+  // David and make an interpolation with ROOT
+  //**************************************************************
+  const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
+  const std::string output_filename = "interpolationTable.txt";
+  // Call function to obtain the interpolation TSpline3 object
+  TSpline3* spline = getInterpolationSpline(coefficient_filename);
+  if (!spline) {
+      std::cerr << "Failed to obtain interpolation spline." << std::endl;
+      exit(1);
+  }
+  saveTableToFile(spline, output_filename);
+    /* // Use the spline as needed
+    double x = 4.5; // x-coordinate to evaluate
+    double interpolatedY = spline->Eval(x); */
+  //**************************************************************
+
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
   //if(fabs(surf[iel].dbeta[0][0])>1000.0) continue;
@@ -216,15 +237,27 @@ void doCalculations(int pid) {
      for(int nu=0; nu<4; nu++)
       for(int rh=0; rh<4; rh++)
        for(int sg=0; sg<4; sg++) {
+
+        
+        //pds = p x dsigma
+        //surf[iel].dbeta[ta][rh] = varpi_{mu nu}
         // computing the 'standard' polarization expression
         Pi_num[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
                                 * p_[sg] * surf[iel].dbeta[nu][rh];
+        
+        //David's formula
+        // Pi_num_navierstokes[ipt][iphi][mu] +=
+
         // computing the extra 'xi' term for the polarization
         for(int ta=0; ta<4; ta++)
          Pi_num_xi[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
                      * p_[sg] * p[ta] / p[0] * tvect[nu]
                      * ( surf[iel].dbeta[rh][ta] + surf[iel].dbeta[ta][rh]);
        }
+
+
+
+
     Qx1 += p[1] * pds * nf;
     Qy1 += p[2] * pds * nf;
     Qx2 += (p[1]*p[1] - p[2]*p[2])/(pT[ipt]+1e-10) * pds * nf;
