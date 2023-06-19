@@ -15,7 +15,7 @@ LIBS          = $(ROOTLIBS) $(SYSLIBS)
 GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
 
 _HYDROO        = DecayChannel.o ParticlePDG2.o DatabasePDG2.o UKUtility.o gen.o \
-                particle.o main.o
+                particle.o main.o interpolation.o
  
 # VPATH = src:../UKW
 HYDROO = $(patsubst %,$(ODIR)/%,$(_HYDROO))
