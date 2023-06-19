@@ -56,12 +56,16 @@ struct element {
 element *surf;
 vector<double> pT, phi;
 vector<vector<vector<double> > > Pi_num; // numerator of Eq. 34
+vector<vector<vector<double> > > Pi_num_navierstokes; // David's contributions
 vector<vector<vector<double> > > Pi_num_xi; // additional "xi" term
 vector<vector<double> > Pi_den; // denominator of Eq. 34
 int nhydros;
 TCanvas *plotSymm, *plotAsymm, *plotMod;
 TH1D *histMod, *histSymm, *histAsymm;
 
+// Hendrik says that this is a known factor oftenly appearing in distribution functions.
+// As example look in SMASH pauli blocking or go an Hendrik's nerves with it
+// Found in longer David paper eq. 20
 const double c1 = pow(1. / 2. / hbarC / TMath::Pi(), 3.0);
 
 // ######## load the elements
@@ -94,6 +98,7 @@ void load(char *filename, int N) {
       surf[n].u[3] >> surf[n].T >> surf[n].mub >> surf[n].muq >> surf[n].mus;
   for(int i=0; i<4; i++)
   for(int j=0; j<4; j++)
+   //dbeta is the thermal vorticity 
    instream >> surf[n].dbeta[i][j];
 
   if (instream.fail()) {
@@ -149,18 +154,22 @@ void initCalc() {
   phi.push_back(_phi);
  }
  Pi_num.resize(pT.size());
+ Pi_num_navierstokes.resize(pT.size());
  Pi_num_xi.resize(pT.size());
  Pi_den.resize(pT.size());
  for (int i = 0; i < Pi_num.size(); i++) {
   Pi_num[i].resize(phi.size());
+  Pi_num_navierstokes[i].resize(phi.size());
   Pi_num_xi[i].resize(phi.size());
   Pi_den[i].resize(phi.size());
   for (int j = 0; j < Pi_num[i].size(); j++) {
    Pi_den[i][j] = 0.0;
    Pi_num[i][j].resize(4);
+   Pi_num_navierstokes[i][j].resize(4);
    Pi_num_xi[i][j].resize(4);
    for(int k=0; k<4; k++) {
     Pi_num[i][j][k] = 0.0;
+    Pi_num_navierstokes[i][j][k] = 0.0;
     Pi_num_xi[i][j][k] = 0.0;
    }
   }
@@ -199,21 +208,21 @@ void doCalculations(int pid) {
  double Qx1=0., Qy1=0., Qx2=0., Qy2=0.;
 
  // This block is needed to import the coefficient csv file from
-  // David and make an interpolation with ROOT
-  //**************************************************************
-  const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
-  const std::string output_filename = "interpolationTable.txt";
-  // Call function to obtain the interpolation TSpline3 object
-  TSpline3* spline = getInterpolationSpline(coefficient_filename);
-  if (!spline) {
-      std::cerr << "Failed to obtain interpolation spline." << std::endl;
-      exit(1);
-  }
-  saveTableToFile(spline, output_filename);
-    /* // Use the spline as needed
-    double x = 4.5; // x-coordinate to evaluate
-    double interpolatedY = spline->Eval(x); */
-  //**************************************************************
+ // David and make an interpolation with ROOT
+ //**************************************************************
+ const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
+ const std::string output_filename = "interpolationTable.txt";
+ // Call function to obtain the interpolation TSpline3 object
+ TSpline3* spline = getInterpolationSpline(coefficient_filename);
+ if (!spline) {
+     std::cerr << "Failed to obtain interpolation spline." << std::endl;
+     exit(1);
+ }
+ saveTableToFile(spline, output_filename);
+ /* // Use the spline as needed
+  double x = 4.5; // x-coordinate to evaluate
+  double interpolatedY = spline->Eval(x); */
+ //**************************************************************
 
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
