@@ -51,6 +51,7 @@ struct element {
  double dsigma[4];
  double T, mub, muq, mus;
  double dbeta [4][4];
+ double dmuCart [4][4]; //derivatives of the 4-velocity in Cartesian coordinates
 };
 
 element *surf;
@@ -100,6 +101,10 @@ void load(char *filename, int N) {
   for(int j=0; j<4; j++)
    //dbeta is the thermal vorticity 
    instream >> surf[n].dbeta[i][j];
+
+  for(int i=0; i<4; i++)
+  for(int j=0; j<4; j++)
+   instream >> surf[n].dmuCart[i][j];
 
   if (instream.fail()) {
    cout << "reading failed at line " << n << "; exiting\n";
@@ -193,6 +198,36 @@ double ffthermal(double *x, double *par) {
  return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
+//double shear_tensor(elememnt* surf, int iel, int mu, int nu)
+//double shear_tensor(elememnt surf[], int iel, int mu, int nu)
+//double shear_tensor(const elememnt* surf_element, int mu, int nu) -> shear_tensor(&surf_element, int mu, int nu)
+double shear_tensor(const element* surf_element, int mu, int nu){
+  const double gmumu[4] = {1., -1., -1., -1.};
+  const double gmunu[4][4] = {{1.,  0., 0., 0.},
+                              {0., -1., 0., 0.},
+                              {0., 0., -1., 0.},
+                              {0., 0., 0., -1.}};
+  double u[4] = {surf_element->u[0], surf_element->u[1], surf_element->u[2], surf_element->u[3]};
+  double u_[4] = {surf_element->u[0], -surf_element->u[1], -surf_element->u[2], -surf_element->u[3]};
+  double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
+  for(int alpha = 0; alpha < 4; alpha++){
+    term_3 += u[mu]*u_[alpha]*surf_element->dmuCart[alpha][nu];
+    term_4 += u[nu]*u_[alpha]*surf_element->dmuCart[mu][alpha];
+    term_5 += u[mu]*u_[alpha]*surf_element->dmuCart[nu][alpha];
+    term_6 += u[nu]*u_[alpha]*surf_element->dmuCart[alpha][mu];
+    term_10 += gmumu[alpha]*surf_element->dmuCart[alpha][alpha];
+    for(int beta = 0; beta < 4; beta++){
+      term_7 += 2.*u[mu]*u[nu]*u_[alpha]*u_[beta]*surf_element->dmuCart[alpha][beta];
+      term_11 += u_[alpha]*u_[beta]*surf_element->dmuCart[alpha][beta];
+    }
+  }
+  double shear = 0.5*(surf_element->dmuCart[mu][nu] + surf_element->dmuCart[nu][mu] - term_3 - term_4
+                - term_5 - term_6 + term_7) - (1./3.) * (gmunu[mu][nu] - u[mu]*u[nu])
+                * (term_10 - term_11);
+
+  return shear;
+}
+
 void doCalculations(int pid) {
  const double gmumu[4] = {1., -1., -1., -1.};
  const double tvect[4] = {1.,0., 0., 0.};
@@ -211,20 +246,25 @@ void doCalculations(int pid) {
  // David and make an interpolation with ROOT
  //**************************************************************
  const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
- const std::string output_filename = "interpolationTable.txt";
+ // const std::string output_filename = "interpolationTable.txt";
  // Call function to obtain the interpolation TSpline3 object
  TSpline3* spline = getInterpolationSpline(coefficient_filename);
  if (!spline) {
      std::cerr << "Failed to obtain interpolation spline." << std::endl;
      exit(1);
  }
- saveTableToFile(spline, output_filename);
- /* // Use the spline as needed
-  double x = 4.5; // x-coordinate to evaluate
-  double interpolatedY = spline->Eval(x); */
+ // saveTableToFile(spline, output_filename);
  //**************************************************************
 
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
+  
+  double z = mass / surf[iel].T;
+  if(z<0.0001 || z>20.0){
+    std::cout << "z outside the range [0.0001, 20.0]. Increase interpolation range!!!\n" << std::endl;
+  }
+  double u_[4] = {surf[iel].u[0], -surf[iel].u[1], -surf[iel].u[2], -surf[iel].u[3]};
+  const element surf_element = surf[iel];
+
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
   //if(fabs(surf[iel].dbeta[0][0])>1000.0) continue;
   for (int ipt = 0; ipt < pT.size(); ipt++)
@@ -255,17 +295,19 @@ void doCalculations(int pid) {
                                 * p_[sg] * surf[iel].dbeta[nu][rh];
         
         //David's formula
-        // Pi_num_navierstokes[ipt][iphi][mu] +=
-
+        
+        for(int ta=0; ta<4; ta++) {
+          Pi_num_navierstokes[ipt][iphi][mu] += -pds * (nf/2.) * hbarC * z * spline->Eval(z) 
+                                    * (1. / surf[iel].T) * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
+                                    * shear_tensor(&surf_element, ta, sg) * p[sg];
+        }
+        
         // computing the extra 'xi' term for the polarization
         for(int ta=0; ta<4; ta++)
          Pi_num_xi[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
                      * p_[sg] * p[ta] / p[0] * tvect[nu]
                      * ( surf[iel].dbeta[rh][ta] + surf[iel].dbeta[ta][rh]);
        }
-
-
-
 
     Qx1 += p[1] * pds * nf;
     Qy1 += p[2] * pds * nf;
