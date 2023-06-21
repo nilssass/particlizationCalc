@@ -295,9 +295,8 @@ void doCalculations(int pid) {
                                 * p_[sg] * surf[iel].dbeta[nu][rh];
         
         //David's formula
-        
         for(int ta=0; ta<4; ta++) {
-          Pi_num_navierstokes[ipt][iphi][mu] += -pds * (nf/2.) * hbarC * z * spline->Eval(z) 
+          Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * hbarC * z * spline->Eval(z) 
                                     * (1. / surf[iel].T) * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
                                     * shear_tensor(&surf_element, ta, sg) * p[sg];
         }
@@ -425,6 +424,8 @@ void outputPolarization(char *out_file) {
     fout << setw(14) << Pi_num[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
    for(int mu=0; mu<4; mu++)
     fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
+   for(int mu=0; mu<4; mu++)
+    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu];
    fout << endl;
  }
  fout.close();
