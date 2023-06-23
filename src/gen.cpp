@@ -229,7 +229,7 @@ double shear_tensor(const element* surf_element, int mu, int nu){
 }
 
 void doCalculations(int pid) {
- std::cout << "doCalculations entered\n" << std::endl;
+ std::cout << "###### doCalculations entered ######\n" << std::endl;
  const double gmumu[4] = {1., -1., -1., -1.};
  const double tvect[4] = {1.,0., 0., 0.};
  particle = database->GetPDGParticle(pid);
@@ -257,7 +257,10 @@ void doCalculations(int pid) {
  // saveTableToFile(spline, output_filename);
  //**************************************************************
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
+  
   if (iel % 1000 == 0)
+   std::cout << "###### iel For-Loop reached element " << iel << " ######\n" << std::endl;
+
   const double u_[4] = {surf[iel].u[0], -surf[iel].u[1], -surf[iel].u[2], -surf[iel].u[3]};
   const element surf_element = surf[iel];
   const double beta = 1. / surf[iel].T;
@@ -324,7 +327,7 @@ void doCalculations(int pid) {
  cout << "event_plane_vectors: " << Qx1 << "  " << Qy1 << "  "
    << Qx2 << "  " << Qy2 << endl;
 
- std::cout << "doCalculations finished\n" << std::endl;
+ std::cout << "###### doCalculations finished ######\n" << std::endl;
 }
 
 void calcInvariantQuantities() {
