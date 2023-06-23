@@ -71,15 +71,16 @@ int main(int argc, char **argv) {
  gen::load(surface_file, getNlines(surface_file));
  #ifndef PLOTS
  gen::calcEP1();
- if(argc==4)
+ if(argc==4){
   gen::doCalculations(atoi(argv[3]));
- else
+ }
+ else {
   gen::doCalculations();
+ }
  gen::outputPolarization(output_file);
  #else
  gen::calcInvariantQuantities();
  #endif
-
  // ========== trees & files
  time_t start, end;
  time(&start);

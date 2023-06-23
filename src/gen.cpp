@@ -207,8 +207,8 @@ double shear_tensor(const element* surf_element, int mu, int nu){
                               {0., -1., 0., 0.},
                               {0., 0., -1., 0.},
                               {0., 0., 0., -1.}};
-  double u[4] = {surf_element->u[0], surf_element->u[1], surf_element->u[2], surf_element->u[3]};
-  double u_[4] = {surf_element->u[0], -surf_element->u[1], -surf_element->u[2], -surf_element->u[3]};
+  const double u[4] = {surf_element->u[0], surf_element->u[1], surf_element->u[2], surf_element->u[3]};
+  const double u_[4] = {surf_element->u[0], -surf_element->u[1], -surf_element->u[2], -surf_element->u[3]};
   double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
   for(int alpha = 0; alpha < 4; alpha++){
     term_3 += u[mu]*u_[alpha]*surf_element->dmuCart[alpha][nu];
@@ -221,7 +221,7 @@ double shear_tensor(const element* surf_element, int mu, int nu){
       term_11 += u_[alpha]*u_[beta]*surf_element->dmuCart[alpha][beta];
     }
   }
-  double shear = 0.5*(surf_element->dmuCart[mu][nu] + surf_element->dmuCart[nu][mu] - term_3 - term_4
+  const double shear = 0.5*(surf_element->dmuCart[mu][nu] + surf_element->dmuCart[nu][mu] - term_3 - term_4
                 - term_5 - term_6 + term_7) - (1./3.) * (gmunu[mu][nu] - u[mu]*u[nu])
                 * (term_10 - term_11);
 
@@ -229,6 +229,7 @@ double shear_tensor(const element* surf_element, int mu, int nu){
 }
 
 void doCalculations(int pid) {
+ std::cout << "doCalculations entered\n" << std::endl;
  const double gmumu[4] = {1., -1., -1., -1.};
  const double tvect[4] = {1.,0., 0., 0.};
  particle = database->GetPDGParticle(pid);
@@ -248,30 +249,31 @@ void doCalculations(int pid) {
  const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
  // const std::string output_filename = "interpolationTable.txt";
  // Call function to obtain the interpolation TSpline3 object
- TSpline3* spline = getInterpolationSpline(coefficient_filename);
+ const TSpline3* spline = getInterpolationSpline(coefficient_filename);
  if (!spline) {
      std::cerr << "Failed to obtain interpolation spline." << std::endl;
      exit(1);
  }
  // saveTableToFile(spline, output_filename);
  //**************************************************************
-
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
-  
-  double z = mass / surf[iel].T;
+  if (iel % 1000 == 0)
+  const double u_[4] = {surf[iel].u[0], -surf[iel].u[1], -surf[iel].u[2], -surf[iel].u[3]};
+  const element surf_element = surf[iel];
+  const double beta = 1. / surf[iel].T;
+  const double z = beta * mass;
   if(z<0.0001 || z>20.0){
     std::cout << "z outside the range [0.0001, 20.0]. Increase interpolation range!!!\n" << std::endl;
   }
-  double u_[4] = {surf[iel].u[0], -surf[iel].u[1], -surf[iel].u[2], -surf[iel].u[3]};
-  const element surf_element = surf[iel];
-
+  const double xi_delta_coefficient = spline->Eval(z);
+  
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
   //if(fabs(surf[iel].dbeta[0][0])>1000.0) continue;
   for (int ipt = 0; ipt < pT.size(); ipt++)
    for (int iphi = 0; iphi < phi.size(); iphi++) {
-    double mT = sqrt(mass * mass + pT[ipt] * pT[ipt]);
-    double p[4] = {mT, pT[ipt]*cos(phi[iphi]), pT[ipt]*sin(phi[iphi]), 0};
-    double p_[4] = {mT, -pT[ipt]*cos(phi[iphi]), -pT[ipt]*sin(phi[iphi]), 0};
+    const double mT = sqrt(mass * mass + pT[ipt] * pT[ipt]);
+    const double p[4] = {mT, pT[ipt]*cos(phi[iphi]), pT[ipt]*sin(phi[iphi]), 0};
+    const double p_[4] = {mT, -pT[ipt]*cos(phi[iphi]), -pT[ipt]*sin(phi[iphi]), 0};
     double pds = 0., pu = 0.;
     for (int mu = 0; mu < 4; mu++) {
      pds += p[mu] * surf[iel].dsigma[mu];
@@ -296,9 +298,9 @@ void doCalculations(int pid) {
         
         //David's formula
         for(int ta=0; ta<4; ta++) {
-          Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * hbarC * z * spline->Eval(z) 
-                                    * (1. / surf[iel].T) * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
-                                    * shear_tensor(&surf_element, ta, sg) * p[sg];
+          Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * z * xi_delta_coefficient 
+                                    * beta * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
+                                    * shear_tensor(&surf_element, ta, sg) * p[ta];
         }
         
         // computing the extra 'xi' term for the polarization
@@ -321,6 +323,8 @@ void doCalculations(int pid) {
   << endl;
  cout << "event_plane_vectors: " << Qx1 << "  " << Qy1 << "  "
    << Qx2 << "  " << Qy2 << endl;
+
+ std::cout << "doCalculations finished\n" << std::endl;
 }
 
 void calcInvariantQuantities() {
@@ -425,7 +429,7 @@ void outputPolarization(char *out_file) {
    for(int mu=0; mu<4; mu++)
     fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
    for(int mu=0; mu<4; mu++)
-    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu];
+    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC;
    fout << endl;
  }
  fout.close();

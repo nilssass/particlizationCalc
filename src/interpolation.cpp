@@ -57,7 +57,6 @@ std::vector<DataPoint> parseCSV(const std::string& filename) {
 }
 
 void plotTGraph(TGraph* graph) {
-    std::cout << "######  plotTGraph() Entered ######\n" << std::endl;
     // Create a canvas for the plot
     TCanvas* canvas = new TCanvas("canvas", "Graph Plot", 800, 600);
 
@@ -76,7 +75,6 @@ void plotTGraph(TGraph* graph) {
 }
 
 TSpline3* performInterpolation(const std::string& filename) {
-    std::cout << "######  performInterpolation() Entered ######\n" << std::endl;
     std::vector<DataPoint> dataPoints = parseCSV(filename);
     if (dataPoints.empty()) {
         std::cerr << "No data points found." << std::endl;
@@ -93,9 +91,6 @@ TSpline3* performInterpolation(const std::string& filename) {
     for (size_t i = 0; i < numDataPoints; ++i) {
         graph.SetPoint(i, dataPoints[i].x, dataPoints[i].y);
     }
-    std::cout << "Number of points in the graph after adding data: " << graph.GetN() << std::endl;
-    //plotTGraph(&graph);
-
     TSpline3* spline = new TSpline3("spline", &graph);
 
     return spline;
@@ -103,7 +98,6 @@ TSpline3* performInterpolation(const std::string& filename) {
 
 // Function definition for obtaining the TSpline3 object
 TSpline3* getInterpolationSpline(const std::string& filename) {
-    std::cout << "######  getInterpolationSpline() Entered ######\n" << std::endl;
     // Call the function in the interpolation file to perform the interpolation
     // and return the TSpline3 object
     return performInterpolation(filename);
