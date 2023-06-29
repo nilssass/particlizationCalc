@@ -45,6 +45,8 @@ DatabasePDG2 *database;
 ParticlePDG2 *particle; // chosen particle sort for the polarization calc
 int NPART;
 
+
+
 struct element {
  double tau, x, y, eta;
  double u[4];
@@ -202,11 +204,6 @@ double ffthermal(double *x, double *par) {
 //double shear_tensor(elememnt surf[], int iel, int mu, int nu)
 //double shear_tensor(const elememnt* surf_element, int mu, int nu) -> shear_tensor(&surf_element, int mu, int nu)
 double shear_tensor(const element* surf_element, int mu, int nu){
-  const double gmumu[4] = {1., -1., -1., -1.};
-  const double gmunu[4][4] = {{1.,  0., 0., 0.},
-                              {0., -1., 0., 0.},
-                              {0., 0., -1., 0.},
-                              {0., 0., 0., -1.}};
   const double u[4] = {surf_element->u[0], surf_element->u[1], surf_element->u[2], surf_element->u[3]};
   const double u_[4] = {surf_element->u[0], -surf_element->u[1], -surf_element->u[2], -surf_element->u[3]};
   double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
@@ -230,7 +227,6 @@ double shear_tensor(const element* surf_element, int mu, int nu){
 
 void doCalculations(int pid) {
  std::cout << "###### doCalculations entered ######\n" << std::endl;
- const double gmumu[4] = {1., -1., -1., -1.};
  const double tvect[4] = {1.,0., 0., 0.};
  particle = database->GetPDGParticle(pid);
  const double mass = particle->GetMass();  // pion
@@ -242,6 +238,7 @@ void doCalculations(int pid) {
  int nFermiFail = 0; // number of elements where nf>1.0
  int nBadElem = 0;
  double Qx1=0., Qy1=0., Qx2=0., Qy2=0.;
+ double z_limits[2];
 
  // This block is needed to import the coefficient csv file from
  // David and make an interpolation with ROOT
@@ -267,6 +264,19 @@ void doCalculations(int pid) {
   const double z = beta * mass;
   if(z<0.0001 || z>20.0){
     std::cout << "z outside the range [0.0001, 20.0]. Increase interpolation range!!!\n" << std::endl;
+  }
+  // store the global min/max values of z over all cells
+  if(iel == 0) {
+    z_limits[0] = z_limits[1] = z;
+  } else if(z < z_limits[0]) {
+    z_limits[0] = z;
+  } else if(z > z_limits[1]) {
+    z_limits[1] = z;
+  }
+  if (iel == Nelem-1){
+    std::cout << "Z Range Used During Simulation:" << std::endl;
+    std::cout << "-------------------------------\n" << std::endl;
+    std::cout << "z_min: " << z_limits[0] << " ,     z_max: " << z_limits[1] << std::endl;  
   }
   const double xi_delta_coefficient = spline->Eval(z);
   
@@ -299,11 +309,13 @@ void doCalculations(int pid) {
         Pi_num[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
                                 * p_[sg] * surf[iel].dbeta[nu][rh];
         
-        //David's formula
+        //David's formula with extra gmunu because I have shear tensor with upper indices (Euclidean) only
         for(int ta=0; ta<4; ta++) {
-          Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * z * xi_delta_coefficient 
+          for(int alph=0; alph<4; alph++){
+            Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * z * xi_delta_coefficient 
                                     * beta * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
-                                    * shear_tensor(&surf_element, ta, sg) * p[ta];
+                                    * gmunu[sg][alph] * shear_tensor(&surf_element, ta, alph) * p_[ta];
+          }
         }
         
         // computing the extra 'xi' term for the polarization
@@ -331,7 +343,6 @@ void doCalculations(int pid) {
 }
 
 void calcInvariantQuantities() {
- const double gmumu[4] = {1., -1., -1., -1.};
  const double tvect[4] = {1.,0., 0., 0.};
  int nBadElem = 0;
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
@@ -378,7 +389,6 @@ void calcInvariantQuantities() {
 }
 
 void calcEP1() {
- const double gmumu[4] = {1., -1., -1., -1.};
  particle = database->GetPDGParticle(2112);
  const double mass = particle->GetMass();  // pion
  int nBadElem = 0;
