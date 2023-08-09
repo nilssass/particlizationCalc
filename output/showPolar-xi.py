@@ -77,8 +77,8 @@ pT = pT.reshape((dimP,dimPhi)).T
 phi = phi.reshape((dimP,dimPhi)).T
 px = px.reshape((dimP,dimPhi)).T
 py = py.reshape((dimP,dimPhi)).T
-px = np.vstack((px,px[0]))
-py = np.vstack((py,py[0]))
+# px = np.vstack((px,px[0]))
+# py = np.vstack((py,py[0]))
 
 Piyurf2d = Piyurf.reshape((dimP,dimPhi)).T
 Pizurf2d = Pizu.reshape((dimP,dimPhi)).T
@@ -170,4 +170,3 @@ for i in range(1,3):
 
 #plt.suptitle(global_title)
 plt.show()
-

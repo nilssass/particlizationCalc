@@ -226,10 +226,10 @@ double shear_tensor(const element* surf_element, int mu, int nu){
 }
 
 void doCalculations(int pid) {
- std::cout << "###### doCalculations entered ######\n" << std::endl;
  const double tvect[4] = {1.,0., 0., 0.};
  particle = database->GetPDGParticle(pid);
  const double mass = particle->GetMass();  // pion
+ std::cout << "Lambda mass: " << mass << std::endl;
  const double baryonCharge = particle->GetBaryonNumber();
  const double electricCharge = particle->GetElectricCharge();
  const double strangeness = particle->GetStrangeness();
@@ -244,14 +244,14 @@ void doCalculations(int pid) {
  // David and make an interpolation with ROOT
  //**************************************************************
  const std::string coefficient_filename = "/Users/nils/Desktop/Projects/Polarization/Coefficients/coeffData.csv";
- // const std::string output_filename = "interpolationTable.txt";
+ const std::string output_filename = "interpolationTable.txt";
  // Call function to obtain the interpolation TSpline3 object
  const TSpline3* spline = getInterpolationSpline(coefficient_filename);
  if (!spline) {
      std::cerr << "Failed to obtain interpolation spline." << std::endl;
      exit(1);
  }
- // saveTableToFile(spline, output_filename);
+ saveTableToFile(spline, output_filename);
  //**************************************************************
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
   
@@ -278,7 +278,12 @@ void doCalculations(int pid) {
     std::cout << "-------------------------------\n" << std::endl;
     std::cout << "z_min: " << z_limits[0] << " ,     z_max: " << z_limits[1] << std::endl;  
   }
-  const double xi_delta_coefficient = spline->Eval(z);
+
+  // The tuning factor is non-physical and is just to test how large the 
+  // xi_delta_coefficient must be in order to match experimental data with 
+  // P^z(phi)
+  const double tuning_factor = 1.5;
+  const double xi_delta_coefficient = spline->Eval(z) * tuning_factor;
   
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
   //if(fabs(surf[iel].dbeta[0][0])>1000.0) continue;
@@ -312,7 +317,7 @@ void doCalculations(int pid) {
         //David's formula with extra gmunu because I have shear tensor with upper indices (Euclidean) only
         for(int ta=0; ta<4; ta++) {
           for(int alph=0; alph<4; alph++){
-            Pi_num_navierstokes[ipt][iphi][mu] += pds * (nf/2.) * z * xi_delta_coefficient 
+            Pi_num_navierstokes[ipt][iphi][mu] += pds * nf * (1. - nf) * z * xi_delta_coefficient
                                     * beta * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
                                     * gmunu[sg][alph] * shear_tensor(&surf_element, ta, alph) * p_[ta];
           }
@@ -442,7 +447,7 @@ void outputPolarization(char *out_file) {
    for(int mu=0; mu<4; mu++)
     fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
    for(int mu=0; mu<4; mu++)
-    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC;
+    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC / 2.0;
    fout << endl;
  }
  fout.close();
