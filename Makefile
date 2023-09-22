@@ -4,10 +4,10 @@ ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
 
-CXX           = g++
-CXXFLAGS      = -fPIC -O3
-LD            = g++
-LDFLAGS       = -O3
+CXX           = /opt/homebrew/Cellar/llvm/16.0.6/bin/clang++
+CXXFLAGS      = -fPIC -O3 -fopenmp  # Add -fopenmp for OpenMP support
+LD            = /opt/homebrew/Cellar/llvm/16.0.6/bin/clang++
+LDFLAGS       = -O3 -fopenmp -lomp # Add -fopenmp for OpenMP support
 FFLAGS        = -fPIC $(ROOTCFLAGS) -O3
 
 CXXFLAGS     += $(ROOTCFLAGS)

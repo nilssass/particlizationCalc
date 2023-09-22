@@ -60,6 +60,7 @@ element *surf;
 vector<double> pT, phi;
 vector<vector<vector<double> > > Pi_num; // numerator of Eq. 34
 vector<vector<vector<double> > > Pi_num_navierstokes; // David's contributions
+vector<vector<vector<double> > > Pi_num_spin_potential_zero;
 vector<vector<vector<double> > > Pi_num_xi; // additional "xi" term
 vector<vector<double> > Pi_den; // denominator of Eq. 34
 int nhydros;
@@ -162,21 +163,25 @@ void initCalc() {
  }
  Pi_num.resize(pT.size());
  Pi_num_navierstokes.resize(pT.size());
+ Pi_num_spin_potential_zero.resize(pT.size());
  Pi_num_xi.resize(pT.size());
  Pi_den.resize(pT.size());
  for (int i = 0; i < Pi_num.size(); i++) {
   Pi_num[i].resize(phi.size());
   Pi_num_navierstokes[i].resize(phi.size());
+  Pi_num_spin_potential_zero[i].resize(phi.size());
   Pi_num_xi[i].resize(phi.size());
   Pi_den[i].resize(phi.size());
   for (int j = 0; j < Pi_num[i].size(); j++) {
    Pi_den[i][j] = 0.0;
    Pi_num[i][j].resize(4);
    Pi_num_navierstokes[i][j].resize(4);
+   Pi_num_spin_potential_zero[i][j].resize(4);
    Pi_num_xi[i][j].resize(4);
    for(int k=0; k<4; k++) {
     Pi_num[i][j][k] = 0.0;
     Pi_num_navierstokes[i][j][k] = 0.0;
+    Pi_num_spin_potential_zero[i][j][k] = 0.0;
     Pi_num_xi[i][j][k] = 0.0;
    }
   }
@@ -200,9 +205,6 @@ double ffthermal(double *x, double *par) {
  return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
-//double shear_tensor(elememnt* surf, int iel, int mu, int nu)
-//double shear_tensor(elememnt surf[], int iel, int mu, int nu)
-//double shear_tensor(const elememnt* surf_element, int mu, int nu) -> shear_tensor(&surf_element, int mu, int nu)
 double shear_tensor(const element* surf_element, int mu, int nu){
   const double u[4] = {surf_element->u[0], surf_element->u[1], surf_element->u[2], surf_element->u[3]};
   const double u_[4] = {surf_element->u[0], -surf_element->u[1], -surf_element->u[2], -surf_element->u[3]};
@@ -224,6 +226,7 @@ double shear_tensor(const element* surf_element, int mu, int nu){
 
   return shear;
 }
+
 
 void doCalculations(int pid) {
  const double tvect[4] = {1.,0., 0., 0.};
@@ -253,10 +256,13 @@ void doCalculations(int pid) {
  }
  saveTableToFile(spline, output_filename);
  //**************************************************************
+
+ int processedCount = 0; // Shared counter to track progress
+ #pragma omp parallel for
  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
   
-  if (iel % 1000 == 0)
-   std::cout << "###### iel For-Loop reached element " << iel << " ######\n" << std::endl;
+ // if (iel % 1000 == 0)
+ //  std::cout << "###### iel For-Loop reached element " << iel << " ######\n" << std::endl;
 
   const double u_[4] = {surf[iel].u[0], -surf[iel].u[1], -surf[iel].u[2], -surf[iel].u[3]};
   const element surf_element = surf[iel];
@@ -274,16 +280,25 @@ void doCalculations(int pid) {
     z_limits[1] = z;
   }
   if (iel == Nelem-1){
-    std::cout << "Z Range Used During Simulation:" << std::endl;
-    std::cout << "-------------------------------\n" << std::endl;
-    std::cout << "z_min: " << z_limits[0] << " ,     z_max: " << z_limits[1] << std::endl;  
+    {
+      std::cout << "Z Range Used During Simulation:" << std::endl;
+      std::cout << "-------------------------------\n" << std::endl;
+      std::cout << "z_min: " << z_limits[0] << " ,     z_max: " << z_limits[1] << std::endl; 
+    }
   }
 
   // The tuning factor is non-physical and is just to test how large the 
   // xi_delta_coefficient must be in order to match experimental data with 
   // P^z(phi)
-  const double tuning_factor = 1.5;
+  const double tuning_factor = 0.37;
   const double xi_delta_coefficient = spline->Eval(z) * tuning_factor;
+
+  // The kappa_coefficient is just a placeholder until I get the real data
+  // from David. We assume, that it behaves like negative temperature times
+  // some number. Here, this number is kappa_tuning_factor that I can use
+  // to study the qualitative effect of the new term
+  const double kappa_tunig_factor = 1.0 ;
+  const double kappa_coefficient = -11.5 * kappa_tunig_factor ;
   
   if(fabs(surf[iel].dbeta[0][0])>1000.0) nBadElem++;
   //if(fabs(surf[iel].dbeta[0][0])>1000.0) continue;
@@ -292,14 +307,14 @@ void doCalculations(int pid) {
     const double mT = sqrt(mass * mass + pT[ipt] * pT[ipt]);
     const double p[4] = {mT, pT[ipt]*cos(phi[iphi]), pT[ipt]*sin(phi[iphi]), 0};
     const double p_[4] = {mT, -pT[ipt]*cos(phi[iphi]), -pT[ipt]*sin(phi[iphi]), 0};
-    double pds = 0., pu = 0.;
+    double pds = 0., E_p = 0.;
     for (int mu = 0; mu < 4; mu++) {
      pds += p[mu] * surf[iel].dsigma[mu];
-     pu += p[mu] * surf[iel].u[mu] * gmumu[mu];
+     E_p += p[mu] * surf[iel].u[mu] * gmumu[mu];
     }
     const double mutot = surf[iel].mub * baryonCharge
       + surf[iel].muq * electricCharge + surf[iel].mus * strangeness;
-    const double nf = c1 / (exp( (pu - mutot) / surf[iel].T) + 1.0);
+    const double nf = c1 / (exp( (E_p - mutot) / surf[iel].T) + 1.0);
     if(nf > 1.0) nFermiFail++;
     Pi_den[ipt][iphi] += pds * nf ;
     for(int mu=0; mu<4; mu++)
@@ -310,21 +325,32 @@ void doCalculations(int pid) {
         
         //pds = p x dsigma
         //surf[iel].dbeta[ta][rh] = varpi_{mu nu}
-        // computing the 'standard' polarization expression
-        Pi_num[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
-                                * p_[sg] * surf[iel].dbeta[nu][rh];
+        // computing the 'standard' polarization expression. I deleted a factor (1. - nf) in every term!!!
+        Pi_num[ipt][iphi][mu] += pds * nf * levi(mu, nu, rh, sg)
+                               * p_[sg] * surf[iel].dbeta[nu][rh];
         
         //David's formula with extra gmunu because I have shear tensor with upper indices (Euclidean) only
         for(int ta=0; ta<4; ta++) {
           for(int alph=0; alph<4; alph++){
-            Pi_num_navierstokes[ipt][iphi][mu] += pds * nf * (1. - nf) * z * xi_delta_coefficient
+            Pi_num_navierstokes[ipt][iphi][mu] += pds * nf * ((xi_delta_coefficient*beta*beta)/z)
                                     * beta * levi(mu, nu, rh, sg) * u_[nu] * p_[rh]
                                     * gmunu[sg][alph] * shear_tensor(&surf_element, ta, alph) * p_[ta];
           }
         }
         
+        // The first of David's new terms under the assumption that \Omega^{\mu\nu}=0
+        for(int ta=0; ta<4; ta++) {
+          for(int alph=0; alph<4; alph++) {
+            for(int bet=0; bet<4; bet++) {
+              Pi_num_spin_potential_zero[ipt][iphi][mu] += pds * nf * kappa_coefficient 
+              *((levi(mu, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph]) 
+              - ((1./E_p) * p_[bet]) * levi(bet, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph] * surf[iel].u[mu]) ;
+            }
+          }
+        }
+
         // computing the extra 'xi' term for the polarization
-        for(int ta=0; ta<4; ta++)
+         for(int ta=0; ta<4; ta++)
          Pi_num_xi[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
                      * p_[sg] * p[ta] / p[0] * tvect[nu]
                      * ( surf[iel].dbeta[rh][ta] + surf[iel].dbeta[ta][rh]);
@@ -335,7 +361,12 @@ void doCalculations(int pid) {
     Qx2 += (p[1]*p[1] - p[2]*p[2])/(pT[ipt]+1e-10) * pds * nf;
     Qy2 += (p[1]*p[2])/(pT[ipt]+1e-10) * pds * nf;
    }
-  if(iel%100000==0) cout << "processed " << iel/1000 << "k elements\n";
+  // Increment the processed count for each thread
+  #pragma omp atomic
+  processedCount++;
+  if (processedCount % 1000 == 0) {
+        cout << "processed " << processedCount / 1000 << "k elements\n";
+  }
  }  // loop over all elements
  delete[] surf;
  cout << "doCalculations: total, bad = " << setw(12) << Nelem << setw(12) << nBadElem << endl;
@@ -440,15 +471,17 @@ void outputPolarization(char *out_file) {
  }
  for (int ipt = 0; ipt < pT.size(); ipt++)
   for (int iphi = 0; iphi < phi.size(); iphi++) {
-   fout << setw(14) << pT[ipt] << setw(14) << phi[iphi]
-     << setw(14) << Pi_den[ipt][iphi];
-   for(int mu=0; mu<4; mu++)
-    fout << setw(14) << Pi_num[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
-   for(int mu=0; mu<4; mu++)
-    fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
-   for(int mu=0; mu<4; mu++)
-    fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC / 2.0;
-   fout << endl;
+    fout << setw(14) << pT[ipt] << setw(14) << phi[iphi]
+       << setw(14) << Pi_den[ipt][iphi];
+    for(int mu=0; mu<4; mu++)
+      fout << setw(14) << Pi_num[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
+    for(int mu=0; mu<4; mu++)
+      fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
+    for(int mu=0; mu<4; mu++)
+      fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC / 2.0;
+    for(int mu=0; mu<4; mu++)
+      fout << setw(14) << - Pi_num_spin_potential_zero[ipt][iphi][mu] * hbarC / 4.0;
+    fout << endl;
  }
  fout.close();
  char dim_file [200];
