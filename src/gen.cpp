@@ -322,14 +322,17 @@ void doCalculations(int pid) {
       for(int rh=0; rh<4; rh++)
        for(int sg=0; sg<4; sg++) {
 
-        
+
+        // Andrea: change zetaSparams in vHLLE to 3 
+        // Maybe also change e_crit to 0.4 
+
         //pds = p x dsigma
         //surf[iel].dbeta[ta][rh] = varpi_{mu nu}
         // computing the 'standard' polarization expression. I deleted a factor (1. - nf) in every term!!!
         Pi_num[ipt][iphi][mu] += pds * nf * levi(mu, nu, rh, sg)
-                               * p_[sg] * surf[iel].dbeta[nu][rh];
+                               * p_[sg] * surf[iel].dmuCart[nu][rh]/surf[iel].T;
         
-        //David's formula with extra gmunu because I have shear tensor with upper indices (Euclidean) only
+        // //David's formula with extra gmunu because I have shear tensor with upper indices (Euclidean) only
         for(int ta=0; ta<4; ta++) {
           for(int alph=0; alph<4; alph++){
             Pi_num_navierstokes[ipt][iphi][mu] += pds * nf * ((xi_delta_coefficient*beta*beta)/z)
@@ -337,23 +340,34 @@ void doCalculations(int pid) {
                                     * gmunu[sg][alph] * shear_tensor(&surf_element, ta, alph) * p_[ta];
           }
         }
+
+        //David's formula with 4-velocity u replaced by t vector tvect by Iurii
+        // for(int ta=0; ta<4; ta++) {
+        //   for(int alph=0; alph<4; alph++){
+        //     Pi_num_navierstokes[ipt][iphi][mu] += pds * nf * ((xi_delta_coefficient*beta*beta)/z)
+        //                             * beta * levi(mu, nu, rh, sg) * tvect[nu] * p_[rh]
+        //                             * gmunu[sg][alph] * shear_tensor(&surf_element, ta, alph) * p_[ta];
+        //   }
+        // }
         
         // The first of David's new terms under the assumption that \Omega^{\mu\nu}=0
-        for(int ta=0; ta<4; ta++) {
-          for(int alph=0; alph<4; alph++) {
-            for(int bet=0; bet<4; bet++) {
-              Pi_num_spin_potential_zero[ipt][iphi][mu] += pds * nf * kappa_coefficient 
-              *((levi(mu, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph]) 
-              - ((1./E_p) * p_[bet]) * levi(bet, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph] * surf[iel].u[mu]) ;
-            }
-          }
-        }
+        // for(int ta=0; ta<4; ta++) {
+        //   for(int alph=0; alph<4; alph++) {
+        //     for(int bet=0; bet<4; bet++) {
+        //       Pi_num_spin_potential_zero[ipt][iphi][mu] += pds * nf * kappa_coefficient 
+        //       *((levi(mu, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph]) 
+        //       - ((1./E_p) * p_[bet]) * levi(bet, nu, rh, sg) * gmunu[rh][ta] * gmunu[sg][alph] * u_[nu] * surf[iel].dmuCart[ta][alph] * surf[iel].u[mu]) ;
+        //     }
+        //   }
+        // }
 
         // computing the extra 'xi' term for the polarization
-         for(int ta=0; ta<4; ta++)
-         Pi_num_xi[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
-                     * p_[sg] * p[ta] / p[0] * tvect[nu]
-                     * ( surf[iel].dbeta[rh][ta] + surf[iel].dbeta[ta][rh]);
+        // Check out on isothermal branch of vhlle. Here, I use my dmuCart/T as an updated version
+        // instead of dbeta as it is equivalent to the thermal vorticity in the case of the isothermal branch
+        //  for(int ta=0; ta<4; ta++)
+        //  Pi_num_xi[ipt][iphi][mu] += pds * nf * (1. - nf) * levi(mu, nu, rh, sg)
+        //              * p_[sg] * p[ta] / p[0] * tvect[nu]
+        //              * ( surf[iel].dmuCart[rh][ta]/surf[iel].T + surf[iel].dmuCart[ta][rh]/surf[iel].T);
        }
 
     Qx1 += p[1] * pds * nf;
@@ -475,12 +489,12 @@ void outputPolarization(char *out_file) {
        << setw(14) << Pi_den[ipt][iphi];
     for(int mu=0; mu<4; mu++)
       fout << setw(14) << Pi_num[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
-    for(int mu=0; mu<4; mu++)
-      fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
+    // for(int mu=0; mu<4; mu++)
+    //   fout << setw(14) << - Pi_num_xi[ipt][iphi][mu] * hbarC / (8.0 * particle->GetMass());
     for(int mu=0; mu<4; mu++)
       fout << setw(14) << - Pi_num_navierstokes[ipt][iphi][mu] * hbarC / 2.0;
-    for(int mu=0; mu<4; mu++)
-      fout << setw(14) << - Pi_num_spin_potential_zero[ipt][iphi][mu] * hbarC / 4.0;
+    // for(int mu=0; mu<4; mu++)
+    //   fout << setw(14) << - Pi_num_spin_potential_zero[ipt][iphi][mu] * hbarC / 4.0;
     fout << endl;
  }
  fout.close();
