@@ -23,6 +23,21 @@ utils::r2_tensor gen::element::du_ll()
     return _dul;
 }
 
+utils::r2_tensor gen::element::dbeta_ll()
+{
+    if (!_dbl_calculated)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                _dbl[i][j] = dbeta[i][j];
+            }
+        }
+        _dbl_calculated = true;
+    }
+    return _dbl;
+}
 void element::print()
 {
     std::cout << "Printing hypersurface element:" << std::endl
@@ -31,7 +46,7 @@ void element::print()
 
 utils::four_vec gen::element::u_u()
 {
-    return utils::four_vec{u[0],u[1],u[2],u[3]};
+    return utils::four_vec{u[0], u[1], u[2], u[3]};
 }
 
 utils::four_vec gen::element::u_l()
@@ -79,6 +94,22 @@ double gen::element::delta_uu(int mu, int nu)
 double gen::element::delta_ul(int mu, int nu)
 {
     return utils::g(mu, nu) - u[mu] * u_l()[nu];
+}
+
+utils::r2_tensor gen::element::delta_ll()
+{
+    if (!_delta_calculated)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                _delta_ll[i][j] = delta_ll(i, j);
+            }
+        }
+        _delta_calculated = true;
+    }
+    return _delta_ll;
 }
 
 double gen::element::delta_ll(int mu, int nu)
@@ -145,7 +176,7 @@ utils::r2_tensor gen::element::f_vorticity_ll()
 
 utils::r2_tensor gen::element::th_vorticity_ll()
 {
-    if(!_th_vorticity_calculated )
+    if (!_th_vorticity_calculated)
     {
         calculate_th_vorticity();
         _th_vorticity_calculated = true;
@@ -155,7 +186,7 @@ utils::r2_tensor gen::element::th_vorticity_ll()
 
 utils::r2_tensor gen::element::th_shear_ll()
 {
-    if(!_th_shear_calculated)
+    if (!_th_shear_calculated)
     {
         calculate_th_shear();
         _th_shear_calculated = true;
@@ -172,12 +203,48 @@ double gen::element::theta()
     return _theta;
 }
 
+double gen::element::b_theta()
+{
+    if (_b_theta == 0)
+    {
+        _b_theta = utils::trace_ll(dbeta_ll());
+    }
+
+    return _b_theta;
+}
+
+double gen::element::old_shear(int mu, int nu)
+{
+    const double u[4] = {u[0], u[1], u[2], u[3]};
+    const double u_[4] = {u[0], -u[1], -u[2], -u[3]};
+    double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
+    for (int alpha = 0; alpha < 4; alpha++)
+    {
+        term_3 += u[mu] * u_[alpha] * dmuCart[alpha][nu];
+        term_4 += u[nu] * u_[alpha] * dmuCart[mu][alpha];
+        term_5 += u[mu] * u_[alpha] * dmuCart[nu][alpha];
+        term_6 += u[nu] * u_[alpha] * dmuCart[alpha][mu];
+        term_10 += utils::gmumu[alpha] * dmuCart[alpha][alpha];
+        for (int beta = 0; beta < 4; beta++)
+        {
+            term_7 += 2. * u[mu] * u[nu] * u_[alpha] * u_[beta] * dmuCart[alpha][beta];
+            term_11 += u_[alpha] * u_[beta] * dmuCart[alpha][beta];
+        }
+    }
+    const double shear = 0.5 * (dmuCart[mu][nu] + dmuCart[nu][mu] - term_3 - term_4 - term_5 - term_6 + term_7) - (1. / 3.) * (utils::gmunu[mu][nu] - u[mu] * u[nu]) * (term_10 - term_11);
+
+    return shear;
+}
+
 void gen::element::calculate_shear()
 {
     for (size_t mu = 0; mu < 4; mu++)
     {
         for (size_t nu = 0; nu < 4; nu++)
         {
+#if USEOLDSHEAR
+            _shear[mu][nu] = old_shear(mu, nu);
+#else
             _shear[mu][nu] = 0;
             for (size_t a = 0; a < 4; a++)
             {
@@ -186,6 +253,7 @@ void gen::element::calculate_shear()
                     _shear[mu][nu] += dd_uu_ll(a, b, mu, nu) * gradu_ll(a, b);
                 }
             }
+#endif
         }
     }
 }
@@ -214,10 +282,9 @@ void gen::element::calculate_fvorticity()
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _f_vorticity[i][j] = 0.5* gradu_ll(i,j) - 0.5* gradu_ll(j,i);
+            _f_vorticity[i][j] = 0.5 * gradu_ll(i, j) - 0.5 * gradu_ll(j, i);
         }
     }
-    
 }
 
 void gen::element::calculate_th_vorticity()
@@ -226,7 +293,7 @@ void gen::element::calculate_th_vorticity()
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _th_vorticity[i][j] = -0.5 * dbeta[i][j] +0.5 * dbeta[j][i];
+            _th_vorticity[i][j] = -0.5 * dbeta[i][j] + 0.5 * dbeta[j][i];
         }
     }
 }
@@ -237,7 +304,7 @@ void gen::element::calculate_th_shear()
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _th_shear[i][j] = 0.5 * dbeta[i][j] +0.5 * dbeta[j][i];
+            _th_shear[i][j] = 0.5 * dbeta[i][j] + 0.5 * dbeta[j][i];
         }
     }
 }
@@ -250,6 +317,6 @@ void gen::element::calculte_ac()
         for (size_t j = 0; j < 4; j++)
         {
             _acc[i] += u_l()[j] * dmuCart[j][i] * utils::gmumu[i];
-        }       
+        }
     }
 }

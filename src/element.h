@@ -18,6 +18,7 @@ namespace gen
         double dbeta[4][4];
         double dmuCart[4][4]; // derivatives of the 4-velocity in Cartesian coordinates
         utils::r2_tensor du_ll();
+        utils::r2_tensor dbeta_ll();
         void print();
         utils::four_vec u_u();
         utils::four_vec u_l();
@@ -32,6 +33,7 @@ namespace gen
         /// @return
         double delta_uu(int mu, int nu);
         double delta_ul(int mu, int nu);
+        utils::r2_tensor delta_ll();
         double delta_ll(int mu, int nu);
         double gradu_ll(int mu, int nu);
         /// @brief Rank-4 project with mu and nu up, a and b down
@@ -49,6 +51,7 @@ namespace gen
         utils::r2_tensor th_vorticity_ll();
         utils::r2_tensor th_shear_ll();
         double theta();
+        double b_theta();
 
 
         friend std::istream& operator>>(std::istream &stream, element &cell)
@@ -94,12 +97,21 @@ namespace gen
             return get_normal_size_sq() > 0;
         }
 
+        double old_shear(int mu, int nu);
+
     private:
         double _normal_size = 0;
         double _theta = 0.0;
+        double _b_theta = 0.0;
+
+        bool _delta_calculated = false;
+        utils::r2_tensor _delta_ll = {0};
 
         bool _dul_calculated = false;
         utils::r2_tensor _dul = {0};
+
+         bool _dbl_calculated = false;
+        utils::r2_tensor _dbl = {0};
 
         bool _acc_caclulated = false;
         utils::four_vec _acc = {0};

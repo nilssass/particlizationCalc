@@ -67,7 +67,7 @@ double utils::trace_ll(r2_tensor tensor)
             tr += utils::gmunu[i][j] * tensor[i][j];
         }
     }
-    return 0.0;
+    return tr;
 }
 
 int utils::levi(int i, int j, int k, int l)
@@ -336,6 +336,8 @@ void utils::show_progress(int perc)
     std::cout.flush();
 }
 
+
+
 template <typename T>
 inline T utils::absolute_error(const T approx, const T exact)
 {
@@ -437,4 +439,65 @@ void utils::program_options::show_help()
 {
     std::cout << SYNTAX
               << std::endl;
+}
+utils::r2_tensor utils::mat_product(utils::four_vec v1, utils::four_vec v2)
+{
+    utils::r2_tensor prod = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            prod[i][j] = v1[i] * v2[j];
+        }
+    }
+    return prod;
+}
+
+utils::four_vec utils::s_product(utils::four_vec v1, double x)
+{
+    utils::four_vec prod = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        prod[i] = v1[i] * x;
+    }
+    return prod;
+}
+
+utils::r2_tensor utils::s_product(utils::r2_tensor t1, double x)
+{
+    r2_tensor prod = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            prod[i][j] = t1[i][j] * x;
+        }
+    }
+    return prod;
+}
+
+utils::four_vec utils::add_vectors(std::vector<four_vec> vecs)
+{
+    four_vec res = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        std::for_each(vecs.begin(), vecs.end(), [&res, i](four_vec v)
+                      { res[i] += v[i]; });
+    }
+    return res;
+}
+
+utils::r2_tensor utils::add_tensors(std::vector<r2_tensor> tensors)
+{
+    utils::r2_tensor res = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            std::for_each(tensors.begin(), tensors.end(), [&res, i, j](r2_tensor t)
+                          { res[i][j] += t[i][j]; });
+        }
+    }
+
+    return res;
 }

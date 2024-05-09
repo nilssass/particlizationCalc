@@ -9,12 +9,8 @@
 #define DEBUG true
 #endif
 
-#ifndef OPEN_MP_A
-#define OPEN_MP_A true 
-#endif
-
-#ifndef OPEN_MP_N
-#define OPEN_MP_N false 
+#ifndef USEOLDSHEAR
+#define USEOLDSHEAR true
 #endif
 
 #include <array>
@@ -30,10 +26,10 @@ namespace utils
     constexpr int bar_width = 70;
     constexpr double TOLERANCE = 0.0;
     const std::string SYNTAX = "usage: ./calc -i <surface_file> -o <output_file> program_mode [accept_mode] [polarization_mode] [-m modifier] [-d] [-q]\n"
-            "program_mode: -e: examine\t -y yield\t -p polarization\n"
-            "accept_mode: \n"
-            "polarization_mode: \n"
-            "-q quite -d feed down";
+                               "program_mode: -e: examine\t -y yield\t -p polarization\n"
+                               "accept_mode: \n"
+                               "polarization_mode: \n"
+                               "-q quite -d feed down";
 
     enum class program_modes
     {
@@ -84,7 +80,7 @@ namespace utils
     // Generates random integer
     int rand_int(int min = 0, int max = 10);
     typedef std::array<double, 4> four_vec;
-    typedef std::array<std::array<double, 4>,4> r2_tensor;
+    typedef std::array<std::array<double, 4>, 4> r2_tensor;
 
     const std::array<int, 4> gmumu = {1, -1, -1, -1};
     // Metric tensor with both indices up or down
@@ -93,13 +89,57 @@ namespace utils
                                 {0., 0., -1., 0.},
                                 {0., 0., 0., -1.}};
     const std::array<int, 4> t_vector = {1, 0, 0, 0};
+
+    constexpr double sign(double a)
+    {
+        return a > 0 ? 1.0 : -1.0;
+    }
+
+    constexpr four_vec from_array(const double *a)
+    {
+        return {a[0], a[1], a[2], a[3]};
+    };
+
     int g(int mu, int nu);
 
     const double Gevtofm = 5.067728853;
     const double hbarC = 1. / 5.067728853; //=0.197 Gev*fm
     const double PI = std::acos(-1);
 
-    constexpr bool is_zero(double v) {return abs(v) > TOLERANCE;};
+    constexpr bool is_zero(double v) { return abs(v) > TOLERANCE; };
+
+    constexpr bool equals(double a, double b)
+    {
+        return is_zero(a - b);
+    }
+
+    constexpr bool are_equal(r2_tensor t1, r2_tensor t2)
+    {
+        bool equal = true;
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                equal = equal && equals(t1[i][j], t2[i][j]);
+            }
+        }
+        return equal;
+    }
+
+    r2_tensor add_tensors(std::vector<r2_tensor> tensors);
+    four_vec add_vectors(std::vector<four_vec> vecs);
+    four_vec s_product(utils::four_vec v1, double x);
+    r2_tensor s_product(r2_tensor t1, double x);
+    r2_tensor mat_product(four_vec v1, four_vec v2);
+    constexpr four_vec to_lower(four_vec v_u)
+    {
+        return {v_u[0], -v_u[1], -v_u[2], -v_u[3]};
+    }
+    constexpr four_vec raise(four_vec v_l)
+    {
+        return {v_l[0], -v_l[1], -v_l[2], -v_l[3]};
+    }
 
     double get_norm_sq(four_vec vec);
 
@@ -109,7 +149,7 @@ namespace utils
 
     double trace_ll(r2_tensor tensor);
 
-    constexpr bool is_zero(four_vec v) 
+    constexpr bool is_zero(four_vec v)
     {
         bool r = true;
         for (size_t i = 0; i < v.size(); i++)
