@@ -76,14 +76,14 @@ void gen::engine::examine()
     int timelike_omega = 0;
     double th_shear_2_sum = 0.0;
     double th_vort_2_sum = 0.0;
-
-#if OPEN_MP_A
-    int threads_ = NTHREADS;
-#pragma omp parallel for num_threads(threads_) reduction(+ : sigma2_sum, theta_sum, fvort2_sum, th_shear_2_sum, th_vort_2_sum)
-#endif
-#if OPEN_MP_N
-#pragma omp parallel for
-#endif
+    int perc = 0;
+// #if OPEN_MP_A
+//     int threads_ = NTHREADS;
+// #pragma omp parallel for num_threads(threads_) reduction(+ : perc, cell_c, lastperc, sigma2_sum, theta_sum, fvort2_sum, th_shear_2_sum, th_vort_2_sum)
+// #endif
+// #if OPEN_MP_N
+// #pragma omp parallel for
+// #endif
     for (auto &cell : _hypersurface.hypersurface())
     {
         cell_c++;
@@ -93,6 +93,7 @@ void gen::engine::examine()
             utils::show_progress(perc);
             lastperc = perc;
         }
+
         // sigma
         auto sigma = cell.shear_ll();
 
@@ -154,9 +155,9 @@ void gen::engine::examine()
         th_shear_2_sum += utils::dot_tltl(xi, xi);
     }
 
-#if OPEN_MP_N
-#pragma omp atomic
-#endif
+// #if OPEN_MP_N
+// #pragma omp atomic
+// #endif
 
     std::cout << std::endl
               << "Report:" << std::endl;
@@ -164,7 +165,7 @@ void gen::engine::examine()
     std::cout << "shear tensor\t avg sigma^2 = " << utils::hbarC * utils::hbarC * sigma2_sum / _hypersurface.total()
               << "\tnonzero trace = " << tr_sigma << "\tnot transverse = " << longi_sigma << std::endl;
     std::cout << "expansion\t avg theta = " << utils::hbarC * theta_sum / _hypersurface.total()
-              << "\t theta < 0 count = " << neg_theta << std::endl;
+              << "\t (theta < 0) count = " << neg_theta << std::endl;
     std::cout << "acceleration\t avg a^2 = " << utils::hbarC * utils::hbarC * a2_sum / _hypersurface.total()
               << "\t timelike a count = " << timelike_a << std::endl;
     std::cout << "fluid vorticity\t avg omega^2 = " << utils::hbarC * utils::hbarC * fvort2_sum / _hypersurface.total()

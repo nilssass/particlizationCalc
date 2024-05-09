@@ -10,7 +10,7 @@
 #endif
 
 #ifndef OPEN_MP_A
-#define OPEN_MP_A false 
+#define OPEN_MP_A true 
 #endif
 
 #ifndef OPEN_MP_N
