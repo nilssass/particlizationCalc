@@ -1,112 +1,127 @@
-#include <omp.h>
-#include <TFile.h>
-#include <TGraph.h>
-#include <TMath.h>
-#include <TGraph.h>
-#include <TVector3.h>
-#include <TLorentzVector.h>
-#include <TRandom3.h>
-#include <TH1.h>
 #include <math.h>
-#include <iomanip>
-#include <ctime>
-#include <cstdlib>
+#include <string>
 #include <iostream>
 #include <fstream>
-#include <TF1.h>
 #include <sstream>
-#include <TUUID.h>
-#include <TROOT.h>
-#include <TApplication.h>
-#include <TStyle.h>
+#include <algorithm>
+#include <chrono>
+#include "utils.h"
+#include "element.h"
+#include "surface.h"
+#include "engine.h"
+#include "pdg_particle.h"
 
-#include "DatabasePDG2.h"
-#include "gen.h"
+bool load_hypersurface(utils::program_options opts, gen::hypersurface_wrapper &hypersurface);
+bool should_exit(utils::program_options &settings, int argc, char **argv);
 
-// ############################################################
-//  execution modes:
-//  1) calculation of polarization
-//     #define PLOTS commented out in src/gen.h
-//  2) plots of invariant combinations of beta derivatives
-//     #define PLOTS UNcommented out in src/gen.h
-// ############################################################
+int main(int argc, char **argv)
+{
+    utils::program_options settings;
+    settings.program_mode = utils::program_modes::Help;
 
-using namespace std;
-int getNlines(char *filename);
+    if (should_exit(settings, argc, argv))
+    {
+        return (settings.program_mode != utils::program_modes::Help);
+    }
 
-int ranseed;
+    gen::hypersurface_wrapper hypersurface;
 
-extern "C" {
-void getranseedcpp_(int *seed) { *seed = ranseed; }
+    if (!load_hypersurface(settings, hypersurface))
+    {
+        return 1;
+    }
+
+
+#if DEBUG
+    std::cout << "Now I try to construct the engine" << std::endl;
+#endif
+    gen::engine engine(settings, hypersurface);
+
+    if (settings.verbose)
+    {
+        std::cout << "Initializing the engine..." << std::endl;
+    }
+
+    engine.init();
+
+    if (settings.verbose)
+    {
+        std::cout << "Particle: "  << engine.particle() << std::endl;
+    }
+
+    engine.run();
+    return 0;
 }
 
-// ########## MAIN block ##################
+bool should_exit(utils::program_options &settings, int argc, char **argv)
+{
+    bool _exit = false;
 
-int main(int argc, char **argv) {
- // command-line parameters
- if (argc < 3) {
-  cout << "usage: ./calc <surface_file> <output_file> [PID]\n" << endl;
-  exit(1);
- }
- char surface_file[200], output_file[200];
- strcpy(surface_file, argv[1]);
- strcpy(output_file, argv[2]);
- //========= particle database init
- DatabasePDG2 *database = new DatabasePDG2("Tb/ptl3.data", "Tb/dky3.mar.data");
- database->LoadData();
- //	database->SetMassRange(0.01, 10.0); //-------without PHOTONS
- //	database->SetWidthRange(0., 10.0);
- database->SortParticlesByMass();
- database->CorrectBranching();
- database->DumpData();
- cout << " pion index = " << database->GetPionIndex() << endl;
- gen::database = database;
+    settings = utils::read_cmd(argc, argv);
+    if (settings.verbose)
+    {
+        settings.print();
+    }
+    if (settings.program_mode == utils::program_modes::Help)
+    {
+        _exit = true;
+    }
 
- #ifdef PLOTS
- TApplication theApp("App", &argc, argv);
- gStyle->SetOptStat(kFALSE);
- #endif
- // ========== generator init
- gen::initCalc();
- gen::load(surface_file, getNlines(surface_file));
- #ifndef PLOTS
- gen::calcEP1();
- if(argc==4){
-  gen::doCalculations(atoi(argv[3]));
- }
- else {
-  gen::doCalculations();
- }
- gen::outputPolarization(output_file);
- #else
- gen::calcInvariantQuantities();
- #endif
- // ========== trees & files
- time_t start, end;
- time(&start);
+    if (settings.program_mode == utils::program_modes::Invalid)
+    {
+        std::cout << "INVALID SINTAX!" << std::endl;
+        settings.show_help();
+        _exit = true;
+    }
 
- time(&end);
- float diff2 = difftime(end, start);
- cout << "Execution time = " << diff2 << " [sec]" << endl;
- #ifdef PLOTS
- theApp.Run();
- #endif
- return 0;
+    return _exit;
 }
 
-// auxiliary function to get the number of lines
-int getNlines(char *filename) {
- ifstream fin(filename);
- if (!fin) {
-  cout << "getNlines: cannot open file: " << filename << endl;
-  exit(1);
- }
- string line;
- int nlines = 0;
- while (fin.good()) {
-  getline(fin, line);
-  nlines++;
- };
- fin.close();
- return nlines - 1;
+bool load_hypersurface(utils::program_options opts, gen::hypersurface_wrapper &hypersurface)
+{
+    bool success = false;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    auto finish_reading = std::chrono::high_resolution_clock::now();
+
+    if (std::filesystem::exists(opts.in_file))
+    {
+        std::ifstream input_file(opts.in_file);
+        if (input_file.is_open())
+        {
+            if (opts.verbose)
+            {
+                std::cout << "Reading hypersurface from " << opts.in_file << std::endl;
+            }
+
+            hypersurface.read_hypersrface(input_file, opts.accept_mode);
+            input_file.close();
+            success = true;
+        }
+        else
+        {
+            std::cout << "Error reading file " << opts.in_file << "." << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Input file " << opts.in_file << " not found." << std::endl;
+    }
+    auto reading_time = std::chrono::duration_cast<std::chrono::milliseconds>(finish_reading - start);
+    if (success)
+    {
+        if (opts.verbose)
+        {
+            std::cout << "Reading of " << hypersurface.lines() << " lines completed in "
+                      << reading_time.count() << " ms" << std::endl
+                      << hypersurface.rejected()
+                      << " rejected\t" << hypersurface.failed() << " failed to read\t"
+                      << hypersurface.skipped() << " skipped\t"
+                      << hypersurface.timelikes() << " timelikes\t"
+                      << hypersurface.total() << " saved." << std::endl;
+        }
+    }
+
+    return success;
 }
