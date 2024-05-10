@@ -10,7 +10,7 @@
 #endif
 
 #ifndef USEOLDSHEAR
-#define USEOLDSHEAR true
+#define USEOLDSHEAR false
 #endif
 
 #include <array>

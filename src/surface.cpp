@@ -158,3 +158,19 @@ surface_info gen::hypersurface_wrapper::read_info()
 
     return info;
 }
+
+void gen::hypersurface_wrapper::clear()
+{
+    _failed = 0;
+    _lines = 0;
+    _rejected = 0;
+    _skipped = 0;
+    _timelikes = 0;
+    _total = 0;
+    _elements.clear();
+}
+
+void gen::hypersurface_wrapper::add(const element &cell)
+{
+    _elements.push_back(cell);
+}

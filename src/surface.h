@@ -26,8 +26,8 @@ namespace gen
             stream << std::endl;
             stream << "min T = " << info.min_T.T << " @" << info.min_T << std::endl;
             stream << "max T = " << info.max_T.T << " @" << info.max_T << std::endl;
-            stream << "min mu_B = " << info.min_mub.T << " @ " << info.min_mub << std::endl;
-            stream << "max mu_B = " << info.max_mub.T << " @" << info.max_mub << std::endl;
+            stream << "min mu_B = " << info.min_mub.mub << " @ " << info.min_mub << std::endl;
+            stream << "max mu_B = " << info.max_mub.mub << " @" << info.max_mub << std::endl;
 
             return stream;
         }
@@ -54,6 +54,8 @@ namespace gen
         int lines() { return _lines; }
         std::vector<element> hypersurface() { return _elements; }
         surface_info read_info();
+        void clear();
+        void add(const element &cell);
     };
 } // namespace gen
 
