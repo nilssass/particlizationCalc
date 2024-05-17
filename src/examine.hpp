@@ -9,7 +9,6 @@ void gen::engine::examine()
         std::cout << "Going through " << _hypersurface.total() << "  cells.." << std::endl;
     }
 
-    
     double sigma2_sum = 0.0;
     int longi_sigma = 0;
     int tr_sigma = 0;
@@ -166,42 +165,43 @@ void gen::engine::examine()
     std::cout << "div.beta\t avg = " << btheta_sum / _hypersurface.total() << std::endl;
     std::cout << "sqrt<T*du - dbeta> = " << utils::sign(sum_diff) * sqrt(abs(sum_diff) / _hypersurface.total()) << std::endl;
     std::cout << "failed du decomp = " << decomp_failed << std::endl;
-    std::cout << "Comparison to Nils shear failed = " << nills_fail << std::endl;
+    // std::cout << "Comparison to Nils shear failed = " << nills_fail << std::endl;
 
     std::ofstream output(_settings.out_file);
 
-    int lastperc = -1;
+    int lastperc = 0;
     int counter = 0;
     if (_settings.verbose)
     {
         std::cout << "Writing output ..." << std::endl;
     }
 
-   output
+    output
         << "# tau,x,y,eta,theta,sqrt(sigma^2),sqrt(-omega^2),div.beta,sqrt(-varpi^2),sqrt(xi^2),sqrt(-a^2)" << std::endl;
 #ifdef _OPENMP
-    #pragma critical
+#pragma critical
     {
 #endif
-    for (auto cell : _hypersurface.hypersurface())
-    {
-        int perc = 100 * ((double)counter) / ((double)_hypersurface.total());
-        if (perc > lastperc)
+        utils::show_progress(0);
+        for (auto cell : _hypersurface.hypersurface())
         {
-            lastperc = perc;
-            utils::show_progress(perc);
+            counter++;
+            int perc = 100 * ((double)counter) / ((double)_hypersurface.total());
+            if (perc > lastperc)
+            {
+                lastperc = perc;
+                utils::show_progress(perc);
+            }
+            output << cell.tau << "," << cell.x << "," << cell.y << "," << cell.eta
+                   << "," << cell.theta()
+                   << "," << cell.sigma_norm() << "," << cell.fvort_norm() << "," << cell.b_theta()
+                   << "," << cell.tvort_norm() << "," << cell.tshear_norm() << "," << cell.acc_norm()
+                   << std::endl;
         }
-        counter++;
-        output << cell.tau << "," << cell.x << "," << cell.y << "," << cell.eta
-         << "," << cell.theta() 
-        << "," << cell.sigma_norm() << "," << cell.fvort_norm() << "," << cell.b_theta()
-        <<"," << cell.tvort_norm() <<"," << cell.tshear_norm() << "," << cell.acc_norm()
-        << std::endl;
-    }
 
-    output.close();
-    #ifdef _OPENMP
-    #pragma critical
+        output.close();
+#ifdef _OPENMP
+#pragma critical
     }
 #endif
 }

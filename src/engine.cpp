@@ -53,6 +53,10 @@ void gen::engine::run()
     // }
 }
 
+void gen::engine::test_analytical(analytical_sol *solution)
+{
+    solution->populate();
+}
 
 void gen::engine::calculate_yield()
 {

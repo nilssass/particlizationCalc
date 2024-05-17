@@ -55,7 +55,9 @@ namespace gen
         std::vector<element> hypersurface() { return _elements; }
         surface_info read_info();
         void clear();
-        void add(const element &cell);
+        void add(element &cell,  utils::accept_modes acc_mode);
+        element& operator[](int);
+        bool checksize();
     };
 } // namespace gen
 

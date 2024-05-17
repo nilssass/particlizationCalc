@@ -9,6 +9,7 @@
 #include "element.h"
 #include "pdg_particle.h"
 #include "surface.h"
+#include "analytical_sol.h"
 
 namespace gen
 {
@@ -62,6 +63,7 @@ namespace gen
         ~engine();
         void init();
         void run();
+        void test_analytical(analytical_sol* solution);
 
         size_t size_pt() { return _size_pt; }
 

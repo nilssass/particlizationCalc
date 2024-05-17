@@ -215,9 +215,9 @@ double gen::element::b_theta()
 
 double gen::element::old_shear(int mu, int nu)
 {
-    const double u[4] = {u[0], u[1], u[2], u[3]};
     const double u_[4] = {u[0], -u[1], -u[2], -u[3]};
     double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
+
     for (int alpha = 0; alpha < 4; alpha++)
     {
         term_3 += u[mu] * u_[alpha] * dmuCart[alpha][nu];
@@ -231,6 +231,7 @@ double gen::element::old_shear(int mu, int nu)
             term_11 += u_[alpha] * u_[beta] * dmuCart[alpha][beta];
         }
     }
+    
     const double shear = 0.5 * (dmuCart[mu][nu] + dmuCart[nu][mu] - term_3 - term_4 - term_5 - term_6 + term_7) - (1. / 3.) * (utils::gmunu[mu][nu] - u[mu] * u[nu]) * (term_10 - term_11);
 
     return shear;

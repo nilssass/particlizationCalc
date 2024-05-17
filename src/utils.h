@@ -9,6 +9,10 @@
 #define DEBUG true
 #endif
 
+#ifndef BENCHMARK
+#define BENCHMARK true
+#endif
+
 #ifndef USEOLDSHEAR
 #define USEOLDSHEAR false
 #endif
@@ -20,6 +24,8 @@
 
 #include <stdexcept>
 #include <random>
+#include <utility>
+#include <chrono>
 
 namespace utils
 {
@@ -79,28 +85,15 @@ namespace utils
     typedef std::mt19937 randomizer;
     // Generates random integer
     int rand_int(int min = 0, int max = 10);
-    typedef std::array<double, 4> four_vec;
-    typedef std::array<std::array<double, 4>, 4> r2_tensor;
 
-    const std::array<int, 4> gmumu = {1, -1, -1, -1};
-    // Metric tensor with both indices up or down
-    const double gmunu[4][4] = {{1., 0., 0., 0.},
-                                {0., -1., 0., 0.},
-                                {0., 0., -1., 0.},
-                                {0., 0., 0., -1.}};
-    const std::array<int, 4> t_vector = {1, 0, 0, 0};
+    double rand_double(double min = 0, double max = 10);
+    
 
     constexpr double sign(double a)
     {
         return a > 0 ? 1.0 : -1.0;
     }
 
-    constexpr four_vec from_array(const double *a)
-    {
-        return {a[0], a[1], a[2], a[3]};
-    };
-
-    int g(int mu, int nu);
 
     const double Gevtofm = 5.067728853;
     const double hbarC = 1. / 5.067728853; //=0.197 Gev*fm
@@ -113,54 +106,6 @@ namespace utils
         return is_zero(a - b);
     }
 
-    constexpr bool are_equal(r2_tensor t1, r2_tensor t2)
-    {
-        bool equal = true;
-
-        for (size_t i = 0; i < 4; i++)
-        {
-            for (size_t j = 0; j < 4; j++)
-            {
-                equal = equal && equals(t1[i][j], t2[i][j]);
-            }
-        }
-        return equal;
-    }
-
-    r2_tensor add_tensors(std::vector<r2_tensor> tensors);
-    four_vec add_vectors(std::vector<four_vec> vecs);
-    four_vec s_product(utils::four_vec v1, double x);
-    r2_tensor s_product(r2_tensor t1, double x);
-    r2_tensor mat_product(four_vec v1, four_vec v2);
-    constexpr four_vec to_lower(four_vec v_u)
-    {
-        return {v_u[0], -v_u[1], -v_u[2], -v_u[3]};
-    }
-    constexpr four_vec raise(four_vec v_l)
-    {
-        return {v_l[0], -v_l[1], -v_l[2], -v_l[3]};
-    }
-
-    double get_norm_sq(four_vec vec);
-
-    double dot_uu(four_vec vec1_u, four_vec vec2_u);
-    four_vec dot_utl(four_vec vec_u, r2_tensor t_ll);
-    double dot_tltl(r2_tensor t1_ll, r2_tensor t2_ll);
-
-    double trace_ll(r2_tensor tensor);
-
-    constexpr bool is_zero(four_vec v)
-    {
-        bool r = true;
-        for (size_t i = 0; i < v.size(); i++)
-        {
-            r = r && is_zero(v[i]);
-        }
-        return r;
-    }
-
-    int levi(int i, int j, int k, int l);
-    std::vector<double> linspace(double min, double max, int size);
 
     template <typename T>
     T absolute_error(const T approx, const T exact);
@@ -168,21 +113,11 @@ namespace utils
     template <typename T>
     T relative_error(const T approx, const T exact);
 
-    template <typename... Args>
-    std::string string_format(const std::string &format, Args... args)
-    {
-        int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
-        if (size_s <= 0)
-        {
-            throw std::runtime_error("Error during formatting.");
-        }
-        auto size = static_cast<size_t>(size_s);
-        std::unique_ptr<char[]> buf(new char[size]);
-        std::snprintf(buf.get(), size, format.c_str(), args...);
-        return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-    }
-
     program_options read_cmd(int argc, char **argv);
     void show_progress(int perc);
-};
+
+    std::vector<double> linspace(double min, double max, int size);
+    
+    double simple_bench(std::function<void(void)> f, int iter);
+}
 #endif

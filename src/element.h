@@ -5,6 +5,7 @@
 #include <iostream>
 #include <array>
 #include "utils.h"
+#include "geometry.h"
 namespace gen
 {
     const std::string MILNE[4] = {"tau", "x", "y", "eta"};
@@ -53,8 +54,7 @@ namespace gen
         double theta();
         double b_theta();
 
-
-        friend std::istream& operator>>(std::istream &stream, element &cell)
+        friend std::istream &operator>>(std::istream &stream, element &cell)
         {
             stream >> cell.tau >> cell.x >> cell.y >> cell.eta;
             for (int mu = 0; mu < 4; mu++)
@@ -84,7 +84,7 @@ namespace gen
 
             return stream;
         }
-        friend std::ostream& operator<<(std::ostream &stream, const element &cell)
+        friend std::ostream &operator<<(std::ostream &stream, const element &cell)
         {
             stream << "(" << cell.tau << "," << cell.x << "," << cell.y << ","
                    << cell.eta << ")\t";
@@ -98,6 +98,12 @@ namespace gen
         }
 
         double old_shear(int mu, int nu);
+        double sigma_norm();
+        double fvort_norm();
+        double tvort_norm();
+        double tshear_norm();
+        double dbdu_diff_norm();
+        double acc_norm();
 
     private:
         double _normal_size = 0;
@@ -110,7 +116,7 @@ namespace gen
         bool _dul_calculated = false;
         utils::r2_tensor _dul = {0};
 
-         bool _dbl_calculated = false;
+        bool _dbl_calculated = false;
         utils::r2_tensor _dbl = {0};
 
         bool _acc_caclulated = false;
@@ -119,7 +125,7 @@ namespace gen
         bool _th_vorticity_calculated = false;
         utils::r2_tensor _th_vorticity = {0};
         bool _th_shear_calculated = false;
-        utils::r2_tensor _th_shear= {0};
+        utils::r2_tensor _th_shear = {0};
         bool _shear_calculated = false;
         utils::r2_tensor _shear = {0};
         bool __f_vorticity_vec_calculated = false;
@@ -132,6 +138,13 @@ namespace gen
         void calculate_th_vorticity();
         void calculate_th_shear();
         void calculte_ac();
+
+        double _sigma_norm = 0;
+        double _fvort_norm = 0;
+        double _tvort_norm = 0;
+        double _tshear_norm = 0;
+        double _dbdu_norm = 0;
+        double _acc_norm = 0;
     };
 }
 #endif
