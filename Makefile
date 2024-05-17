@@ -4,15 +4,25 @@ ODIR           = obj
 # ROOTLIBS     := $(shell root-config --libs)
 # ROOTGLIBS    := $(shell root-config --glibs)
 
-CXX           = /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++
-CXXFLAGS      = -g -fPIC -O3 -fopenmp -Xpreprocessor # Add -fopenmp for OpenMP support
+# Linux
+CXX = g++
+# Mac 
+# CXX           = /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++
+#CXXFLAGS      = -fPIC -O3 -fopenmp -Xpreprocessor # Add -fopenmp for OpenMP support
 CXXFLAGS      = -fPIC -O3 -fopenmp -Xpreprocessor # Add -fopenmp for OpenMP support
-LD            = /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++
-LDFLAGS       = -O3 -fopenmp -lomp  # Add -fopenmp for OpenMP support
+# Mac
+#LD            = /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++
+#LDFLAGS       = -O3 -fopenmp -lomp  # Add -fopenmp for OpenMP support
+# Linux
+LD            = g++
+LDFLAGS       = -O3 -fopenmp -lpthread  # Add -fopenmp for OpenMP support
 # FFLAGS        = -fPIC $(ROOTCFLAGS) -O3
 FFLAGS        = -fPIC -O3
 
-CXXFLAGS 	+= -stdlib=libc++ -pthread -std=c++17 -m64
+# Mac
+# CXXFLAGS 	+= -stdlib=libc++ -pthread -std=c++17 -m64
+# Linux
+CXXFLAGS 	+= -std=c++17 -m64
 # CXXFLAGS     += $(ROOTCFLAGS)
 # LIBS          = $(ROOTLIBS) $(SYSLIBS)
 # GLIBS         = $(ROOTGLIBS) $(SYSLIBS)

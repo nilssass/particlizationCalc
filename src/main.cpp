@@ -5,6 +5,7 @@
 #include <sstream>
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include "utils.h"
 #include "element.h"
 #include "surface.h"

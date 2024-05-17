@@ -21,7 +21,7 @@
 #include <cmath>
 #include <vector>
 #include <map>
-
+#include <functional>
 #include <stdexcept>
 #include <random>
 #include <utility>

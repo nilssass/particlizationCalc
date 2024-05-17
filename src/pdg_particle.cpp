@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <filesystem>
 #include "pdg_particle.h"
 
 gen::pdg_particle::pdg_particle()
