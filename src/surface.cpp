@@ -46,6 +46,7 @@ void gen::hypersurface_wrapper::read_hypersrface(std::ifstream &file, utils::acc
         if (line.empty() || line[0] == '#')
         {
             _skipped++;
+            continue;
         }
 
         std::istringstream iss(line);
@@ -54,7 +55,8 @@ void gen::hypersurface_wrapper::read_hypersrface(std::ifstream &file, utils::acc
         if (iss.fail())
         {
             _failed++;
-            std::cout << "I cannot read line " << _lines << "!" << std::endl;
+            std::cerr << "I cannot read line " << _lines << "!" << std::endl;
+            continue;
         }
 
         if (!cell.is_spacelike())
