@@ -1,5 +1,6 @@
 #include "geometry.h"
 #include <iostream>
+#include <cassert>
 
 utils::r2_tensor utils::mat_product(utils::four_vec v1, utils::four_vec v2)
 {
@@ -155,7 +156,7 @@ utils::t_four_vec::t_four_vec(double arr[], const int size, bool is_lower)
     {
         for (size_t i = 0; i < size; i++)
         {
-            _vec[i] = arr[i];
+            _data[i] = arr[i];
         }
         _lower = is_lower;
     }
@@ -167,96 +168,71 @@ utils::t_four_vec::t_four_vec(double arr[], const int size, bool is_lower)
 
 utils::t_four_vec::t_four_vec(const t_four_vec &other)
 {
-    _vec = other._vec;
+    _data = other._data;
     _lower = other._lower;
 }
 
-double *utils::t_four_vec::to_array()
+// utils::t_four_vec::t_four_vec(std::initializer_list<double> init, bool is_lower)
+// {
+//      std::copy(init.begin(), init.end(), _data.begin());
+//     _lower = is_lower;
+// }
+
+utils::t_four_vec &utils::t_four_vec::operator+=(const t_four_vec &rhs)
 {
-    double arr[4];
+    assert(rhs._lower == _lower);
+
     for (size_t i = 0; i < 4; i++)
     {
-        arr[i] = _vec[i];
+        this->_data[i] += rhs._data[i];
     }
-    return arr;
+    return *this;
 }
 
-utils::t_four_vec &utils::t_four_vec::operator+(const t_four_vec &vec2)
+utils::t_four_vec &utils::t_four_vec::operator-=(const t_four_vec &rhs)
 {
-    four_vec res = {0};
-    if (vec2._lower == _lower)
+    assert(rhs._lower == _lower);
+
+    for (size_t i = 0; i < 4; i++)
     {
-        
-        for (size_t i = 0; i < 4; i++)
-        {
-            res[i] = _vec[i] + vec2._vec[i];
-        }
+        this->_data[i] -= rhs._data[i];
     }
-    else
-    {
-        throw std::invalid_argument("Different vector index structures.");
-    }
-    auto vec3 = t_four_vec(res, _lower);
-    return vec3;
+
+    return *this;
 }
 
-utils::t_four_vec &utils::t_four_vec::operator-(const t_four_vec &vec2)
-{
-    four_vec res = {0};
-    if (vec2._lower == _lower)
-    {
-        
-        for (size_t i = 0; i < 4; i++)
-        {
-            res[i] = _vec[i] - vec2._vec[i];
-        }
-    }
-    else
-    {
-        throw std::invalid_argument("Different vector index structures.");
-    }
-    auto vec3 = t_four_vec(res, _lower);
-    return vec3;
-}
-
-double &utils::t_four_vec::operator*(const t_four_vec &vec2)
+double utils::t_four_vec::operator*(const t_four_vec &vec2)
 {
     double res = 0;
-    
-        for (size_t i = 0; i < 4; i++)
-        {
-            res+= _vec[i]*vec2._vec[i] * (vec2._lower == _lower ? utils::gmumu[i] : 1.);
-        }
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        res += _data[i] * vec2._data[i] * (vec2._lower == _lower ? utils::gmumu[i] : 1.);
+    }
     return res;
 }
 
-utils::t_four_vec &utils::t_four_vec::operator*(const double &x)
-{
-    auto result = t_four_vec({x*_vec[0], x*_vec[1], x*_vec[2], x*_vec[3]}, _lower);
-    return result;
-}
-
-bool &utils::t_four_vec::operator==(const t_four_vec &other) const
+bool utils::t_four_vec::operator==(const t_four_vec &other) const
 {
     auto res = _lower == other._lower;
     if (res)
     {
         for (size_t i = 0; i < 4 && res; i++)
         {
-            res = res & is_zero(other._vec[i]-_vec[i]);
+            res = res & is_zero(other._data[i] - _data[i]);
         }
     }
     return res;
 }
 
-utils::r2_tensor &utils::t_four_vec::operator&(const t_four_vec &vec2)
+utils::r2_tensor utils::t_four_vec::operator&(const t_four_vec &vec2)
 {
     r2_tensor res = {0};
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
         {
-            res[i][j] = _vec[i]*vec2._vec[j];
+            res[i][j] = _data[i] * vec2._data[j];
         }
     }
     return res;
@@ -264,7 +240,8 @@ utils::r2_tensor &utils::t_four_vec::operator&(const t_four_vec &vec2)
 
 utils::t_four_vec utils::t_four_vec::add_vectors(std::vector<t_four_vec> vecs)
 {
-    std::accumulate(vecs.begin(), vecs.end(), vecs[0]);
+    auto sum = std::accumulate(vecs.begin(), vecs.end(), vecs[0]);
+    return sum;
 }
 
 double utils::t_four_vec::norm_sq()
@@ -272,32 +249,56 @@ double utils::t_four_vec::norm_sq()
     return (*this) * (*this);
 }
 
-utils::t_four_vec utils::t_four_vec::lower()
+utils::t_four_vec utils::t_four_vec::to_lower()
 {
     auto res = t_four_vec(*this);
     if (!_lower)
     {
         for (size_t i = 0; i < 4; i++)
         {
-            res._vec[i] *= gmumu[i];
+            res._data[i] *= gmumu[i];
         }
-       res._lower = true;
+        res._lower = true;
     }
     return res;
 }
 
-utils::t_four_vec utils::t_four_vec::raise()
+void utils::t_four_vec::lower()
+{
+    if (!_lower)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            _data[i] *= gmumu[i];
+        }
+        _lower = true;
+    }
+}
+
+utils::t_four_vec utils::t_four_vec::to_upper()
 {
     auto res = t_four_vec(*this);
     if (_lower)
     {
         for (size_t i = 0; i < 4; i++)
         {
-            res._vec[i] *= gmumu[i];
+            res._data[i] *= gmumu[i];
         }
-       res._lower = false;
+        res._lower = false;
     }
     return res;
+}
+
+void utils::t_four_vec::raise()
+{
+    if (_lower)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            _data[i] *= gmumu[i];
+        }
+        _lower = false;
+    }
 }
 
 utils::t_four_vec utils::t_four_vec::boost(const t_four_vec &four_velocity)
