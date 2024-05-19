@@ -3,6 +3,7 @@
 
 #pragma once
 #include "surface.h"
+#include "element.h"
 class analytical_sol
 {
 public:
@@ -18,18 +19,18 @@ public:
     void populate();
 
 protected:
-    virtual gen::element generate_cell(double T, double x, double y, double eta) = 0;
-    virtual utils::four_vec exp_acc_u(gen::element) = 0;
-    virtual utils::r2_tensor exp_shear_ll(gen::element) = 0;
-    virtual utils::four_vec exp_f_vorticity_u(gen::element) = 0;
-    virtual utils::r2_tensor exp_f_vorticity_ll(gen::element) = 0;
-    virtual utils::r2_tensor exp_th_vorticity_ll(gen::element) = 0;
-    virtual utils::r2_tensor exp_th_shear_ll(gen::element) = 0;
-    virtual double exp_theta(gen::element) = 0;
-    virtual double exp_b_theta(gen::element) = 0;
+    virtual hydro::element generate_cell(double T, double x, double y, double eta) = 0;
+    virtual utils::four_vec exp_acc_u(hydro::element) = 0;
+    virtual utils::r2_tensor exp_shear_ll(hydro::element) = 0;
+    virtual utils::four_vec exp_f_vorticity_u(hydro::element) = 0;
+    virtual utils::r2_tensor exp_f_vorticity_ll(hydro::element) = 0;
+    virtual utils::r2_tensor exp_th_vorticity_ll(hydro::element) = 0;
+    virtual utils::r2_tensor exp_th_shear_ll(hydro::element) = 0;
+    virtual double exp_theta(hydro::element) = 0;
+    virtual double exp_b_theta(hydro::element) = 0;
 
 private:
-    gen::hypersurface_wrapper _surface;
+    hydro::hypersurface_wrapper _surface;
     size_t _count;
     utils::four_vec _mincoords;
     utils::four_vec _maxcoords;

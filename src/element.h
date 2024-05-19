@@ -6,10 +6,8 @@
 #include <array>
 #include "utils.h"
 #include "geometry.h"
-namespace gen
+namespace hydro
 {
-    const std::string MILNE[4] = {"tau", "x", "y", "eta"};
-    const std::string MINKOWSKI[4] = {"t", "x", "y", "z"};
     struct element
     {
         double tau, x, y, eta;

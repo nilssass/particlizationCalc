@@ -14,7 +14,7 @@ int utils::rand_int(int min, int max)
     return dist(rng);
 }
 
-double utils::rand_double(double min, double  max)
+double utils::rand_double(double min, double max)
 {
     static std::random_device randomizer;
     static std::mt19937 rng(randomizer());
@@ -285,6 +285,7 @@ void utils::program_options::print()
         case utils::program_modes::Yield:
             std::cout << "yield";
             break;
+        case utils::program_modes::Invalid:
         default:
             std::cout << "Unknown mode";
             break;
@@ -307,6 +308,8 @@ void utils::program_options::print()
             break;
         case utils::accept_modes::RejectTimelike:
             std::cout << "Reject if dSigma.dSigma < 0";
+            break;
+        case utils::accept_modes::Invalid:
             break;
         }
         std::cout << std::endl;
@@ -335,6 +338,8 @@ void utils::program_options::print()
                 break;
             case utils::polarization_modes::SpinHydro:
                 std::cout << "Spin hydrodynamics";
+                break;
+            case utils::polarization_modes::Invalid:
                 break;
             }
             std::cout << std::endl;

@@ -38,7 +38,7 @@ int levi(int i, int j, int k, int l)
     return ((i - j) * (i - k) * (i - l) * (j - k) * (j - l) * (k - l) / 12);
 }
 
-namespace gen
+namespace hydro
 {
 
   int Nelem;

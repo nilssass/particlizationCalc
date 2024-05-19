@@ -29,6 +29,8 @@
 
 namespace utils
 {
+    const std::string MILNE[4] = {"tau", "x", "y", "eta"};
+    const std::string MINKOWSKI[4] = {"t", "x", "y", "z"};
     constexpr int bar_width = 70;
     constexpr double TOLERANCE = 0.0;
     const std::string SYNTAX = "usage: ./calc -i <surface_file> -o <output_file> program_mode [accept_mode] [polarization_mode] [-m modifier] [-d] [-q]\n"
@@ -126,6 +128,10 @@ namespace utils
                                 {0., -1., 0., 0.},
                                 {0., 0., -1., 0.},
                                 {0., 0., 0., -1.}};
+    const r2_tensor metric = {{{1., 0., 0., 0.},
+                               {0., -1., 0., 0.},
+                               {0., 0., -1., 0.},
+                               {0., 0., 0., -1.}}};
     const std::array<int, 4> t_vector = {1, 0, 0, 0};
     constexpr four_vec from_array(const double *a)
     {

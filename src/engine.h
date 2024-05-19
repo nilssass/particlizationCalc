@@ -11,7 +11,7 @@
 #include "surface.h"
 #include "analytical_sol.h"
 
-namespace gen
+namespace hydro
 {
     constexpr size_t DEFAULT_SIZE_PT = 20;
     constexpr size_t DEFAULT_SIZE_PHI = 30;
@@ -23,7 +23,7 @@ namespace gen
     {
     private:
         utils::program_options _settings;
-        gen::hypersurface_wrapper _hypersurface;
+        hydro::hypersurface_wrapper _hypersurface;
         size_t _size_pt;
         size_t _size_phi;
         size_t _size_y;
@@ -36,10 +36,10 @@ namespace gen
         std::vector<double> _pauli_lubanski_u;
         bool _initialized = false;
         int _particle_id;
-        gen::pdg_particle _particle;
+        hydro::pdg_particle _particle;
 
     public:
-        engine(utils::program_options t_settings, gen::hypersurface_wrapper &t_hypersurface,
+        engine(utils::program_options t_settings, hydro::hypersurface_wrapper &t_hypersurface,
                int t_particle_id = particle_names::LAMBDA,
                size_t t_size_pt = DEFAULT_SIZE_PT,
                size_t t_size_phi = DEFAULT_SIZE_PHI,
@@ -63,7 +63,7 @@ namespace gen
         ~engine();
         void init();
         void run();
-        void test_analytical(analytical_sol* solution);
+        void test_analytical(analytical_sol *solution);
 
         size_t size_pt() { return _size_pt; }
 

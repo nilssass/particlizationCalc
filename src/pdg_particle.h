@@ -4,7 +4,7 @@
 #pragma once
 // A modified version of Andrea's code
 #include <string>
-namespace gen
+namespace hydro
 {
     const std::string DATABASE = "pdg_database/baryons_mesons.dat";
 

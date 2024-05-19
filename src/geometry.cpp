@@ -73,19 +73,6 @@ bool ug::four_vector::operator==(const ug::four_vector &other) const
     return res;
 }
 
-utils::r2_tensor ug::four_vector::operator&(const ug::four_vector &vec2)
-{
-    r2_tensor res = {0};
-    for (size_t i = 0; i < 4; i++)
-    {
-        for (size_t j = 0; j < 4; j++)
-        {
-            res[i][j] = _data[i] * vec2._data[j];
-        }
-    }
-    return res;
-}
-
 ug::four_vector ug::four_vector::add_vectors(std::vector<ug::four_vector> vecs)
 {
     auto sum = std::accumulate(vecs.begin(), vecs.end(), vecs[0]);
@@ -154,6 +141,19 @@ ug::four_vector ug::four_vector::boost(const ug::four_vector &four_velocity)
     return ug::four_vector();
 }
 
+utils::r2_tensor ug::four_vector::operator&(const ug::four_vector &vec2)
+{
+    utils::r2_tensor res = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            res[i][j] = _data[i] * vec2._data[j];
+        }
+    }
+    return res;
+}
+
 std::istream &utils::geometry::operator>>(std::istream &stream, four_vector &vector)
 {
     stream >> vector._data[0] >> vector._data[1] >> vector._data[2] >> vector._data[3];
@@ -164,4 +164,5 @@ std::ostream &utils::geometry::operator<<(std::ostream &stream, const four_vecto
 {
     stream << "(" << vector[0] << "," << vector[1] << ","
     << vector[2] << "," << vector[3] << ")";
+    return stream;
 }

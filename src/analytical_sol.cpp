@@ -12,7 +12,7 @@ void analytical_sol::populate()
         {
             for (double eta = _mincoords[3]; eta <= _maxcoords[3]; eta += _coordsteps[3])
             {
-                gen::element cell = generate_cell(_Tf, x, y, eta);
+                hydro::element cell = generate_cell(_Tf, x, y, eta);
                 _surface.add(cell, _opts.accept_mode);
             }
         }

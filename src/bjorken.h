@@ -21,33 +21,33 @@ public:
     };
     ~bjorken();
 
-    gen::element generate_cell(double T, double x, double y, double eta) override;
-    utils::r2_tensor exp_th_vorticity_ll(gen::element cell) override
+    hydro::element generate_cell(double T, double x, double y, double eta) override;
+    utils::r2_tensor exp_th_vorticity_ll(hydro::element cell) override
     {
         return {0};
     }
-    utils::r2_tensor exp_f_vorticity_ll(gen::element cell) override
+    utils::r2_tensor exp_f_vorticity_ll(hydro::element cell) override
     {
         return {0};
     }
-    utils::four_vec exp_f_vorticity_u(gen::element cell) override
+    utils::four_vec exp_f_vorticity_u(hydro::element cell) override
     {
         return {0};
     }
 
-    double exp_theta(gen::element cell) override
+    double exp_theta(hydro::element cell) override
     {
         return 1 / cell.tau;
     }
 
-    utils::four_vec exp_acc_u(gen::element) override
+    utils::four_vec exp_acc_u(hydro::element) override
     {
         return {0};
     }
-    utils::r2_tensor exp_shear_ll(gen::element cell) override;
-    utils::r2_tensor exp_th_shear_ll(gen::element) override;
+    utils::r2_tensor exp_shear_ll(hydro::element cell) override;
+    utils::r2_tensor exp_th_shear_ll(hydro::element) override;
 
-    double exp_b_theta(gen::element) override;
+    double exp_b_theta(hydro::element) override;
 
 private:
     double _T0;

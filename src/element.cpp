@@ -5,9 +5,9 @@
 #include <sstream>
 #include "element.h"
 
-using namespace gen;
+using namespace hydro;
 
-utils::r2_tensor gen::element::du_ll()
+utils::r2_tensor hydro::element::du_ll()
 {
     if (!_dul_calculated)
     {
@@ -23,7 +23,7 @@ utils::r2_tensor gen::element::du_ll()
     return _dul;
 }
 
-utils::r2_tensor gen::element::dbeta_ll()
+utils::r2_tensor hydro::element::dbeta_ll()
 {
     if (!_dbl_calculated)
     {
@@ -44,12 +44,12 @@ void element::print()
               << *this << std::endl;
 }
 
-utils::four_vec gen::element::u_u()
+utils::four_vec hydro::element::u_u()
 {
     return utils::four_vec{u[0], u[1], u[2], u[3]};
 }
 
-utils::four_vec gen::element::u_l()
+utils::four_vec hydro::element::u_l()
 {
     return utils::four_vec({u[0], -u[1], -u[2], -u[3]});
 }
@@ -86,17 +86,17 @@ utils::four_vec element::get_pos_mink()
     return {t(), x, y, z()};
 }
 
-double gen::element::delta_uu(int mu, int nu)
+double hydro::element::delta_uu(int mu, int nu)
 {
     return utils::g(mu, nu) - u[mu] * u[nu];
 }
 
-double gen::element::delta_ul(int mu, int nu)
+double hydro::element::delta_ul(int mu, int nu)
 {
     return utils::g(mu, nu) - u[mu] * u_l()[nu];
 }
 
-utils::r2_tensor gen::element::delta_ll()
+utils::r2_tensor hydro::element::delta_ll()
 {
     if (!_delta_calculated)
     {
@@ -112,12 +112,12 @@ utils::r2_tensor gen::element::delta_ll()
     return _delta_ll;
 }
 
-double gen::element::delta_ll(int mu, int nu)
+double hydro::element::delta_ll(int mu, int nu)
 {
     return utils::g(mu, nu) - u_l()[mu] * u_l()[nu];
 }
 
-double gen::element::gradu_ll(int mu, int nu)
+double hydro::element::gradu_ll(int mu, int nu)
 {
     double result = 0;
     for (size_t rho = 0; rho < 4; rho++)
@@ -127,12 +127,12 @@ double gen::element::gradu_ll(int mu, int nu)
     return result;
 }
 
-double gen::element::dd_uu_ll(int mu, int nu, int a, int b)
+double hydro::element::dd_uu_ll(int mu, int nu, int a, int b)
 {
     return 0.5 * delta_ul(mu, a) * delta_ul(nu, b) + 0.5 * delta_ul(mu, b) * delta_ul(nu, a) - delta_uu(mu, nu) * delta_ll(a, b) / 3.0;
 }
 
-utils::four_vec gen::element::acc_u()
+utils::four_vec hydro::element::acc_u()
 {
     if (!_acc_caclulated)
     {
@@ -143,7 +143,7 @@ utils::four_vec gen::element::acc_u()
     return _acc;
 }
 
-utils::r2_tensor gen::element::shear_ll()
+utils::r2_tensor hydro::element::shear_ll()
 {
     if (!_shear_calculated)
     {
@@ -153,7 +153,7 @@ utils::r2_tensor gen::element::shear_ll()
     return _shear;
 }
 
-utils::four_vec gen::element::f_vorticity_u()
+utils::four_vec hydro::element::f_vorticity_u()
 {
     if (!__f_vorticity_vec_calculated)
     {
@@ -164,7 +164,7 @@ utils::four_vec gen::element::f_vorticity_u()
     return _f_vorticity_vec;
 }
 
-utils::r2_tensor gen::element::f_vorticity_ll()
+utils::r2_tensor hydro::element::f_vorticity_ll()
 {
     if (!__f_vorticity_calculated)
     {
@@ -174,7 +174,7 @@ utils::r2_tensor gen::element::f_vorticity_ll()
     return _f_vorticity;
 }
 
-utils::r2_tensor gen::element::th_vorticity_ll()
+utils::r2_tensor hydro::element::th_vorticity_ll()
 {
     if (!_th_vorticity_calculated)
     {
@@ -184,7 +184,7 @@ utils::r2_tensor gen::element::th_vorticity_ll()
     return _th_vorticity;
 }
 
-utils::r2_tensor gen::element::th_shear_ll()
+utils::r2_tensor hydro::element::th_shear_ll()
 {
     if (!_th_shear_calculated)
     {
@@ -194,7 +194,7 @@ utils::r2_tensor gen::element::th_shear_ll()
     return _th_shear;
 }
 
-double gen::element::theta()
+double hydro::element::theta()
 {
     if (_theta == 0)
     {
@@ -203,7 +203,7 @@ double gen::element::theta()
     return _theta;
 }
 
-double gen::element::b_theta()
+double hydro::element::b_theta()
 {
     if (_b_theta == 0)
     {
@@ -213,7 +213,7 @@ double gen::element::b_theta()
     return _b_theta;
 }
 
-double gen::element::old_shear(int mu, int nu)
+double hydro::element::old_shear(int mu, int nu)
 {
     const double u_[4] = {u[0], -u[1], -u[2], -u[3]};
     double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
@@ -237,7 +237,7 @@ double gen::element::old_shear(int mu, int nu)
     return shear;
 }
 
-double gen::element::sigma_norm()
+double hydro::element::sigma_norm()
 {
     if (_sigma_norm == 0)
     {
@@ -248,7 +248,7 @@ double gen::element::sigma_norm()
     return _sigma_norm;
 }
 
-double gen::element::fvort_norm()
+double hydro::element::fvort_norm()
 {
     if (_fvort_norm == 0)
     {
@@ -259,7 +259,7 @@ double gen::element::fvort_norm()
     return _fvort_norm;
 }
 
-double gen::element::tvort_norm()
+double hydro::element::tvort_norm()
 {
     if (_tvort_norm == 0)
     {
@@ -270,7 +270,7 @@ double gen::element::tvort_norm()
     return _tvort_norm;
 }
 
-double gen::element::tshear_norm()
+double hydro::element::tshear_norm()
 {
     if (_tshear_norm == 0)
     {
@@ -281,7 +281,7 @@ double gen::element::tshear_norm()
     return _tshear_norm;
 }
 
-double gen::element::dbdu_diff_norm()
+double hydro::element::dbdu_diff_norm()
 {
     if (_dbdu_norm == 0)
     {
@@ -292,7 +292,7 @@ double gen::element::dbdu_diff_norm()
     return _dbdu_norm;
 }
 
-double gen::element::acc_norm()
+double hydro::element::acc_norm()
 {
     if (_acc_norm == 0)
     {
@@ -303,7 +303,7 @@ double gen::element::acc_norm()
     return _acc_norm;
 }
 
-void gen::element::calculate_shear()
+void hydro::element::calculate_shear()
 {
     for (size_t mu = 0; mu < 4; mu++)
     {
@@ -325,7 +325,7 @@ void gen::element::calculate_shear()
     }
 }
 
-void gen::element::calculate_fvorticity_vec()
+void hydro::element::calculate_fvorticity_vec()
 {
     for (size_t mu = 0; mu < 4; mu++)
     {
@@ -343,7 +343,7 @@ void gen::element::calculate_fvorticity_vec()
     }
 }
 
-void gen::element::calculate_fvorticity()
+void hydro::element::calculate_fvorticity()
 {
     for (size_t i = 0; i < 4; i++)
     {
@@ -354,7 +354,7 @@ void gen::element::calculate_fvorticity()
     }
 }
 
-void gen::element::calculate_th_vorticity()
+void hydro::element::calculate_th_vorticity()
 {
     for (size_t i = 0; i < 4; i++)
     {
@@ -365,7 +365,7 @@ void gen::element::calculate_th_vorticity()
     }
 }
 
-void gen::element::calculate_th_shear()
+void hydro::element::calculate_th_shear()
 {
     for (size_t i = 0; i < 4; i++)
     {
@@ -376,7 +376,7 @@ void gen::element::calculate_th_shear()
     }
 }
 
-void gen::element::calculte_ac()
+void hydro::element::calculte_ac()
 {
     for (size_t i = 0; i < 4; i++)
     {

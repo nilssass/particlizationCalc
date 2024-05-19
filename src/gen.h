@@ -5,7 +5,7 @@ struct element;
 
 //#define PLOTS
 
-namespace gen {
+namespace hydro {
 // typedef std::vector<Particle*> ParticleList ; // TODO in far future
 // data
 extern DatabasePDG2 *database;

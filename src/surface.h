@@ -5,10 +5,10 @@
 #include <vector>
 #include <iostream>
 #include "element.h"
+#include "fcell.h"
 
-namespace gen
+namespace hydro
 {
-
     struct surface_info
     {
         element min_T, max_T;
@@ -21,7 +21,7 @@ namespace gen
         {
             for (size_t i = 0; i < 4; i++)
             {
-                stream << MILNE[i] << " in [" << info.min_coords[i] << "," << info.max_coords[i] << "]\t";
+                stream << utils::MILNE[i] << " in [" << info.min_coords[i] << "," << info.max_coords[i] << "]\t";
             }
             stream << std::endl;
             stream << "min T = " << info.min_T.T << " @" << info.min_T << std::endl;

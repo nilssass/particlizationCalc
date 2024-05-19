@@ -14,7 +14,7 @@
 #include "analytical_sol.h"
 #include "bjorken.h"
 
-bool load_hypersurface(utils::program_options opts, gen::hypersurface_wrapper &hypersurface);
+bool load_hypersurface(utils::program_options opts, hydro::hypersurface_wrapper &hypersurface);
 bool should_exit(utils::program_options &settings, int argc, char **argv);
 
 // void benchmark_shear(gen::hypersurface_wrapper &hypersurface);
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         return (settings.program_mode != utils::program_modes::Help);
     }
 
-    gen::hypersurface_wrapper hypersurface;
+    hydro::hypersurface_wrapper hypersurface;
 
     if (!load_hypersurface(settings, hypersurface))
     {
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 #if DEBUG
     std::cout << "Now I try to construct the engine" << std::endl;
 #endif
-    gen::engine engine(settings, hypersurface);
+    hydro::engine engine(settings, hypersurface);
 
     if (settings.verbose)
     {
@@ -90,7 +90,7 @@ bool should_exit(utils::program_options &settings, int argc, char **argv)
     return _exit;
 }
 
-bool load_hypersurface(utils::program_options opts, gen::hypersurface_wrapper &hypersurface)
+bool load_hypersurface(utils::program_options opts, hydro::hypersurface_wrapper &hypersurface)
 {
     bool success = false;
 

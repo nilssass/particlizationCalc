@@ -3,8 +3,7 @@
 #include <fstream>
 #include <algorithm>
 
-using namespace gen;
-
+using namespace hydro;
 bool reject_negative_du_dsig(element &cell)
 {
     auto failed = false;
@@ -14,7 +13,7 @@ bool reject_negative_du_dsig(element &cell)
     return dsu < 0.0;
 }
 
-void gen::hypersurface_wrapper::read_hypersrface(std::ifstream &file, utils::accept_modes mode)
+void hydro::hypersurface_wrapper::read_hypersrface(std::ifstream &file, utils::accept_modes mode)
 {
     std::string line;
 
@@ -86,7 +85,7 @@ void gen::hypersurface_wrapper::read_hypersrface(std::ifstream &file, utils::acc
     std::cout << std::endl;
 }
 
-surface_info gen::hypersurface_wrapper::read_info()
+surface_info hydro::hypersurface_wrapper::read_info()
 {
     surface_info info;
 #if DEBUG
@@ -149,7 +148,7 @@ surface_info gen::hypersurface_wrapper::read_info()
     return info;
 }
 
-void gen::hypersurface_wrapper::clear()
+void hydro::hypersurface_wrapper::clear()
 {
     _failed = 0;
     _lines = 0;
@@ -160,7 +159,7 @@ void gen::hypersurface_wrapper::clear()
     _elements.clear();
 }
 
-void gen::hypersurface_wrapper::add(element &cell, utils::accept_modes acc_mode)
+void hydro::hypersurface_wrapper::add(element &cell, utils::accept_modes acc_mode)
 {
     bool reject = false;
     auto spacelike = cell.is_spacelike();
@@ -186,12 +185,12 @@ void gen::hypersurface_wrapper::add(element &cell, utils::accept_modes acc_mode)
     }
 }
 
-element &gen::hypersurface_wrapper::operator[](int i)
+element &hydro::hypersurface_wrapper::operator[](int i)
 {
     return _elements[i];
 }
 
-bool gen::hypersurface_wrapper::checksize()
+bool hydro::hypersurface_wrapper::checksize()
 {
     bool r = _elements.size() == _total;
     _total = _elements.size();

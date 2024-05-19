@@ -11,23 +11,23 @@ const int NTHREADS = omp_get_max_threads();
 #include <fstream>
 #include "examine.hpp"
 
-gen::engine::~engine()
+hydro::engine::~engine()
 {
 }
 
-void gen::engine::init()
+void hydro::engine::init()
 {
     if (!_initialized)
     {
         _pT = utils::linspace(0, _pt_max, _size_pt);
         _phi = utils::linspace(0, 2 * M_PI, _size_phi);
         _y_rap = utils::linspace(_y_min, _y_max, _size_y);
-        _particle = gen::pdg_particle(_particle_id);
+        _particle = hydro::pdg_particle(_particle_id);
         _initialized = true;
     }
 }
 
-void gen::engine::run()
+void hydro::engine::run()
 {
     if (_settings.program_mode != utils::program_modes::Examine && !_initialized)
     {
@@ -53,15 +53,15 @@ void gen::engine::run()
     // }
 }
 
-void gen::engine::test_analytical(analytical_sol *solution)
+void hydro::engine::test_analytical(analytical_sol *solution)
 {
     solution->populate();
 }
 
-void gen::engine::calculate_yield()
+void hydro::engine::calculate_yield()
 {
 }
 
-void gen::engine::calculate_polarization()
+void hydro::engine::calculate_polarization()
 {
 }

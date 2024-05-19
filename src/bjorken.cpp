@@ -8,9 +8,9 @@ bjorken::~bjorken()
 {
 }
 
-gen::element bjorken::generate_cell(double T, double x, double y, double eta)
+hydro::element bjorken::generate_cell(double T, double x, double y, double eta)
 {
-    gen::element cell;
+    hydro::element cell;
     cell.T = T;
     cell.x = x;
     cell.y = y;
@@ -45,7 +45,7 @@ gen::element bjorken::generate_cell(double T, double x, double y, double eta)
     return cell;
 }
 
-utils::r2_tensor bjorken::exp_shear_ll(gen::element cell)
+utils::r2_tensor bjorken::exp_shear_ll(hydro::element cell)
 {
     utils::r2_tensor shear = {0};
     shear[0][0] = -2. * sinh(cell.eta) * sinh(cell.eta) / (3. * cell.tau);
@@ -54,7 +54,7 @@ utils::r2_tensor bjorken::exp_shear_ll(gen::element cell)
     shear[3][3] = -2. * cosh(cell.eta) * cosh(cell.eta) / (3. * cell.tau);
     return shear;
 }
-utils::r2_tensor bjorken::exp_th_shear_ll(gen::element cell)
+utils::r2_tensor bjorken::exp_th_shear_ll(hydro::element cell)
 {
     utils::r2_tensor tshear = {0};
 
@@ -64,7 +64,7 @@ utils::r2_tensor bjorken::exp_th_shear_ll(gen::element cell)
     tshear[0][0] = utils::hbarC * (-cosh(cell.eta) * cosh(cell.eta) * cell.T / cell.tau + sinh(cell.eta) * sinh(cell.eta) * dotT(cell.tau));
     return tshear;
 }
-double bjorken::exp_b_theta(gen::element cell)
+double bjorken::exp_b_theta(hydro::element cell)
 {
     return utils::hbarC * (dotT(cell.tau) + cell.T / cell.tau);
 }
