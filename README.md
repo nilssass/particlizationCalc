@@ -51,6 +51,3 @@ To run the script type: `cd output; python3 showPolar-xi.py rhic200.20-50`. The 
  
 An update: recently, we have published an updated formalism to compute the Lambda polarization: arXiv:2103.14621, which includes an extra term - see Eq. 3 therein.
 Therefore, the output from step 3 contains separately the "standard" polarization term from 1610.04717, and also the polarization stemming from the new term - therefore there are columns (xi^0, xi^1, xi^2, xi^3) in the output. So in practice the total polarization would be equal to (s^i + xi^i)/(dN/dpt).
-
-### MS 
-Install Templatized C++ command-line parser library (tclap)
