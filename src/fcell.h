@@ -13,7 +13,37 @@ namespace hydro
     {
     public:
         fcell();
-        fcell(fcell &other);
+        fcell(const fcell &other)
+        {
+            _tau = other._tau;
+            _x = other._x;
+            _y = other._y;
+            _eta = other._eta;
+            _dsigma = other._dsigma;
+            _u = other._u;
+            _T = other._T;
+            _mub = other._mub;
+            _muq = other._muq;
+            _mus = other._mus;
+            _dbeta = other._dbeta;
+            _du = other._du;
+        }
+        fcell &operator=(const fcell &other)
+        {
+            this->_tau = other._tau;
+            this->_x = other._x;
+            this->_y = other._y;
+            this->_eta = other._eta;
+            this->_dsigma = other._dsigma;
+            this->_u = other._u;
+            this->_T = other._T;
+            this->_mub = other._mub;
+            this->_muq = other._muq;
+            this->_mus = other._mus;
+            this->_dbeta = other._dbeta;
+            this->_du = other._du;
+            return *this;
+        }
         ~fcell();
         double tau() const { return _tau; }
         double t() const { return _tau * cosh(_eta); }
@@ -21,10 +51,10 @@ namespace hydro
         double y() const { return _y; }
         double eta() const { return _eta; }
         double z() const { return _tau * sinh(_eta); }
-        double T() { return _T; }
-        double muq() { return _muq; }
-        double mub() { return _mub; }
-        double mus() { return _mus; }
+        double T() const { return _T; }
+        double muq() const { return _muq; }
+        double mub() const { return _mub; }
+        double mus() const { return _mus; }
         ug::four_vector milne_coords() const { return ug::four_vector({_tau, _x, _y, _eta}, false); }
         ug::four_vector mink_coords() const { return ug::four_vector({t(), _x, _y, z()}, false); }
         utils::r2_tensor du_ll() { return _du; }
@@ -47,7 +77,7 @@ namespace hydro
         utils::r2_tensor delta_ll();
         utils::r2_tensor delta_uu();
         utils::r2_tensor delta_ul();
-       
+
         double gradu_ll(int mu, int nu);
         /// @brief Rank-4 project with mu and nu up, a and b down
         /// @param mu

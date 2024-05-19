@@ -11,9 +11,9 @@
 #include "../src/element.h"
 #include "../src/fcell.h"
 #include "../src/surface.h"
+#include "../src/t_surface.h"
 
 const std::string PATH = "./input/beta.dat";
-
 
 static hydro::element read_element()
 {
@@ -69,27 +69,27 @@ static void examine_fcell(hydro::fcell &cell)
     auto _q = !utils::are_equal(rhs, cell.du_ll());
 }
 
-static void bm_read_element(benchmark::State& state)
+static void bm_read_element(benchmark::State &state)
 {
-    for(auto _ : state)
+    for (auto _ : state)
     {
         auto cell = read_element();
     }
 }
 BENCHMARK(bm_read_element);
 
-static void bm_read_fcell(benchmark::State& state)
+static void bm_read_fcell(benchmark::State &state)
 {
-    for(auto _ : state)
+    for (auto _ : state)
     {
         auto cell = read_fcell();
     }
 }
 BENCHMARK(bm_read_fcell);
 
-static void bm_examine_element(benchmark::State& state)
+static void bm_examine_element(benchmark::State &state)
 {
-    for(auto _ : state)
+    for (auto _ : state)
     {
         auto cell = read_element();
         examine_element(cell);
@@ -97,9 +97,9 @@ static void bm_examine_element(benchmark::State& state)
 }
 BENCHMARK(bm_examine_element);
 
-static void bm_examine_fcell(benchmark::State& state)
+static void bm_examine_fcell(benchmark::State &state)
 {
-    for(auto _ : state)
+    for (auto _ : state)
     {
         auto cell = read_fcell();
         examine_fcell(cell);
@@ -107,7 +107,7 @@ static void bm_examine_fcell(benchmark::State& state)
 }
 BENCHMARK(bm_examine_fcell);
 
-static void bm_nills_shear(benchmark::State& state)
+static void bm_nills_shear(benchmark::State &state)
 {
     for (auto _ : state)
     {
@@ -116,7 +116,7 @@ static void bm_nills_shear(benchmark::State& state)
         {
             for (size_t j = 0; j < 4; j++)
             {
-                auto __ = cell.old_shear(i,j);
+                auto __ = cell.old_shear(i, j);
             }
         }
     }
@@ -124,7 +124,7 @@ static void bm_nills_shear(benchmark::State& state)
 
 BENCHMARK(bm_nills_shear);
 
-static void bm_element_shear(benchmark::State& state)
+static void bm_element_shear(benchmark::State &state)
 {
     for (auto _ : state)
     {
@@ -135,7 +135,7 @@ static void bm_element_shear(benchmark::State& state)
 
 BENCHMARK(bm_element_shear);
 
-static void bm_fcell_shear(benchmark::State& state)
+static void bm_fcell_shear(benchmark::State &state)
 {
     for (auto _ : state)
     {
@@ -146,12 +146,30 @@ static void bm_fcell_shear(benchmark::State& state)
 
 BENCHMARK(bm_fcell_shear);
 
-static void read_hyper_elements()
+static void bm_read_elements(benchmark::State &state)
 {
-    std::ifstream file(PATH);
-    hydro::hypersurface_wrapper surface;
-    surface.read_hypersrface(file, utils::accept_modes::AcceptAll);
-    file.close();
+    for (auto _ : state)
+    {
+        std::ifstream file(PATH);
+        hydro::hypersurface_wrapper surface;
+        surface.read_hypersrface(file, utils::accept_modes::AcceptAll);
+        file.close();
+    }
 }
+
+BENCHMARK(bm_read_elements);
+
+static void bm_read_fcells(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        std::ifstream file(PATH);
+        hydro::fsurface surface;
+        surface.read(file, utils::accept_modes::AcceptAll);
+        file.close();
+    }
+}
+
+BENCHMARK(bm_read_fcells);
 
 BENCHMARK_MAIN();

@@ -6,22 +6,6 @@ fcell::fcell()
 {
 }
 
-hydro::fcell::fcell(fcell &other)
-{
-    _tau = other._tau;
-    _x = other._x;
-    _y = other._y;
-    _eta = other._eta;
-    _dsigma = other._dsigma;
-    _u = other._u;
-    _T = other._T;
-    _mub = other._mub;
-    _muq = other._muq;
-    _mus = other._mus;
-    _dbeta = other._dbeta;
-    _du = other._du;
-}
-
 fcell::~fcell()
 {
 }
