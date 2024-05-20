@@ -38,32 +38,33 @@ namespace utils
                                "accept_mode: \n"
                                "polarization_mode: \n"
                                "-q quite -d feed down";
-
+    /// @brief What to do, correspoding command line parameter is listed
     enum class program_modes
     {
-        Examine,
-        Yield,
-        Polarization,
-        Invalid,
+        Examine, // -e examine the hypersurface data
+        Yield, // -y caclulate the yield
+        Polarization, // -p caclulate polarization
+        Invalid, 
         Help
     };
+    /// @brief How to reject cells, correspoding command line parameter is listed
     enum class accept_modes
     {
-        AcceptAll,
-        RejectTimelike,
-        RejectNegativeDuDSigma,
-        RejectNegativePDSigma,
+        AcceptAll, // -rn
+        RejectTimelike, // -rt
+        RejectNegativeDuDSigma, // -ru
+        RejectNegativePDSigma, // -rp
         Invalid
     };
     enum class polarization_modes
     {
-        GlobalEq,       // Thermal vorticity alone
-        ThermalShear,   // Thermal shear alone
-        LocalEqDb,      // Local equilibrium with dbeta
-        LocalEqDu,      // Local equilibrium with du
-        EqSpinHydro,    // spin hydro in equilibrium
-        ModEqSpinHydro, // Modified spin hydro in equilibrium
-        SpinHydro,      // Real spin hydro
+        GlobalEq,       // Thermal vorticity alone -geq
+        ThermalShear,   // Thermal shear alone -ts
+        LocalEqDb,      // Local equilibrium with dbeta -leqdb
+        LocalEqDu,      // Local equilibrium with du -leqdu
+        EqSpinHydro,    // spin hydro in equilibrium -eqsh
+        ModEqSpinHydro, // Modified spin hydro in equilibrium -meqdsh
+        SpinHydro,      // Real spin hydro -sh
         Invalid
     };
     struct program_options
@@ -73,14 +74,14 @@ namespace utils
         utils::accept_modes accept_mode;
         utils::polarization_modes polarization_mode;
         double modifier;
-        std::string in_file;
-        std::string out_file;
-        std::string what;
+        std::string in_file; // -i <input_fule>
+        std::string out_file; // -o <output_file>
+        std::string what; // Error message
         bool validate() { return program_mode != program_modes::Invalid; };
         void print();
         void show_help();
-        bool decay;
-        bool verbose;
+        bool decay; // Use feeddown -d
+        bool verbose; // Default is true use -q for quiet mode
     };
 
     // Random engine type
@@ -114,7 +115,7 @@ namespace utils
 
     program_options read_cmd(int argc, char **argv);
     void show_progress(int perc);
-
+    // Andrea Palermo
     std::vector<double> linspace(double min, double max, int size);
 
     double simple_bench(std::function<void(void)> f, int iter);
@@ -139,26 +140,67 @@ namespace utils
     };
 
     int g(int mu, int nu);
+    /// @brief adds rank 2 tensors
+    /// @param tensors 
+    /// @return 
     r2_tensor add_tensors(std::vector<r2_tensor> tensors);
+    /// @brief adds four vectors
+    /// @param vecs 
+    /// @return 
     four_vec add_vectors(std::vector<four_vec> vecs);
+    /// @brief scalar product of a vector with a number
+    /// @param v1 
+    /// @param x 
+    /// @return 
     four_vec s_product(utils::four_vec v1, double x);
+    /// @brief scalar product of a rank 2 tensor with a number
+    /// @param t1 
+    /// @param x 
+    /// @return 
     r2_tensor s_product(r2_tensor t1, double x);
+    /// @brief matrix product of two vectors
+    /// @param v1 
+    /// @param v2 
+    /// @return 
     r2_tensor mat_product(four_vec v1, four_vec v2);
+    /// @brief lower the indices
+    /// @param v_u 
+    /// @return 
     constexpr four_vec to_lower(four_vec v_u)
     {
         return {v_u[0], -v_u[1], -v_u[2], -v_u[3]};
     }
+    /// @brief raise the indices
+    /// @param v_l 
+    /// @return 
     constexpr four_vec raise(four_vec v_l)
     {
         return {v_l[0], -v_l[1], -v_l[2], -v_l[3]};
     }
 
+    /// @brief norm squared
+    /// @param vec 
+    /// @return vec^\mu vec^\nu g_{\mu\nu}
     double get_norm_sq(four_vec vec);
 
+    /// @brief dot product
+    /// @param vec1_u 
+    /// @param vec2_u 
+    /// @return g_{\mu\nu}vec1_u^\mu vec2_u^\nu
     double dot_uu(four_vec vec1_u, four_vec vec2_u);
+    /// @brief vector dot tensor
+    /// @param vec_u 
+    /// @param t_ll 
+    /// @return vec_u^\mu t_ll_{\mu\nu} 
     four_vec dot_utl(four_vec vec_u, r2_tensor t_ll);
+    /// @brief dot product
+    /// @param t1_ll 
+    /// @param t2_ll 
+    /// @return t1_ll_{\mu\nu} t2_ll^{\mu\nu}
     double dot_tltl(r2_tensor t1_ll, r2_tensor t2_ll);
-
+    /// @brief trace
+    /// @param tensor 
+    /// @return g_{\mu\nu} tensor^{\mu\nu}
     double trace_ll(r2_tensor tensor);
 
     constexpr bool is_zero(four_vec v)
@@ -170,11 +212,15 @@ namespace utils
         }
         return r;
     }
-
+    /// @brief // Levi-Civita symbols with upper indices
+    /// @param i 
+    /// @param j 
+    /// @param k 
+    /// @param l 
+    /// @return \epsilon^{ijkl}
     constexpr int levi(int i, int j, int k, int l)
     {
-        // Levi-Civita symbols
-        // i,j,k,l = 0...3 i.e. upper indices
+        
         if ((i == j) || (i == k) || (i == l) || (j == k) || (j == l) || (k == l))
             return 0;
         else

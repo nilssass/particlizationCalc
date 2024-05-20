@@ -6,6 +6,7 @@
 #include <cassert>
 namespace utils::geometry
 {
+    /// @brief Minkowski four vector with index information
     class four_vector
     {
     public:
@@ -20,14 +21,20 @@ namespace utils::geometry
 
         four_vector(double &v0, double &v1, double &v2, double &v3, bool &lower) : _data({v0, v1, v2, v3}), _lower(lower){};
 
-        // t_four_vec(std::initializer_list<double> init, bool is_lower = false);
+        // four_vector(std::initializer_list<double> init, bool is_lower = false);
 
         four_vec vec() { return _data; }
         bool is_lower() { return _lower; }
         double *to_array() { return _data.data(); }
         double operator[](const int i) const { return _data[i]; }
         double &operator[](const int i) { return _data[i]; }
+        /// @brief vector addition
+        /// @param rhs 
+        /// @return 
         four_vector &operator+=(const four_vector &rhs);
+        /// @brief vector addition
+        /// @param vec2 
+        /// @return 
         four_vector operator+(four_vector &vec2)
         {
             assert(vec2._lower == _lower);
@@ -38,6 +45,9 @@ namespace utils::geometry
                  _data[3] + vec2._data[3]},
                 _lower);
         }
+        /// @brief vector subtraction
+        /// @param vec2 
+        /// @return 
         four_vector operator-(const four_vector &vec2)
         {
             assert(vec2._lower == _lower);

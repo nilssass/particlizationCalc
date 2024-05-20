@@ -453,7 +453,7 @@ utils::four_vec utils::dot_utl(four_vec vec_u, r2_tensor t_ll)
     {
         for (size_t nu = 0; nu < 4; nu++)
         {
-            pr[mu] += vec_u[nu] * t_ll[nu][nu];
+            pr[mu] += vec_u[nu] * t_ll[nu][mu];
         }
     }
     return pr;
