@@ -235,39 +235,5 @@ namespace hydro
         utils::geometry::four_vector _coordsteps;
         hydro::hypersurface<hydro::fcell> _cells;
     };
-    // pattern implementation based on https://www.codeproject.com/Articles/363338/Factory-Pattern-in-Cplusplus
-    typedef std::shared_ptr<I_analytical_sol> (*solution_creator)(void);
-    class solution_factory
-    {
-    private:
-        solution_factory() {}
-        solution_factory(const solution_factory &rs) {}
-        solution_factory &operator=(const solution_factory &rs)
-        {
-            return *this;
-        }
-        typedef std::map<std::string, solution_creator> factory_map;
-        factory_map _factory_map;
-
-    public:
-        ~solution_factory() { _factory_map.clear(); }
-        void register_solution(const std::string &name, solution_creator creator);
-        std::shared_ptr<I_analytical_sol> create(const std::string &name);
-
-        static std::mutex _mutex;
-        static std::shared_ptr<solution_factory> &get_factory()
-        {
-            static std::shared_ptr<solution_factory> _factory_instance = nullptr;
-            if (!_factory_instance)
-            {
-                // std::lock_guard lock(solution_factory::_mutex);
-                // if (!_factory_instance)
-                // {
-                _factory_instance.reset(new solution_factory());
-                // }
-            }
-            return _factory_instance;
-        }
-    };
 }
 #endif

@@ -314,19 +314,3 @@ std::istream &hydro::operator>>(std::istream &stream, fcell &cell)
 
     return stream;
 }
-
-void hydro::solution_factory::register_solution(const std::string &name, solution_creator creator)
-{
-    _factory_map[name] = creator;
-}
-
-std::shared_ptr<I_analytical_sol> hydro::solution_factory::create(const std::string &name)
-{
-    factory_map::iterator it = _factory_map.find(name);
-    if (it!=_factory_map.end())
-    {
-        return it->second();
-    }
-    
-    return nullptr;
-}

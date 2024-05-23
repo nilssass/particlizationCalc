@@ -11,9 +11,10 @@
 #include "../src/interfaces.h"
 #include "../src/fcell.h"
 #include "../src/element.h"
-#include "my_tests.hpp"
 #include "ibjorken.h"
 #include <type_traits>
+#include "../src/factory.h"
+#include "my_test.h"
 
 namespace
 {
@@ -22,7 +23,7 @@ namespace
     const std::string PATH = "./input/beta.dat";
     const std::string BJORKEN = "./bjorken.dat";
     const double abs_error = 1e-6;
-    class IcellTest : public testing::Test
+    class IcellTest : public my_test
     {
     protected:
         std::shared_ptr<hydro::solution_factory> factory = hydro::solution_factory::get_factory();
@@ -124,13 +125,6 @@ namespace
             //                 cell.fluid_vort_ll(), "-fluid_vort_ll");
             // EXPECT_ARRAY_EQ(solution->exp_th_vorticity_ll(cell),
             //                 cell.thermal_vort_ll(), "-thermal_vort_ll");
-        }
-
-        std::string to_string(utils::four_vec vec)
-        {
-            std::stringstream ss;
-            ss << "(" << vec[0] << "," << vec[1] << "," << vec[2] << "," << vec[3] << ")";
-            return ss.str();
         }
     };
 
