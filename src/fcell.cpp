@@ -1,13 +1,21 @@
 #include "fcell.h"
+#include "util.h"
 #include <iostream>
 #include <algorithm>
 using namespace hydro;
+namespace ug = utils::geometry;
 fcell::fcell()
 {
 }
 
 fcell::~fcell()
 {
+}
+
+void hydro::fcell::print()
+{
+    std::cout << "Printing hypersurface element:" << std::endl
+              << *this << std::endl;
 }
 
 utils::r2_tensor hydro::fcell::delta_ll()
@@ -41,7 +49,7 @@ double hydro::fcell::gradu_ll(int mu, int nu)
 {
     if (!_gradu)
     {
-        utils::r2_tensor _ = {0};
+        utils::r2_tensor _ = {{0}};
         for (size_t i = 0; i < 4; i++)
         {
             for (size_t j = 0; j < 4; j++)
@@ -83,7 +91,7 @@ utils::r2_tensor hydro::fcell::shear_ll()
     return *_shear;
 }
 
-ug::four_vector hydro::fcell::f_vorticity_u()
+ug::four_vector hydro::fcell::fluid_vort_vec()
 {
     if (!_f_vorticity_vec)
     {
@@ -93,7 +101,7 @@ ug::four_vector hydro::fcell::f_vorticity_u()
     return *_f_vorticity_vec;
 }
 
-utils::r2_tensor hydro::fcell::f_vorticity_ll()
+utils::r2_tensor hydro::fcell::fluid_vort_ll()
 {
     if (!_f_vorticity)
     {
@@ -102,7 +110,7 @@ utils::r2_tensor hydro::fcell::f_vorticity_ll()
     return *_f_vorticity;
 }
 
-utils::r2_tensor hydro::fcell::th_vorticity_ll()
+utils::r2_tensor hydro::fcell::thermal_vort_ll()
 {
     if (!_th_vorticity)
     {
@@ -111,7 +119,7 @@ utils::r2_tensor hydro::fcell::th_vorticity_ll()
     return *_th_vorticity;
 }
 
-utils::r2_tensor hydro::fcell::th_shear_ll()
+utils::r2_tensor hydro::fcell::thermal_shear_ll()
 {
     if (!_th_shear)
     {
@@ -154,7 +162,7 @@ double hydro::fcell::fvort_norm()
 {
     if (!_fvort_norm)
     {
-        _fvort_norm = std::make_unique<double>(utils::dot_tltl(f_vorticity_ll(), f_vorticity_ll()));
+        _fvort_norm = std::make_unique<double>(utils::dot_tltl(fluid_vort_ll(), fluid_vort_ll()));
     }
 
     return *_fvort_norm;
@@ -164,7 +172,7 @@ double hydro::fcell::tvort_norm()
 {
     if (!_tvort_norm)
     {
-        _tvort_norm = std::make_unique<double>(utils::dot_tltl(th_vorticity_ll(), th_vorticity_ll()));
+        _tvort_norm = std::make_unique<double>(utils::dot_tltl(thermal_vort_ll(), thermal_vort_ll()));
     }
 
     return *_tvort_norm;
@@ -174,7 +182,7 @@ double hydro::fcell::tshear_norm()
 {
     if (!_tshear_norm)
     {
-        _tshear_norm = std::make_unique<double>(utils::dot_tltl(th_shear_ll(), th_shear_ll()));
+        _tshear_norm = std::make_unique<double>(utils::dot_tltl(thermal_shear_ll(), thermal_shear_ll()));
     }
 
     return *_tshear_norm;
@@ -191,7 +199,7 @@ double hydro::fcell::acc_norm()
 
 void hydro::fcell::calculate_shear()
 {
-    utils::r2_tensor _ = {0};
+    utils::r2_tensor _ = {{0}};
     for (size_t mu = 0; mu < 4; mu++)
     {
         for (size_t nu = 0; nu < 4; nu++)
@@ -231,7 +239,7 @@ void hydro::fcell::calculate_fvorticity_vec()
 
 void hydro::fcell::calculate_fvorticity()
 {
-    utils::r2_tensor _ = {0};
+    utils::r2_tensor _ = {{0}};
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -244,7 +252,7 @@ void hydro::fcell::calculate_fvorticity()
 
 void hydro::fcell::calculate_th_vorticity()
 {
-    utils::r2_tensor _ = {0};
+    utils::r2_tensor _ = {{0}};
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -257,7 +265,7 @@ void hydro::fcell::calculate_th_vorticity()
 
 void hydro::fcell::calculate_th_shear()
 {
-    utils::r2_tensor _ = {0};
+    utils::r2_tensor _ = {{0}};
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -305,4 +313,20 @@ std::istream &hydro::operator>>(std::istream &stream, fcell &cell)
     }
 
     return stream;
+}
+
+void hydro::solution_factory::register_solution(const std::string &name, solution_creator creator)
+{
+    _factory_map[name] = creator;
+}
+
+std::shared_ptr<I_analytical_sol> hydro::solution_factory::create(const std::string &name)
+{
+    factory_map::iterator it = _factory_map.find(name);
+    if (it!=_factory_map.end())
+    {
+        return it->second();
+    }
+    
+    return nullptr;
 }

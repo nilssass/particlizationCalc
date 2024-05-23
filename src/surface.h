@@ -37,7 +37,7 @@ namespace hydro
 
     private:
         std::vector<element> _elements;
-        int _skipped;
+        int _skipped; 
         int _rejected;
         int _timelikes;
         int _total;
@@ -45,6 +45,9 @@ namespace hydro
         int _lines;
 
     public:
+        /// @brief Reads the hypersurface data
+        /// @param file 
+        /// @param mode 
         void read_hypersrface(std::ifstream &file, utils::accept_modes mode);
         int skipped() { return _skipped; }
         int rejected() { return _rejected; }

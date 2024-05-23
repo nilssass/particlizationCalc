@@ -1,4 +1,4 @@
-void hydro::engine::examine()
+void powerhouse::engine::examine()
 {
     auto basic_info = _hypersurface.read_info();
     std::cout << "Basic information" << std::endl;

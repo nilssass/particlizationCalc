@@ -7,6 +7,7 @@
 namespace utils::geometry
 {
     /// @brief Minkowski four vector with index information
+
     class four_vector
     {
     public:
@@ -29,12 +30,12 @@ namespace utils::geometry
         double operator[](const int i) const { return _data[i]; }
         double &operator[](const int i) { return _data[i]; }
         /// @brief vector addition
-        /// @param rhs 
-        /// @return 
+        /// @param rhs
+        /// @return
         four_vector &operator+=(const four_vector &rhs);
         /// @brief vector addition
-        /// @param vec2 
-        /// @return 
+        /// @param vec2
+        /// @return
         four_vector operator+(four_vector &vec2)
         {
             assert(vec2._lower == _lower);
@@ -46,8 +47,8 @@ namespace utils::geometry
                 _lower);
         }
         /// @brief vector subtraction
-        /// @param vec2 
-        /// @return 
+        /// @param vec2
+        /// @return
         four_vector operator-(const four_vector &vec2)
         {
             assert(vec2._lower == _lower);
@@ -62,6 +63,9 @@ namespace utils::geometry
         double operator*(const four_vector &vec2);
         four_vector operator*(const double &x) { return four_vector({x * _data[0], x * _data[1], x * _data[2], x * _data[3]}, _lower); }
         bool operator==(const four_vector &other) const;
+        /// @brief Outer product
+        /// @param vec2
+        /// @return a_\mu b_\nu or similar
         r2_tensor operator&(const four_vector &vec2);
         static four_vector add_vectors(std::vector<four_vector> vecs);
         double norm_sq();
@@ -69,6 +73,9 @@ namespace utils::geometry
         void lower();
         four_vector to_upper();
         void raise();
+        /// @brief Lorentz boost (not implemented)
+        /// @param four_velocity
+        /// @return
         four_vector boost(const four_vector &four_velocity);
         four_vector operator/(const four_vector &four_velocity)
         {

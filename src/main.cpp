@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 #if DEBUG
     std::cout << "Now I try to construct the engine" << std::endl;
 #endif
-    hydro::engine engine(settings, hypersurface);
+    powerhouse::engine engine(settings, hypersurface);
 
     if (settings.verbose)
     {

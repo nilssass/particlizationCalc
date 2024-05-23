@@ -6,6 +6,9 @@ project(particilizationcalc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/18.1.5/bin/clang++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -16,6 +19,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
+
 add_executable(
     test_utils
     test/test_utils.cpp 
@@ -27,3 +31,58 @@ target_link_libraries(
 )
 include(GoogleTest)
 gtest_discover_tests(test_utils)
+
+add_executable(
+    test_cells
+    test/test_cells.cpp 
+    test/ibjorken.cpp
+    src/utils.cpp   
+    src/geometry.cpp
+    src/fcell.cpp
+    src/element.cpp
+)
+target_link_libraries(
+    test_cells
+    GTest::gtest_main
+)
+include(GoogleTest)
+gtest_discover_tests(test_cells)
+
+
+add_executable(
+    test_engine_design
+    test/test_engine_design.cpp 
+    src/utils.cpp   
+    src/geometry.cpp
+    src/fcell.cpp
+    src/element.cpp
+)
+target_link_libraries(
+    test_engine_design
+    GTest::gtest_main
+)
+include(GoogleTest)
+gtest_discover_tests(test_engine_design)
+
+find_package(benchmark REQUIRED)
+
+add_executable(
+    bench_utils
+    test/bench_utils.cpp
+    src/utils.cpp
+    src/geometry.cpp
+)
+target_link_libraries(bench_utils benchmark::benchmark)
+
+# add_executable(
+#     bench_cells
+#     test/bench_cells.cpp
+#     src/utils.cpp
+#     src/geometry.cpp
+#     src/fcell.cpp
+#     src/element.cpp
+#     src/surface.cpp
+#     src/t_surface.cpp
+# )
+# target_link_libraries(bench_cells benchmark::benchmark)
+

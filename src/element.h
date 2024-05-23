@@ -10,12 +10,15 @@ namespace hydro
 {
     struct element
     {
+        bool shear_legacy;
         double tau, x, y, eta;
         double u[4];
         double dsigma[4];
         double T, mub, muq, mus;
         double dbeta[4][4];
         double dmuCart[4][4]; // derivatives of the 4-velocity in Cartesian coordinates
+        utils::four_vec milne_coords() const { return utils::four_vec{tau, x, y, eta}; }
+        utils::four_vec thermodynamics() const { return utils::four_vec{T, mub, muq, mus}; }
         utils::r2_tensor du_ll();
         utils::r2_tensor dbeta_ll();
         void print();

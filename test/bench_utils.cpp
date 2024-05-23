@@ -130,7 +130,7 @@ static void bm_linspace(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        utils::linspace(0, hydro::DEFAULT_PT_MAX, hydro::DEFAULT_SIZE_PT);
+        utils::linspace(0, powerhouse::DEFAULT_PT_MAX, powerhouse::DEFAULT_SIZE_PT);
     }
 }
 BENCHMARK(bm_linspace);

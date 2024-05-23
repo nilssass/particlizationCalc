@@ -5,13 +5,13 @@
 #include <filesystem>
 #include "pdg_particle.h"
 
-hydro::pdg_particle::pdg_particle()
+utils::pdg_particle::pdg_particle()
 {
 
     _id = 0;
 }
 
-hydro::pdg_particle::pdg_particle(int id)
+utils::pdg_particle::pdg_particle(int id)
 {
     if (!std::filesystem::exists(DATABASE))
     {
@@ -56,7 +56,7 @@ hydro::pdg_particle::pdg_particle(int id)
 }
 
 
-hydro::pdg_particle::~pdg_particle()
+utils::pdg_particle::~pdg_particle()
 {
 }
 

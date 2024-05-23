@@ -9,9 +9,8 @@
 #include "element.h"
 #include "pdg_particle.h"
 #include "surface.h"
-#include "analytical_sol.h"
 
-namespace hydro
+namespace powerhouse
 {
     constexpr size_t DEFAULT_SIZE_PT = 20;
     constexpr size_t DEFAULT_SIZE_PHI = 30;
@@ -36,11 +35,11 @@ namespace hydro
         std::vector<double> _pauli_lubanski_u;
         bool _initialized = false;
         int _particle_id;
-        hydro::pdg_particle _particle;
+        utils::pdg_particle _particle;
 
     public:
         engine(utils::program_options t_settings, hydro::hypersurface_wrapper &t_hypersurface,
-               int t_particle_id = particle_names::LAMBDA,
+               int t_particle_id = utils::particle_names::LAMBDA,
                size_t t_size_pt = DEFAULT_SIZE_PT,
                size_t t_size_phi = DEFAULT_SIZE_PHI,
                size_t t_size_y = DEFAULT_SIZE_Y,
@@ -54,16 +53,10 @@ namespace hydro
                                                    _size_phi(t_size_phi),
                                                    _y_min(t_y_min),
                                                    _y_max(t_y_max),
-                                                   _pt_max(t_pt_max)
-        {
-#if DEBUG
-            std::cout << "Constructing the engine." << std::endl;
-#endif
-        };
+                                                   _pt_max(t_pt_max){};
         ~engine();
         void init();
         void run();
-        void test_analytical(analytical_sol *solution);
 
         size_t size_pt() { return _size_pt; }
 
@@ -71,7 +64,7 @@ namespace hydro
 
         size_t size_y() { return _size_y; }
 
-        pdg_particle particle() { return _particle; }
+        utils::pdg_particle particle() { return _particle; }
 
     protected:
         void examine();

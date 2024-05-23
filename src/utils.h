@@ -26,6 +26,7 @@
 #include <random>
 #include <utility>
 #include <chrono>
+#include <strstream>
 
 namespace utils
 {
@@ -177,6 +178,13 @@ namespace utils
     {
         return {v_l[0], -v_l[1], -v_l[2], -v_l[3]};
     }
+
+    // std::string print_vec(four_vec vec)
+    // {
+    //     std::stringstream ss;
+    //     ss << "("<< vec[0] << "," << vec[1]<<","<<vec[2]<<"," << vec[3] << ")" ;
+    //     return ss.str();   
+    // }
 
     /// @brief norm squared
     /// @param vec 

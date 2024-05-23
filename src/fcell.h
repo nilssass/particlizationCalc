@@ -1,18 +1,42 @@
 #include <string>
+#include <map>
+#include <memory>
+#include <thread>
+#include <mutex>
 #include "utils.h"
 #include "geometry.h"
+#include "interfaces.h"
 #ifndef FCELL_H
 #define FCELL_H
 
 #pragma once
-namespace ug = utils::geometry;
 
 namespace hydro
 {
-    class fcell
+    class fcell : public I_cell<utils::geometry::four_vector, utils::r2_tensor>
     {
     public:
         fcell();
+        fcell(utils::geometry::four_vector coords,
+              utils::geometry::four_vector thermo,
+              utils::geometry::four_vector dsigma,
+              utils::geometry::four_vector u,
+              utils::r2_tensor dbeta,
+              utils::r2_tensor du)
+        {
+            _tau = coords[0];
+            _x = coords[1];
+            _y = coords[2];
+            _eta = coords[3];
+            _dsigma = dsigma;
+            _u = u;
+            _T = thermo[0];
+            _mub = thermo[1];
+            _muq = thermo[2];
+            _mus = thermo[3];
+            _dbeta = dbeta;
+            _du = du;
+        }
         fcell(const fcell &other)
         {
             _tau = other._tau;
@@ -55,14 +79,16 @@ namespace hydro
         double muq() const { return _muq; }
         double mub() const { return _mub; }
         double mus() const { return _mus; }
-        ug::four_vector milne_coords() const { return ug::four_vector({_tau, _x, _y, _eta}, false); }
-        ug::four_vector mink_coords() const { return ug::four_vector({t(), _x, _y, z()}, false); }
-        utils::r2_tensor du_ll() { return _du; }
-        utils::r2_tensor dbeta_ll() { return _dbeta; }
+        utils::geometry::four_vector milne_coords() const override { return utils::geometry::four_vector({_tau, _x, _y, _eta}, false); }
+        utils::geometry::four_vector thermodynamics() const override { return utils::geometry::four_vector({_T, _mub, _muq, _mus}); }
+        utils::geometry::four_vector mink_coords() const { return utils::geometry::four_vector({t(), _x, _y, z()}, false); }
+        utils::r2_tensor du_ll() const override { return _du; }
+        utils::r2_tensor dbeta_ll() const override { return _dbeta; }
         void print();
-        ug::four_vector u() { return _u; }
-        ug::four_vector dsigma() { return _dsigma; }
-        double normal_sq()
+        utils::geometry::four_vector four_vel() const override { return _u; }
+        utils::geometry::four_vector dsigma() const override { return _dsigma; }
+        double u_dot_n() override { return _u * _dsigma; }
+        double normal_sq() override
         {
             if (!_normal_size)
             {
@@ -87,14 +113,14 @@ namespace hydro
         /// @return
         double r2proj_uu_ll(int mu, int nu, int a, int b);
 
-        ug::four_vector acceleration();
-        utils::r2_tensor shear_ll();
-        ug::four_vector f_vorticity_u();
-        utils::r2_tensor f_vorticity_ll();
-        utils::r2_tensor th_vorticity_ll();
-        utils::r2_tensor th_shear_ll();
-        double theta();
-        double b_theta();
+        utils::geometry::four_vector acceleration() override;
+        utils::r2_tensor shear_ll() override;
+        utils::geometry::four_vector fluid_vort_vec() override;
+        utils::r2_tensor fluid_vort_ll() override;
+        utils::r2_tensor thermal_vort_ll() override;
+        utils::r2_tensor thermal_shear_ll() override;
+        double theta() override;
+        double b_theta() override;
 
         friend std::istream &operator>>(std::istream &stream, fcell &cell);
 
@@ -105,22 +131,56 @@ namespace hydro
             return stream;
         }
 
-        bool is_spacelike()
+        std::ostream &write_back(std::ostream &output, const char delim) override
+        {
+            output << _tau << delim << _x << delim << _y << delim << _eta
+                   << delim << _dsigma[0] << delim << _dsigma[1] << delim << _dsigma[2]
+                   << delim << _dsigma[3]
+                   << delim << _u[0] << delim << _u[1] << delim << _u[2]
+                   << delim << _u[3];
+            for (size_t i = 0; i < 4; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                {
+                    output << delim << _dbeta[i][j];
+                }
+            }
+            for (size_t i = 0; i < 4; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                {
+                    output << delim << _du[i][j];
+                }
+            }
+
+            return output;
+        }
+
+        std::ostream &write_info(std::ostream &output, const char delim) override
+        {
+            output << _tau << delim << _x << delim << _y << delim << _eta
+                   << delim << theta()
+                   << delim << sigma_norm() << delim << fvort_norm() << delim << b_theta()
+                   << delim << tvort_norm() << delim << tshear_norm() << delim << acc_norm();
+            return output;
+        }
+
+        bool is_spacelike() override
         {
             return normal_sq() > 0;
         }
 
         // double old_shear(int mu, int nu);
-        double sigma_norm();
-        double fvort_norm();
-        double tvort_norm();
-        double tshear_norm();
-        double acc_norm();
+        double sigma_norm() override;
+        double fvort_norm() override;
+        double tvort_norm() override;
+        double tshear_norm() override;
+        double acc_norm() override;
 
     private:
         double _tau, _x, _y, _eta;
-        ug::four_vector _u;
-        ug::four_vector _dsigma;
+        utils::geometry::four_vector _u;
+        utils::geometry::four_vector _dsigma;
         double _T, _mub, _muq, _mus;
         utils::r2_tensor _dbeta;
         utils::r2_tensor _du; // derivatives of the 4-velocity in Cartesian coordinates
@@ -130,11 +190,11 @@ namespace hydro
         std::unique_ptr<utils::r2_tensor> _delta_ll;
         std::unique_ptr<utils::r2_tensor> _delta_ul;
         std::unique_ptr<utils::r2_tensor> _delta_uu;
-        std::unique_ptr<ug::four_vector> _acc;
+        std::unique_ptr<utils::geometry::four_vector> _acc;
         std::unique_ptr<utils::r2_tensor> _th_vorticity;
         std::unique_ptr<utils::r2_tensor> _th_shear;
         std::unique_ptr<utils::r2_tensor> _shear;
-        std::unique_ptr<ug::four_vector> _f_vorticity_vec;
+        std::unique_ptr<utils::geometry::four_vector> _f_vorticity_vec;
         std::unique_ptr<utils::r2_tensor> _f_vorticity;
         std::unique_ptr<utils::r2_tensor> _gradu;
         void calculate_shear();
@@ -149,6 +209,65 @@ namespace hydro
         std::unique_ptr<double> _tvort_norm;
         std::unique_ptr<double> _tshear_norm;
         std::unique_ptr<double> _acc_norm;
+    };
+
+    class I_analytical_sol : public It_analytical_sol<fcell, utils::geometry::four_vector, utils::r2_tensor>
+    {
+    public:
+        I_analytical_sol() {}
+        I_analytical_sol(
+            utils::geometry::four_vector coordsteps,
+            utils::geometry::four_vector mincoords,
+            utils::geometry::four_vector maxcoords) : _coordsteps(coordsteps),
+                                                      _mincoords(mincoords),
+                                                      _maxcoords(maxcoords)
+        {
+        }
+        virtual ~I_analytical_sol() {}
+        int count() const override { return _count; }
+
+        virtual hydro::fcell generate_cell(double T, double x, double y, double eta) = 0;
+
+    protected:
+        size_t _count;
+        utils::geometry::four_vector _mincoords;
+        utils::geometry::four_vector _maxcoords;
+        utils::geometry::four_vector _coordsteps;
+        hydro::hypersurface<hydro::fcell> _cells;
+    };
+    // pattern implementation based on https://www.codeproject.com/Articles/363338/Factory-Pattern-in-Cplusplus
+    typedef std::shared_ptr<I_analytical_sol> (*solution_creator)(void);
+    class solution_factory
+    {
+    private:
+        solution_factory() {}
+        solution_factory(const solution_factory &rs) {}
+        solution_factory &operator=(const solution_factory &rs)
+        {
+            return *this;
+        }
+        typedef std::map<std::string, solution_creator> factory_map;
+        factory_map _factory_map;
+
+    public:
+        ~solution_factory() { _factory_map.clear(); }
+        void register_solution(const std::string &name, solution_creator creator);
+        std::shared_ptr<I_analytical_sol> create(const std::string &name);
+
+        static std::mutex _mutex;
+        static std::shared_ptr<solution_factory> &get_factory()
+        {
+            static std::shared_ptr<solution_factory> _factory_instance = nullptr;
+            if (!_factory_instance)
+            {
+                // std::lock_guard lock(solution_factory::_mutex);
+                // if (!_factory_instance)
+                // {
+                _factory_instance.reset(new solution_factory());
+                // }
+            }
+            return _factory_instance;
+        }
     };
 }
 #endif
