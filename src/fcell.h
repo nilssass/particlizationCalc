@@ -68,7 +68,7 @@ namespace hydro
             this->_du = other._du;
             return *this;
         }
-        ~fcell();
+        ~fcell() override{}
         double tau() const { return _tau; }
         double t() const { return _tau * cosh(_eta); }
         double x() const { return _x; }
@@ -182,8 +182,8 @@ namespace hydro
         utils::geometry::four_vector _u;
         utils::geometry::four_vector _dsigma;
         double _T, _mub, _muq, _mus;
-        utils::r2_tensor _dbeta;
-        utils::r2_tensor _du; // derivatives of the 4-velocity in Cartesian coordinates
+        utils::r2_tensor _dbeta = {{0}};
+        utils::r2_tensor _du = {{0}}; // derivatives of the 4-velocity in Cartesian coordinates
         std::unique_ptr<double> _normal_size;
         std::unique_ptr<double> _theta;
         std::unique_ptr<double> _b_theta;

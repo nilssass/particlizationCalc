@@ -1,13 +1,19 @@
-# for google tests
 cmake_minimum_required(VERSION 3.14)
 project(particilizationcalc)
 
 # GoogleTest requires at least C++17
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)  
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Debug)
 
-# set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/18.1.5/bin/clang++")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+# Add debug flags
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+
+# Add release flags
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+# Alternatively, you can set debug and release flags together
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 
 include(FetchContent)
 FetchContent_Declare(
@@ -52,6 +58,7 @@ gtest_discover_tests(test_cells)
 add_executable(
     test_engine_design
     test/test_engine_design.cpp 
+    test/my_engine.cpp
     src/utils.cpp   
     src/geometry.cpp
     src/fcell.cpp
@@ -85,4 +92,3 @@ target_link_libraries(bench_utils benchmark::benchmark)
 #     src/t_surface.cpp
 # )
 # target_link_libraries(bench_cells benchmark::benchmark)
-

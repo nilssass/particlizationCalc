@@ -13,16 +13,13 @@
 #include "../src/element.h"
 #include "ibjorken.h"
 #include <type_traits>
-#include "../src/factory.h"
+#include "../src/solution_factory.h"
 #include "my_test.h"
 
 namespace
 {
 
     namespace ug = utils::geometry;
-    const std::string PATH = "./input/beta.dat";
-    const std::string BJORKEN = "./bjorken.dat";
-    const double abs_error = 1e-6;
     class IcellTest : public my_test
     {
     protected:
@@ -43,59 +40,13 @@ namespace
         void TearDown() override
         {
         }
-        template <typename C>
-        C read_cell()
-        {
-            std::ifstream file(PATH);
-            std::string line;
-            C el;
-
-            do
-            {
-                std::getline(file, line);
-
-                std::istringstream iss(line);
-
-                iss >> el;
-            } while (line.empty() || line[0] == '#');
-            return el;
-        }
+        
 
         void write(std::string path, std::shared_ptr<hydro::I_analytical_sol> solution)
         {
             std::ofstream soloutput(path);
             solution->write(soloutput);
             soloutput.close();
-        }
-
-        template <typename C>
-        hydro::hypersurface<C> read_cells(std::string path, int count, int &lines, int jump = 1)
-        {
-            hydro::hypersurface<C> _surface;
-            std::ifstream file(path);
-            std::string line;
-
-            lines = std::count(std::istreambuf_iterator<char>(file),
-                               std::istreambuf_iterator<char>(), '\n');
-            file.seekg(0);
-            int _counter = 0;
-
-            while (std::getline(file, line))
-            {
-                if (line.empty() || line[0] == '#' || _counter % jump != 0)
-                {
-                    continue;
-                }
-
-                _counter++;
-
-                std::istringstream iss(line);
-                C cell;
-                iss >> cell;
-                _surface.add(cell, utils::accept_modes::AcceptAll);
-            }
-            file.close();
-            return _surface;
         }
 
         void examine_solution(hydro::fcell &cell, std::shared_ptr<hydro::I_analytical_sol> solution)
@@ -130,8 +81,8 @@ namespace
 
     TEST_F(IcellTest, ReadCell)
     {
-        auto fcell = read_cell<hydro::fcell>();
-        auto ecell = read_cell<hydro::element>();
+        auto fcell = read_cell<hydro::fcell>(PATH);
+        auto ecell = read_cell<hydro::element>(PATH);
         // std::cout << "Cell info\r\n"
         //           << cell << std::endl;
         auto v = fcell.four_vel();
@@ -151,7 +102,7 @@ namespace
         ASSERT_TRUE(bjorken->count() > 0);
         write(BJORKEN, bjorken);
         int lines;
-        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines, 10);
+        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines);
         EXPECT_EQ(lines, bjorken->count());
     }
 
@@ -166,7 +117,7 @@ namespace
     TEST_F(IcellTest, TestVsBjorken)
     {
         int lines;
-        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines, 10);
+        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines);
         auto bjorken = factory->create(ibjorken::get_name());
         for (auto &&_ : surface.data())
         {

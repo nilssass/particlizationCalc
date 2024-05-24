@@ -8,10 +8,6 @@ fcell::fcell()
 {
 }
 
-fcell::~fcell()
-{
-}
-
 void hydro::fcell::print()
 {
     std::cout << "Printing hypersurface element:" << std::endl

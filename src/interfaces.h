@@ -47,6 +47,7 @@ namespace hydro
         virtual double u_dot_n() = 0;
         virtual std::ostream &write_info(std::ostream &osm, const char delim) = 0;
         virtual std::ostream &write_back(std::ostream &os, const char delim) = 0;
+        virtual ~I_cell() {}
     };
     template <typename C>
     struct surface_stat
@@ -275,11 +276,45 @@ namespace hydro
 }
 namespace powerhouse
 {
+    struct I_output
+    {
+    virtual ~I_output(){}
+    };
+    struct exam_output : public I_output
+    {
+        double sigma2_sum = 0.0;
+        int longi_sigma = 0;
+        int tr_sigma = 0;
+        double theta_sum = 0.0;
+        int neg_theta = 0;
+        double btheta_sum = 0.0;
+        double a2_sum = 0.0;
+        int timelike_a = 0;
+        int u_dot_a_not_zero = 0;
+        double fvort2_sum = 0.0;
+        int timelike_omega = 0;
+        double th_shear_2_sum = 0.0;
+        double th_vort_2_sum = 0.0;
+        int decomp_failed = 0;
+        ~exam_output() override{}
+    };
+    struct polarization_output : public I_output
+    {
+        /* data */
+    };
+
+     struct yield_output : public I_output
+    {
+        /* data */
+    };
     template<typename C>
     class I_calculator
     {
-        virtual double caclulate(C &cell) = 0;
+        public:
+        virtual I_output* perform_step(C &cell, powerhouse::I_output* previous_step) = 0;
+        virtual ~I_calculator() {}
     };
+    
     class I_particle
     {
         public:

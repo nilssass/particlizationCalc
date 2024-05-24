@@ -1,51 +1,74 @@
 #ifndef MY_ENGINE_H
 #define MY_ENGINE_H
 #include "../src/utils.h"
+#include "../src/fcell.h"
 #include "../src/interfaces.h"
+#include "../src/I_engine.h"
+#include "../src/geometry.h"
+#include <map>
+#include <memory>
+#include <mutex>
 #pragma once
-/*
-    The engine is a singlton factory that takes care of the calculations.
-*/
-template <typename C, typename V>
-class my_engine
+
+class my_engine : public powerhouse::I_engine<hydro::fcell>
 {
 public:
-    ~my_engine(){}
-    static my_engine get(utils::program_options settings)
+    ~my_engine() override
     {
-        std::call_once(
-            my_engine<C, V>::only_one,
-            [](utils::program_options settingsx)
-            {
-                my_engine<C, V>::_engine.reset(new my_engine<C, V>(settingsx));
-            },
-            settings); 
-            return *my_engine<C, V>::_engine;
     }
 
-private:
-    my_engine(utils::program_options settings) : _settings(settings) {}
-    my_engine(const my_engine &other)
-    {
-        _engine = other._engine;
-    }
-    my_engine &operator=(const my_engine &other)
-    {
-        if (this != &other)
-        {
-            _engine = other._engine;
-        }
-        return *this;
-    }
-    utils::program_options _settings;
-    hydro::hypersurface<C> _hypersurface;
-    // powerhouse::I_calculator<C> _calculator;
-    static std::shared_ptr<my_engine<C, V>> _engine;
-    static std::once_flag only_one;
+    void run() override;
+    void write() override;
 };
-template <typename C, typename V>
-std::once_flag my_engine<C, V>::only_one;
-template <typename C, typename V>
-std::shared_ptr<my_engine<C, V>> my_engine<C, V>::_engine = nullptr;
+class mock_calculator : public powerhouse::I_calculator<hydro::fcell>
+{
+public:
+    mock_calculator() {}
+    ~mock_calculator() override {
+        std::cout << "Calculator destroyed " << std::endl;
+    }
+    powerhouse::I_output *perform_step(hydro::fcell &cell, powerhouse::I_output *previous_step) override
+    {
 
+        powerhouse::exam_output data;
+        if (previous_step)
+        {
+            auto exam_output_ptr = dynamic_cast<powerhouse::exam_output *>(previous_step);
+            if (exam_output_ptr)
+            {
+                data = *exam_output_ptr;
+            }
+            else
+            {
+                std::cout << "Type of previous_step: " << typeid(*previous_step).name() << std::endl;
+                throw std::runtime_error("Unknown error");
+            }
+        }
+
+        data.a2_sum += cell.acc_norm();
+        data.btheta_sum += cell.b_theta();
+        data.fvort2_sum += cell.fvort_norm();
+        data.sigma2_sum += cell.sigma_norm();
+        data.th_shear_2_sum += cell.tshear_norm();
+        data.th_vort_2_sum += cell.tvort_norm();
+        data.theta_sum += cell.theta();
+        if (cell.theta() < 0)
+        {
+            data.neg_theta++;
+        }
+        if (cell.acceleration() * cell.four_vel() != 0)
+        {
+            data.u_dot_a_not_zero++;
+        }
+
+        if (utils::trace_ll(cell.shear_ll()) != 0)
+        {
+            data.tr_sigma++;
+        }
+
+        // etc
+
+        return new powerhouse::exam_output(data);
+    }
+};
 #endif

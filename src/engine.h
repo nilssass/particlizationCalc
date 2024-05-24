@@ -12,12 +12,6 @@
 
 namespace powerhouse
 {
-    constexpr size_t DEFAULT_SIZE_PT = 20;
-    constexpr size_t DEFAULT_SIZE_PHI = 30;
-    constexpr size_t DEFAULT_SIZE_Y = 20;
-    constexpr double DEFAULT_Y_MIN = -1.0;
-    constexpr double DEFAULT_Y_MAX = 1.0;
-    constexpr double DEFAULT_PT_MAX = -1.0;
     class engine
     {
     private:

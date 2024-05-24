@@ -68,12 +68,21 @@ namespace utils
         SpinHydro,      // Real spin hydro -sh
         Invalid
     };
+    enum class yield_modes
+    {
+        GlobalEq
+    };
+    enum class examine_modes
+    {
+        Simple
+    };
     struct program_options
     {
     public:
         utils::program_modes program_mode;
         utils::accept_modes accept_mode;
         utils::polarization_modes polarization_mode;
+        utils::yield_modes yield_mode;
         double modifier;
         std::string in_file; // -i <input_fule>
         std::string out_file; // -o <output_file>
@@ -259,5 +268,14 @@ namespace utils
         }
         return equal;
     }
+}
+namespace powerhouse
+{
+    constexpr size_t DEFAULT_SIZE_PT = 20;
+    constexpr size_t DEFAULT_SIZE_PHI = 30;
+    constexpr size_t DEFAULT_SIZE_Y = 20;
+    constexpr double DEFAULT_Y_MIN = -1.0;
+    constexpr double DEFAULT_Y_MAX = 1.0;
+    constexpr double DEFAULT_PT_MAX = -1.0;
 }
 #endif
