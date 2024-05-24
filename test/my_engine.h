@@ -22,18 +22,24 @@ public:
 };
 class mock_calculator : public powerhouse::I_calculator<hydro::fcell>
 {
+private:
+    size_t _count;
+    size_t _step_size;
+    size_t _perc = 0;
+    size_t _local_cell_counter = 0;
+
 public:
     mock_calculator() {}
-    ~mock_calculator() override {
-        std::cout << "Calculator destroyed " << std::endl;
+    ~mock_calculator() override
+    {
     }
-    powerhouse::I_output *perform_step(hydro::fcell &cell, powerhouse::I_output *previous_step) override
+    powerhouse::I_output<hydro::fcell> *perform_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
     {
 
-        powerhouse::exam_output data;
+        powerhouse::exam_output<hydro::fcell> data;
         if (previous_step)
         {
-            auto exam_output_ptr = dynamic_cast<powerhouse::exam_output *>(previous_step);
+            auto exam_output_ptr = dynamic_cast<powerhouse::exam_output<hydro::fcell> *>(previous_step);
             if (exam_output_ptr)
             {
                 data = *exam_output_ptr;
@@ -66,9 +72,35 @@ public:
             data.tr_sigma++;
         }
 
-        // etc
-
         return new powerhouse::exam_output(data);
+    }
+
+    void prepare(const size_t &t_count) override
+    {
+        _count = t_count;
+        _step_size = _count / 100 - 1;
+        _perc = 0;
+        _local_cell_counter = 0;
+    }
+    void pre_step() override
+    {
+        if (_local_cell_counter % _step_size == 0)
+        {
+            _perc++;
+            utils::show_progress((_perc > 100) ? 100 : _perc);
+        }
+        _local_cell_counter++;
+    }
+    void process_output(powerhouse::I_output<hydro::fcell> *output) override
+    {
+    }
+
+    void pre_write(std::ostream &output) override
+    {
+    }
+
+    void write(std::ostream &output, hydro::fcell *cell, powerhouse::I_output<hydro::fcell> *final_output) override
+    {
     }
 };
 #endif

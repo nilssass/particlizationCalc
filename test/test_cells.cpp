@@ -13,7 +13,7 @@
 #include "../src/element.h"
 #include "ibjorken.h"
 #include <type_traits>
-#include "../src/solution_factory.h"
+#include "../src/factories.h"
 #include "my_test.h"
 
 namespace

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "utils.h"
 #include <type_traits>
+#include <tuple>
 #pragma once
 
 template <template <typename...> class C, typename... Ts>
@@ -269,6 +270,7 @@ namespace hydro
         virtual double exp_theta(const C &) const = 0;
         virtual double exp_b_theta(const C &) const = 0;
         virtual int count() const = 0;
+
     protected:
         static_assert(is_template_base_of<I_cell, C>::value,
                       "C class in surface_stat must be derived from Icell<V,T>");
@@ -276,12 +278,33 @@ namespace hydro
 }
 namespace powerhouse
 {
+    template <typename C>
     struct I_output
     {
-    virtual ~I_output(){}
+        virtual ~I_output() {}
     };
-    struct exam_output : public I_output
+    template <typename C>
+    struct exam_output : public I_output<C>
     {
+        std::shared_ptr<hydro::surface_stat<C>> basic_info;
+        exam_output(exam_output &other) : basic_info(other.basic_info)
+        {
+            sigma2_sum = other.sigma2_sum;
+            longi_sigma = other.longi_sigma;
+            tr_sigma = other.tr_sigma;
+            theta_sum = other.theta_sum;
+            neg_theta = other.neg_theta;
+            btheta_sum = other.btheta_sum;
+            a2_sum = other.a2_sum;
+            timelike_a = other.timelike_a;
+            u_dot_a_not_zero = other.u_dot_a_not_zero;
+            fvort2_sum = other.fvort2_sum;
+            timelike_omega = other.timelike_omega;
+            th_shear_2_sum = other.th_shear_2_sum;
+            th_vort_2_sum = other.th_vort_2_sum;
+            decomp_failed = other.decomp_failed;
+        }
+        exam_output(hydro::surface_stat<C> *info = nullptr) : basic_info(info) {}
         double sigma2_sum = 0.0;
         int longi_sigma = 0;
         int tr_sigma = 0;
@@ -296,35 +319,72 @@ namespace powerhouse
         double th_shear_2_sum = 0.0;
         double th_vort_2_sum = 0.0;
         int decomp_failed = 0;
-        ~exam_output() override{}
+        ~exam_output() override {}
     };
-    struct polarization_output : public I_output
+    template <typename C>
+    struct polarization_output : public I_output<C>
     {
         /* data */
     };
-
-     struct yield_output : public I_output
+    template <typename C>
+    struct yield_output : public I_output<C>
     {
         /* data */
     };
-    template<typename C>
+    template <typename C>
     class I_calculator
     {
-        public:
-        virtual I_output* perform_step(C &cell, powerhouse::I_output* previous_step) = 0;
+    public:
+        virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
+        virtual void prepare(const size_t &t_count) = 0;
+        virtual void pre_step() = 0;
+        virtual void process_output(powerhouse::I_output<C> *output) = 0;
+        virtual void pre_write(std::ostream &os) = 0;
+        virtual void write(std::ostream &os, C *cell, powerhouse::I_output<C> *final_output) = 0;
         virtual ~I_calculator() {}
     };
-    
+
     class I_particle
     {
-        public:
+    public:
         virtual ~I_particle() = 0;
         virtual double mass() = 0;
-        virtual int pdg_id() =0;
-        virtual double Q() =0;
-        virtual double B() =0;
-        virtual double S() =0;
-        virtual float spin() =0;
-        virtual bool isparticle() =0;
+        virtual int pdg_id() = 0;
+        virtual double Q() = 0;
+        virtual double B() = 0;
+        virtual double S() = 0;
+        virtual float spin() = 0;
+        virtual bool isparticle() = 0;
+    };
+
+    struct calculator_key
+    {
+        utils::program_modes program_mode;
+        utils::polarization_modes polarization_mode;
+        utils::yield_modes yield_mode;
+
+        bool operator==(const calculator_key &other) const
+        {
+            return std::tie(program_mode, polarization_mode, yield_mode) ==
+                   std::tie(other.program_mode, other.polarization_mode, other.yield_mode);
+        }
+
+        static calculator_key get_key(utils::program_options opts)
+        {
+            return calculator_key{opts.program_mode, opts.polarization_mode, opts.yield_mode};
+        }
+    };
+}
+namespace std
+{
+    template <>
+    struct hash<powerhouse::calculator_key>
+    {
+        size_t operator()(const powerhouse::calculator_key &key) const
+        {
+            return std::hash<int>()(static_cast<int>(key.program_mode)) ^
+                   std::hash<int>()(static_cast<int>(key.polarization_mode)) ^
+                   std::hash<int>()(static_cast<int>(key.yield_mode));
+        }
     };
 }
