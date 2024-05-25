@@ -7,6 +7,10 @@
 #include "utils.h"
 #include <type_traits>
 #include <tuple>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#include <limits>
 #pragma once
 
 template <template <typename...> class C, typename... Ts>
@@ -92,7 +96,7 @@ namespace hydro
 
         C operator[](size_t i) const { return _cells[i]; }
         C &operator[](size_t i) { return _cells[i]; }
-        virtual void read(std::ifstream &file, utils::accept_modes mode);
+        virtual void read(const std::string &i_file, utils::accept_modes mode);
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
         std::vector<C> &data() { return _cells; }
@@ -128,74 +132,191 @@ namespace hydro
     };
 
     template <typename C>
-    inline void hypersurface<C>::read(std::ifstream &file, utils::accept_modes mode)
+    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode)
     {
-        std::string line;
+        const int estimated_line_count = 900000; // Rough estimate of the number of lines
+        const int step_size = estimated_line_count / 100 - 1;
 
-        utils::show_progress(0);
+        std::vector<std::streampos> file_positions;
+        std::vector<std::streampos> failed_positions;
+        std::ifstream file(i_file);
 
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Input file cannot be opened!");
+        }
+
+        // Determine chunk positions
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+#ifdef _OPENMP
+        int threads_count = omp_get_max_threads();
+#else
+        int threads_count = 1;
         _lines = std::count(std::istreambuf_iterator<char>(file),
                             std::istreambuf_iterator<char>(), '\n');
+        file_size = _lines;
+        file.seekg(0, std::ios::beg);
+#endif
 
-        int _counter = 0;
-        _total = 0;
-        _failed = 0, _rejected = 0, _timelikes = 0, _skipped = 0;
-        file.seekg(0);
-        file.clear();
-        int lastperc = -1;
-        while (std::getline(file, line))
+        std::streampos chunk_size = file_size / threads_count;
+        for (int i = 0; i < threads_count; ++i)
         {
-            bool reject = false;
-            _counter++;
-            int perc = 100 * ((double)_counter) / ((double)_lines);
-            if (perc > lastperc)
-            {
-                lastperc = perc;
-                utils::show_progress(perc);
-            }
+            std::streampos start = i * chunk_size;
+            file_positions.push_back(start);
+        }
+        file_positions.push_back(file_size);
 
-            if (line.empty() || line[0] == '#')
-            {
-                _skipped++;
-                continue;
-            }
+        _total = 0;
+        _failed = 0;
+        _rejected = 0;
+        _timelikes = 0;
+        _skipped = 0;
+        int perc = 0;
+        int last_perc = -1;
 
-            std::istringstream iss(line);
-            C cell;
-            iss >> cell;
-            if (iss.fail())
-            {
-                _failed++;
-                std::cerr << "I cannot read line " << _lines << "!" << std::endl;
-                continue;
-            }
+#ifdef _OPENMP
+#pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+#else
+        int tid = 0;
+#endif
 
-            if (!cell.is_spacelike())
-            {
-                if (mode == utils::accept_modes::RejectTimelike)
-                {
-                    reject = true;
-                }
-                _timelikes++;
-            }
+            int local_total = 0;
+            int local_failed = 0;
+            int local_rejected = 0;
+            int local_timelikes = 0;
+            int local_skipped = 0;
+            int local_counter = 0;
+            int local_perc = 0;
+            int local_last_perc = -1;
+            std::ifstream local_file(i_file);
+            std::vector<C> thread_cells;
+            thread_cells.reserve(chunk_size);
 
-            if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+            if (!local_file.is_open())
             {
-                reject = true;
-            }
-            if (!reject)
-            {
-                _cells.push_back(cell);
-                _total++;
+                std::cerr << "Cannot open file " << i_file << " in thread " << tid << std::endl;
             }
             else
             {
-                _rejected++;
+#ifdef _OPENMP
+                local_file.seekg(file_positions[tid]);
+#endif
+                std::string line;
+#ifdef _OPENMP
+                while (local_file.tellg() < file_positions[tid + 1] && std::getline(local_file, line))
+#else
+            while (std::getline(local_file, line))
+#endif
+                {
+
+                    local_counter++;
+                    bool reject = false;
+
+                    if (line.empty() || line[0] == '#')
+                    {
+                        local_skipped++;
+                        continue;
+                    }
+
+                    std::istringstream iss(line);
+                    C cell;
+                    iss >> cell;
+                    if (iss.fail())
+                    {
+                        local_failed++;
+                        // std::cerr << "I cannot read line " << local_file.tellg() << " in thread " << tid << "!" << std::endl;
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+                        failed_positions.push_back(local_file.tellg());
+                        continue;
+                    }
+
+                    if (!cell.is_spacelike())
+                    {
+                        if (mode == utils::accept_modes::RejectTimelike)
+                        {
+                            reject = true;
+                        }
+                        local_timelikes++;
+                    }
+
+                    if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+                    {
+                        reject = true;
+                    }
+                    if (!reject)
+                    {
+                        thread_cells.push_back(cell);
+                        local_total++;
+                    }
+                    else
+                    {
+                        local_rejected++;
+                    }
+                    local_perc = 100 * ((double)local_counter) / ((double)estimated_line_count);
+
+#ifdef _OPENMP
+#pragma omp critical
+                    {
+#endif
+                        perc = std::max(perc, local_perc);
+                        if (perc > last_perc)
+                        {
+                            last_perc = perc;
+                            utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                        }
+#ifdef _OPENMP
+                    }
+#endif
+                }
+            }
+
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+            {
+                _cells.insert(_cells.end(), thread_cells.begin(), thread_cells.end());
+                _total += local_total;
+                _failed += local_failed;
+                _rejected += local_rejected;
+                _timelikes += local_timelikes;
+                _skipped += local_skipped;
+                _lines += local_counter;
+                utils::show_progress(100);
+            }
+
+#ifdef _OPENMP
+        }
+#endif
+        // retrying for the failed cells
+        if (_failed > 0)
+        {
+            std::string line;
+            for (auto &&pos : failed_positions)
+            {
+                file.seekg(pos);
+                std::getline(file, line);
+                std::istringstream iss(line);
+                C cell;
+                iss >> cell;
+                if (!iss.fail())
+                {
+                    _cells.push_back(cell);
+                    _failed--;
+                    _total++;
+                }
             }
         }
 
         std::cout << std::endl;
     }
+
     template <typename C>
     inline surface_stat<C> hypersurface<C>::readinfo()
     {
@@ -320,6 +441,49 @@ namespace powerhouse
         double th_vort_2_sum = 0.0;
         int decomp_failed = 0;
         ~exam_output() override {}
+        void accumulate(powerhouse::I_output<C> *output)
+        {
+            auto other = dynamic_cast<exam_output<C> *>(output);
+            if (other)
+            {
+                sigma2_sum += other->sigma2_sum;
+                longi_sigma += other->longi_sigma;
+                tr_sigma += other->tr_sigma;
+                theta_sum += other->theta_sum;
+                neg_theta += other->neg_theta;
+                btheta_sum += other->btheta_sum;
+                a2_sum += other->a2_sum;
+                timelike_a += other->timelike_a;
+                u_dot_a_not_zero += other->u_dot_a_not_zero;
+                fvort2_sum += other->fvort2_sum;
+                timelike_omega += other->timelike_omega;
+                th_shear_2_sum += other->th_shear_2_sum;
+                th_vort_2_sum += other->th_vort_2_sum;
+                decomp_failed += other->decomp_failed;
+            }
+            else
+            {
+                throw std::runtime_error("Failed to cast output to exam_output<C>");
+            }
+        }
+        exam_output &operator+=(const exam_output &rhs)
+        {
+            sigma2_sum += rhs.sigma2_sum;
+            longi_sigma += rhs.longi_sigma;
+            tr_sigma += rhs.tr_sigma;
+            theta_sum += rhs.theta_sum;
+            neg_theta += rhs.neg_theta;
+            btheta_sum += rhs.btheta_sum;
+            a2_sum += rhs.a2_sum;
+            timelike_a += rhs.timelike_a;
+            u_dot_a_not_zero += rhs.u_dot_a_not_zero;
+            fvort2_sum += rhs.fvort2_sum;
+            timelike_omega += rhs.timelike_omega;
+            th_shear_2_sum += rhs.th_shear_2_sum;
+            th_vort_2_sum += rhs.th_vort_2_sum;
+            decomp_failed += rhs.decomp_failed;
+            return *this;
+        }
     };
     template <typename C>
     struct polarization_output : public I_output<C>

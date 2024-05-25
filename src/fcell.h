@@ -68,7 +68,7 @@ namespace hydro
             this->_du = other._du;
             return *this;
         }
-        ~fcell() override{}
+        ~fcell() override {}
         double tau() const { return _tau; }
         double t() const { return _tau * cosh(_eta); }
         double x() const { return _x; }

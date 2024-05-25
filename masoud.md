@@ -5,7 +5,7 @@ Update: [20.05.2024]
 2. Write a wrapper for r2_tensor (2d array benchmarks)
 3. Test utils::geometry
 4. Test cells against analytical solutions
-5. Review engine::examine
+5. Review engine::examine + 
 6. engine::yield 
 7. engine::polarization
 

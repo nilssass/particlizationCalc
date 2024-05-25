@@ -27,7 +27,15 @@ namespace powerhouse
         {
             if (_local_cell_counter % _step_size == 0)
             {
+#ifdef _OPENMP
+#pragma omp atomic
+#endif
                 _percentage++;
+
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+
                 utils::show_progress((_percentage > 100) ? 100 : _percentage);
             }
             _local_cell_counter++;
@@ -132,9 +140,10 @@ namespace powerhouse
                     throw std::runtime_error("Unknown error");
                 }
             }
-            std::cout << "Basic information" << std::endl;
+            std::cout << std::endl
+                      << "Basic information" << std::endl;
             // How % of timelikes
-            std::cout << data.basic_info << std::endl;
+            std::cout << *data.basic_info << std::endl;
 
             std::cout << std::endl
                       << "Report:" << std::endl;

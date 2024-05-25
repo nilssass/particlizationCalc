@@ -313,22 +313,56 @@ namespace powerhouse
     inline void I_engine<C>::examine()
     {
         calculator()->prepare(_hypersurface.total());
-        std::shared_ptr<powerhouse::I_output<C>> output = nullptr;
 
-        for (auto &cell : _hypersurface.data())
+#ifdef _OPENMP
+#pragma omp parallel
         {
+            std::shared_ptr<powerhouse::I_output<C>> local_output = nullptr;
+
+#pragma omp for
+            for (size_t i = 0; i < _hypersurface.total(); i++)
+            {
+                auto &cell = _hypersurface[i];
+                calculator()->pre_step();
+
+                if (local_output)
+                {
+                    local_output.reset(calculator()->perform_step(cell, local_output.get()));
+                }
+                else
+                {
+                    local_output.reset(calculator()->perform_step(cell, nullptr));
+                }
+            }
+
+            // Combine thread-local results into the shared result in a critical section
+#pragma omp critical
+            {
+                _exam_output.accumulate(dynamic_cast<exam_output<C> *>(local_output.get()));
+            }
+        }
+#else
+        std::shared_ptr<powerhouse::I_output<C>> local_output = nullptr;
+        auto local_exam_output = std::make_shared<exam_output<C>>();
+
+        for (size_t i = 0; i < _hypersurface.total(); i++)
+        {
+            auto &cell = _hypersurface[i];
             calculator()->pre_step();
 
-            if (output)
+            if (local_output)
             {
-                output.reset(calculator()->perform_step(cell, output.get()));
+                local_output.reset(calculator()->perform_step(cell, local_output.get()));
             }
             else
             {
-                output.reset(calculator()->perform_step(cell, nullptr));
+                local_output.reset(calculator()->perform_step(cell, nullptr));
             }
         }
-        _exam_output = *(dynamic_cast<powerhouse::exam_output<C> *>(output.get()));
+
+        _exam_output.accumulate(dynamic_cast<exam_output<C> *>(local_output.get()));
+#endif
+
         _exam_output.basic_info.reset(new hydro::surface_stat<C>(_hypersurface.readinfo()));
         calculator()->process_output(&_exam_output);
     }

@@ -40,7 +40,6 @@ namespace
         void TearDown() override
         {
         }
-        
 
         void write(std::string path, std::shared_ptr<hydro::I_analytical_sol> solution)
         {
@@ -109,7 +108,7 @@ namespace
     TEST_F(IcellTest, TestBjorkenCell)
     {
         auto bjorken = factory->create(ibjorken::get_name());
-        auto cell = bjorken->generate_cell(0.167, 0,0 ,0);
+        auto cell = bjorken->generate_cell(0.167, 0, 0, 0);
         ASSERT_TRUE(cell.tau() > 0) << cell;
         examine_solution(cell, bjorken);
     }

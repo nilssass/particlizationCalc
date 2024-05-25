@@ -224,6 +224,19 @@ bench_utils/fast:
 .PHONY : bench_utils/fast
 
 #=============================================================================
+# Target rules for targets named calc
+
+# Build rule for target.
+calc: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calc
+.PHONY : calc
+
+# fast build rule for target.
+calc/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/build
+.PHONY : calc/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -309,6 +322,7 @@ src/fcell.o: src/fcell.cpp.o
 src/fcell.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/fcell.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/fcell.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/fcell.cpp.o
 .PHONY : src/fcell.cpp.o
 
 src/fcell.i: src/fcell.cpp.i
@@ -318,6 +332,7 @@ src/fcell.i: src/fcell.cpp.i
 src/fcell.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/fcell.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/fcell.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/fcell.cpp.i
 .PHONY : src/fcell.cpp.i
 
 src/fcell.s: src/fcell.cpp.s
@@ -327,6 +342,7 @@ src/fcell.s: src/fcell.cpp.s
 src/fcell.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/fcell.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/fcell.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/fcell.cpp.s
 .PHONY : src/fcell.cpp.s
 
 src/geometry.o: src/geometry.cpp.o
@@ -337,6 +353,7 @@ src/geometry.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/geometry.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/geometry.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/geometry.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/geometry.cpp.o
 .PHONY : src/geometry.cpp.o
 
 src/geometry.i: src/geometry.cpp.i
@@ -347,6 +364,7 @@ src/geometry.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/geometry.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/geometry.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/geometry.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/geometry.cpp.i
 .PHONY : src/geometry.cpp.i
 
 src/geometry.s: src/geometry.cpp.s
@@ -357,7 +375,32 @@ src/geometry.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/geometry.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/geometry.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/geometry.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/geometry.cpp.s
 .PHONY : src/geometry.cpp.s
+
+src/main.o: src/main.cpp.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
 src/utils.o: src/utils.cpp.o
 .PHONY : src/utils.o
@@ -368,6 +411,7 @@ src/utils.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/utils.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/utils.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/utils.cpp.o
 .PHONY : src/utils.cpp.o
 
 src/utils.i: src/utils.cpp.i
@@ -379,6 +423,7 @@ src/utils.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/utils.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/utils.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/utils.cpp.i
 .PHONY : src/utils.cpp.i
 
 src/utils.s: src/utils.cpp.s
@@ -390,6 +435,7 @@ src/utils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_cells.dir/build.make CMakeFiles/test_cells.dir/src/utils.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_engine_design.dir/build.make CMakeFiles/test_engine_design.dir/src/utils.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_utils.dir/build.make CMakeFiles/bench_utils.dir/src/utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/calc.dir/build.make CMakeFiles/calc.dir/src/utils.cpp.s
 .PHONY : src/utils.cpp.s
 
 test/bench_utils.o: test/bench_utils.cpp.o
@@ -550,6 +596,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... bench_utils"
+	@echo "... calc"
 	@echo "... gmock"
 	@echo "... gmock_main"
 	@echo "... gtest"
@@ -566,6 +613,9 @@ help:
 	@echo "... src/geometry.o"
 	@echo "... src/geometry.i"
 	@echo "... src/geometry.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"

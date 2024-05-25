@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(particilizationcalc)
 
+# set(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++)
+# set(CMAKE_LD_COMPILER /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++)
+
 # GoogleTest requires at least C++17
 set(CMAKE_CXX_STANDARD 17)  
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,6 +17,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # Alternatively, you can set debug and release flags together
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+
+# Find OpenMP package
+find_package(OpenMP REQUIRED)
+
+
+
 
 include(FetchContent)
 FetchContent_Declare(
@@ -66,10 +75,20 @@ add_executable(
 )
 target_link_libraries(
     test_engine_design
+    PUBLIC
     GTest::gtest_main
 )
+
 include(GoogleTest)
 gtest_discover_tests(test_engine_design)
+
+Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_engine_design PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_engine_design PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 find_package(benchmark REQUIRED)
 
@@ -92,3 +111,29 @@ target_link_libraries(bench_utils benchmark::benchmark)
 #     src/t_surface.cpp
 # )
 # target_link_libraries(bench_cells benchmark::benchmark)
+
+
+# Add the main executable target
+add_executable(
+    calc  # Name of the executable
+    src/main.cpp  # Source files for the main executable
+    # Add other necessary source files here
+    src/fcell.cpp
+    src/geometry.cpp
+    src/utils.cpp
+)
+
+# Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(calc PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(calc PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+# Include any necessary directories
+target_include_directories(
+    calc
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
+)

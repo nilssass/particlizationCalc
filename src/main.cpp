@@ -7,17 +7,14 @@
 #include <chrono>
 #include <filesystem>
 #include "utils.h"
-#include "element.h"
+#include "fcell.h"
 #include "surface.h"
-#include "engine.h"
+#include "I_engine.h"
 #include "pdg_particle.h"
-#include "analytical_sol.h"
-#include "bjorken.h"
-
-bool load_hypersurface(utils::program_options opts, hydro::hypersurface_wrapper &hypersurface);
+#include "examiner.h"
+typedef hydro::hypersurface<hydro::fcell> surface;
+bool load_hypersurface(utils::program_options opts, surface &hypersurface);
 bool should_exit(utils::program_options &settings, int argc, char **argv);
-
-// void benchmark_shear(gen::hypersurface_wrapper &hypersurface);
 
 int main(int argc, char **argv)
 {
@@ -29,32 +26,26 @@ int main(int argc, char **argv)
         return (settings.program_mode != utils::program_modes::Help);
     }
 
-    hydro::hypersurface_wrapper hypersurface;
+    surface hypersurface;
 
     if (!load_hypersurface(settings, hypersurface))
     {
         return 1;
     }
 
-#if DEBUG
-    std::cout << "Now I try to construct the engine" << std::endl;
-#endif
-    powerhouse::engine engine(settings, hypersurface);
+    powerhouse::calculator_factory<hydro::fcell>::factory()
+        ->register_calculator(settings,
+                              []()
+                              {
+                                  return std::make_unique<powerhouse::examiner>();
+                              });
 
-    if (settings.verbose)
-    {
-        std::cout << "Initializing the engine..." << std::endl;
-    }
+    auto engine = powerhouse::I_engine<hydro::fcell>::get(settings);
 
-    engine.init();
-
-    if (settings.verbose)
-    {
-        std::cout << "Particle: " << engine.particle() << std::endl;
-    }
+    engine->init(hypersurface);
 
     auto start = std::chrono::high_resolution_clock::now();
-    engine.run();
+    engine->run();
     auto finish = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
     if (settings.verbose)
@@ -90,7 +81,7 @@ bool should_exit(utils::program_options &settings, int argc, char **argv)
     return _exit;
 }
 
-bool load_hypersurface(utils::program_options opts, hydro::hypersurface_wrapper &hypersurface)
+bool load_hypersurface(utils::program_options opts, surface &hypersurface)
 {
     bool success = false;
 
@@ -104,9 +95,9 @@ bool load_hypersurface(utils::program_options opts, hydro::hypersurface_wrapper 
             if (opts.verbose)
             {
                 std::cout << "Reading hypersurface from " << opts.in_file << std::endl;
-            }
 
-            hypersurface.read_hypersrface(input_file, opts.accept_mode);
+                hypersurface.read(opts.in_file, opts.accept_mode);
+            }
             input_file.close();
             success = true;
         }

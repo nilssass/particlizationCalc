@@ -52,11 +52,7 @@ namespace
             ->register_calculator(opts,
                                   []()
                                   {
-                                      std::unique_ptr<powerhouse::I_calculator<hydro::fcell>> ptr;
-                                      auto _ =
-                                          dynamic_cast<powerhouse::I_calculator<hydro::fcell> *>(new powerhouse::examiner());
-                                      ptr.reset(_);
-                                      return ptr;
+                                      return std::make_unique<powerhouse::examiner>();
                                   });
 
         auto engine = powerhouse::I_engine<hydro::fcell>::get();
