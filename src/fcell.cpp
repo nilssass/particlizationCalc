@@ -19,6 +19,27 @@ utils::r2_tensor hydro::fcell::delta_ll()
     if (!_delta_ll)
     {
         _delta_ll = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u.to_lower() * -1.0) & _u.to_lower()}));
+        // const auto &u0 = _u[0];
+        // const auto &u1 = _u[1];
+        // const auto &u2 = _u[2];
+        // const auto &u3 = _u[3];
+
+        //  utils::r2_tensor _ = {0};
+
+        // _[0][0] = 1. - u0 * u0;
+        // _[0][1] = u0 * u1;
+        // _[1][0] = _[0][1];
+        // _[0][2] = u0 * u2;
+        // _[2][0] = _[0][2];
+        // _[0][3] = u0 * u3;
+        // _[3][0] = _[0][3];
+        // _[1][1] = -1 - u1 * u1;
+        // _[1][2] = _[2][1] = -u1 * u2;
+        // _[1][3] = _[3][1] = -u1 * u3;
+        // _[2][2] = -1. -   u2 * u2;
+        // _[2][3] = _[3][2] = -u2 * u3;
+        // _[3][3] = -1 - u3 * u3;
+        //  _delta_ll = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ll;
 }
@@ -28,6 +49,36 @@ utils::r2_tensor hydro::fcell::delta_uu()
     if (!_delta_uu)
     {
         _delta_uu = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u * -1.0) & _u}));
+        // utils::r2_tensor _ = {0};
+        // // for (size_t i = 0; i < 4; i++)
+        // // {
+        // //     for (size_t j = 0; j < 4; j++)
+        // //     {
+        // //         for (size_t k = 0; k < 4; k++)
+        // //         {
+        // //             _[i][j]+=delta_ll()[i][k]*utils::g(k,j);
+        // //         }
+        // //     }
+        // // }
+        // const auto &u0 = _u[0];
+        // const auto &u1 = _u[1];
+        // const auto &u2 = _u[2];
+        // const auto &u3 = _u[3];
+
+        // _[0][0] = 1. - u0 * u0;
+        // _[0][1] = -u0 * u1;
+        // _[1][0] = _[0][1];
+        // _[0][2] = -u0 * u2;
+        // _[2][0] = _[0][2];
+        // _[0][3] = -u0 * u3;
+        // _[3][0] = _[0][3];
+        // _[1][1] = -1 - u1 * u1;
+        // _[1][2] = _[2][1] = -u1 * u2;
+        // _[1][3] = _[3][1] = -u1 * u3;
+        // _[2][2] = -1 -   u2 * u2;
+        // _[2][3] = _[3][2] = -u2 * u3;
+        // _[3][3] = -1 - u3 * u3;
+        //  _delta_uu = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_uu;
 }
@@ -36,12 +87,41 @@ utils::r2_tensor hydro::fcell::delta_ul()
 {
     if (!_delta_ul)
     {
-        _delta_ul = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u * -1.0) & _u.to_lower()}));
+        utils::r2_tensor _ = {0};
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                for (size_t k = 0; k < 4; k++)
+                {
+                    _[i][j] += delta_ll()[i][k] * utils::g(k, j);
+                }
+            }
+        }
+        // const auto &u0 = _u[0];
+        // const auto &u1 = _u[1];
+        // const auto &u2 = _u[2];
+        // const auto &u3 = _u[3];
+
+        // _[0][0] = 1. - u0 * u0;
+        // _[0][1] = u0 * u1;
+        // _[1][0] = -_[0][1];
+        // _[0][2] = u0 * u2;
+        // _[2][0] = -_[0][2];
+        // _[0][3] = u0 * u3;
+        // _[3][0] = -_[0][3];
+        // _[1][1] = 1 + u1 * u1;
+        // _[1][2] = _[2][1] = u1 * u2;
+        // _[1][3] = _[3][1] = u1 * u2;
+        // _[2][2] = 1 + u2 * u2;
+        // _[2][3] = _[3][2] = u2 * u3;
+        // _[3][3] = 1 + u3 * u3;
+        _delta_ul = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ul;
 }
 
-double hydro::fcell::gradu_ll(int mu, int nu)
+utils::r2_tensor hydro::fcell::gradu_ll()
 {
     if (!_gradu)
     {
@@ -53,14 +133,19 @@ double hydro::fcell::gradu_ll(int mu, int nu)
                 _[i][j] = 0;
                 for (size_t rho = 0; rho < 4; rho++)
                 {
-                    _[i][j] += delta_ul()[rho][mu] * _du[rho][nu];
+                    _[i][j] += delta_ul()[i][rho] * _du[rho][j];
                 }
             }
         }
         _gradu = std::make_unique<utils::r2_tensor>(_);
     }
 
-    return (*_gradu)[mu][nu];
+    return (*_gradu);
+}
+
+double hydro::fcell::gradu_ll(int mu, int nu)
+{
+    return gradu_ll()[mu][nu];
 }
 
 double hydro::fcell::r2proj_uu_ll(int mu, int nu, int a, int b)
@@ -138,7 +223,7 @@ double hydro::fcell::b_theta()
 {
     if (!_b_theta)
     {
-        _b_theta = std::make_unique<double>(utils::trace_ll(_dbeta));
+        _b_theta = std::make_unique<double>(utils::trace_ll(_dbeta) * utils::hbarC);
     }
 
     return *_b_theta;
@@ -200,14 +285,7 @@ void hydro::fcell::calculate_shear()
     {
         for (size_t nu = 0; nu < 4; nu++)
         {
-            _[mu][nu] = 0;
-            for (size_t a = 0; a < 4; a++)
-            {
-                for (size_t b = 0; b < 4; b++)
-                {
-                    _[mu][nu] += r2proj_uu_ll(a, b, mu, nu) * gradu_ll(a, b);
-                }
-            }
+            _[mu][nu] = 0.5 * gradu_ll()[mu][nu] + 0.5 * gradu_ll()[nu][mu] - delta_ll()[mu][nu] * theta() / 3.0;
         }
     }
     _shear = std::make_unique<utils::r2_tensor>(_);
@@ -236,11 +314,12 @@ void hydro::fcell::calculate_fvorticity_vec()
 void hydro::fcell::calculate_fvorticity()
 {
     utils::r2_tensor _ = {{0}};
+    const auto &grad = gradu_ll();
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _[i][j] = 0.5 * gradu_ll(i, j) - 0.5 * gradu_ll(j, i);
+            _[i][j] = 0.5 * grad[i][j] - 0.5 * grad[j][i];
         }
     }
     _f_vorticity = std::make_unique<utils::r2_tensor>(_);
@@ -253,7 +332,7 @@ void hydro::fcell::calculate_th_vorticity()
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _[i][j] = (-0.5 * _dbeta[i][j] + 0.5 * _dbeta[j][i]) * utils::hbarC;
+            _[i][j] = (-0.5 * _dbeta[i][j] * utils::hbarC + 0.5 * _dbeta[j][i] * utils::hbarC);
         }
     }
     _th_vorticity = std::make_unique<utils::r2_tensor>(_);
@@ -266,7 +345,7 @@ void hydro::fcell::calculate_th_shear()
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _[i][j] = (0.5 * _dbeta[i][j] + 0.5 * _dbeta[j][i]) * utils::hbarC;
+            _[i][j] = (0.5 * _dbeta[i][j]* utils::hbarC + 0.5 * _dbeta[j][i]* utils::hbarC) ;
         }
     }
     _th_shear = std::make_unique<utils::r2_tensor>(_);

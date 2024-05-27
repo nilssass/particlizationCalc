@@ -4,6 +4,8 @@
 #include <array>
 #include "utils.h"
 #include <cassert>
+#include <initializer_list>
+#include <algorithm>
 namespace utils::geometry
 {
     /// @brief Minkowski four vector with index information
@@ -20,10 +22,9 @@ namespace utils::geometry
 
         four_vector(const four_vector &other);
 
-        four_vector(double &v0, double &v1, double &v2, double &v3, bool &lower) : _data({v0, v1, v2, v3}), _lower(lower){};
-
-        // four_vector(std::initializer_list<double> init, bool is_lower = false);
-
+        // four_vector(double &v0, double &v1, double &v2, double &v3, bool &lower) : _data({v0, v1, v2, v3}), _lower(lower){};
+        four_vector(const double &v0, const double &v1, const double &v2, const double &v3, const bool &lower) : _data({v0, v1, v2, v3}), _lower(lower){};
+    
         four_vec vec() { return _data; }
         bool is_lower() { return _lower; }
         double *to_array() { return _data.data(); }

@@ -18,7 +18,7 @@ namespace
 {
     const std::string PATH = "./input/beta.dat";
     const double abs_error = 1e-6;
-    class IcellTest : public testing::Test
+    class BjorkenTest : public testing::Test
     {
     protected:
         hydro::hypersurface<my_cell> _hypersurface;
@@ -87,7 +87,7 @@ namespace
         }
     };
 
-    TEST_F(IcellTest, ReadElement)
+    TEST_F(BjorkenTest, ReadElement)
     {
         auto cell = read_element();
         // std::cout << "Cell info\r\n"
@@ -98,7 +98,7 @@ namespace
         ASSERT_TRUE(cell.acc_norm() < 0);
     }
 
-    TEST_F(IcellTest, ReadFCell)
+    TEST_F(BjorkenTest, ReadFCell)
     {
         auto cell = read_fcell();
         // std::cout << "Cell info\r\n"
@@ -110,7 +110,7 @@ namespace
         ASSERT_TRUE(cell.acc_norm() < 0);
     }
 
-    TEST_F(IcellTest, ReadICell)
+    TEST_F(BjorkenTest, ReadICell)
     {
         auto cell = read_cell();
         auto fcell = read_fcell();

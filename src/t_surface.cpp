@@ -56,7 +56,7 @@ void hydro::fsurface::read(std::ifstream &file, utils::accept_modes mode)
             _timelikes++;
         }
 
-        if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u() * cell.dsigma() < 0))
+        if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.four_vel() * cell.dsigma() < 0))
         {
             reject = true;
         }
@@ -141,7 +141,7 @@ void hydro::fsurface::add(fcell &cell, utils::accept_modes mode)
     if (mode != utils::accept_modes::AcceptAll)
     {
         reject = (mode == utils::accept_modes::RejectTimelike && !spacelike) ||
-                 (mode == utils::accept_modes::RejectNegativeDuDSigma && cell.u() * cell.dsigma() < 0);
+                 (mode == utils::accept_modes::RejectNegativeDuDSigma && cell.four_vel() * cell.dsigma() < 0);
     }
 
     if (reject)

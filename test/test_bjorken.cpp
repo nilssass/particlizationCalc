@@ -1,0 +1,174 @@
+#include <iostream>
+#include <istream>
+#include <vector>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+#include <iterator>
+#include <gtest/gtest.h>
+#include "../src/utils.h"
+#include "../src/geometry.h"
+#include "../src/interfaces.h"
+#include "../src/fcell.h"
+#include "../src/element.h"
+#include "ibjorken.h"
+#include <type_traits>
+#include "../src/factories.h"
+#include "my_test.h"
+
+namespace
+{
+
+    namespace ug = utils::geometry;
+
+    class BjorkenTest : public my_test
+    {
+    protected:
+        const double T_f = 0.167;
+        const double T_0 = 0.3;
+        const double vs2 = 1. / 3.;
+        const double t_0 = 0.6;
+        std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
+            hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
+        void SetUp() override
+        {
+            const double T_f = 0.167;
+            const double T_0 = 0.3;
+            const double vs2 = 1. / 3.;
+            const double t_0 = 0.6;
+            factory->regsiter_solution(ibjorken::get_name(),
+                                       [T_f, T_0, vs2, t_0]()
+                                       {
+                                           return std::make_unique<ibjorken>(
+                                               ibjorken(
+                                                   ug::four_vector(0.1, 0.1, 0.1, 0.1, false),
+                                                   ug::four_vector(t_0, -5, -5, -1, false),
+                                                   ug::four_vector(0, 5, 5, 1, false),
+                                                   T_f, T_0, vs2));
+                                       });
+        }
+        void TearDown() override
+        {
+        }
+    };
+
+    TEST_F(BjorkenTest, TestBjorken)
+    {
+        auto bjorken = factory->create(ibjorken::get_name());
+        bjorken->populate();
+        ASSERT_TRUE(bjorken->count() > 0);
+        const auto &tau_f = bjorken->data()[0].tau();
+        const auto &exp_tau_f = pow(T_f / T_0, -1 / vs2) * t_0;
+        EXPECT_DOUBLE_EQ(exp_tau_f, tau_f) << "tau_f should be " << exp_tau_f;
+        EXPECT_DOUBLE_EQ(T_0 * pow(t_0 / exp_tau_f, vs2), T_f);
+        const auto &act_T_f = T_0 * pow(t_0 / tau_f, vs2);
+        EXPECT_DOUBLE_EQ(act_T_f, T_f);
+
+        std::ofstream soloutput(BJORKEN);
+        bjorken->write(soloutput);
+        int lines;
+        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines);
+        EXPECT_EQ(lines, bjorken->count());
+    }
+
+    TEST_F(BjorkenTest, TestFirstCellAgBjorken)
+    {
+        auto bjorken = factory->create(ibjorken::get_name());
+        bjorken->populate();
+        auto cell = bjorken->data()[0];
+        ASSERT_TRUE(cell.tau() > 0) << cell;
+        EXPECT_NEAR(bjorken->exp_theta(cell),
+                    cell.theta(), abs_error)
+            << "should be 1 / " << cell.tau() << " = " << 1 / cell.tau();
+        EXPECT_ARRAY_NEAR(bjorken->exp_acc_u(cell).vec(),
+                          cell.acceleration().vec(), "-acceleration");
+        EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_u(cell).vec(),
+                          cell.fluid_vort_vec().vec(), "-fluid_vort_vec");
+        EXPECT_NEAR(bjorken->exp_b_theta(cell),
+                    cell.b_theta(), abs_error);
+
+        EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_ll(cell),
+                          cell.fluid_vort_ll(), "-fluid_vort_ll");
+        EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_ll(cell),
+                          cell.fluid_vort_ll(), "-fluid_vort_ll");
+        EXPECT_ARRAY_NEAR(bjorken->exp_th_vorticity_ll(cell),
+                          cell.thermal_vort_ll(), "-thermal_vort_ll");
+        EXPECT_ARRAY_NEAR_SYMMETRIC(cell.dbeta_ll(), "dbeta is not symmetric");
+        EXPECT_ARRAY_NEAR(bjorken->exp_th_shear_ll(cell),
+                          utils::s_product(cell.dbeta_ll(), utils::hbarC), "-thermal_shear_ll");
+        EXPECT_ARRAY_NEAR(bjorken->exp_th_shear_ll(cell),
+                          cell.thermal_shear_ll(), "-thermal_shear_ll");
+        // Testing the relevant components for shear
+        EXPECT_ARRAY_NEAR(bjorken->exp_delta_ul(cell), cell.delta_ul(), "-delta_ul");
+        EXPECT_ARRAY_NEAR(bjorken->exp_delta_uu(cell), cell.delta_uu(), "-delta_uu");
+        EXPECT_ARRAY_NEAR(cell.gradu_ll(),
+                          cell.du_ll(), "-gradu_ll");
+        EXPECT_ARRAY_NEAR(bjorken->exp_gradu_ll(cell),
+                          cell.gradu_ll(), "-gradu_ll");
+        EXPECT_ARRAY_NEAR_SYMMETRIC(cell.gradu_ll());
+
+        // Testing our expected shear
+        auto _shear = utils::add_tensors({cell.du_ll(), utils::s_product(cell.delta_ll(), -cell.theta() / 3.0)});
+        EXPECT_ARRAY_NEAR(_shear, bjorken->exp_shear_ll(cell));
+
+        // Testing the shear
+        EXPECT_ARRAY_NEAR_SYMMETRIC(cell.du_ll());
+        EXPECT_ARRAY_NEAR_SYMMETRIC(cell.shear_ll());
+        EXPECT_ARRAY_EQ(bjorken->exp_shear_ll(cell),
+                        cell.shear_ll(), "-shear_ll");
+    }
+
+    TEST_F(BjorkenTest, TestAllCellsAgBjorken)
+    {
+        int lines;
+        auto bjorken = factory->create(ibjorken::get_name());
+        bjorken->populate();
+        auto surface = bjorken->data();
+
+        const int batch_size = 100;
+        int batch_start = 0;
+        while (batch_start < surface.total())
+        {
+            int batch_end = std::min(batch_start + batch_size, static_cast<int>(surface.total()));
+            for (int i = batch_start; i < batch_end; i++)
+            {
+                auto &cell = surface.data()[i];
+                ASSERT_TRUE(cell.tau() > 0) << cell;
+
+                EXPECT_NEAR(bjorken->exp_theta(cell),
+                            cell.theta(), abs_error)
+                    << "should be 1 / " << cell.tau() << " = " << 1 / cell.tau();
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_acc_u(cell).vec(),
+                                  cell.acceleration().vec(), "-acceleration");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_u(cell).vec(),
+                                  cell.fluid_vort_vec().vec(), "-fluid_vort_vec");
+
+                EXPECT_NEAR(bjorken->exp_b_theta(cell),
+                            cell.b_theta(), abs_error);
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_ll(cell),
+                                  cell.fluid_vort_ll(), "-fluid_vort_ll");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_f_vorticity_ll(cell),
+                                  cell.fluid_vort_ll(), "-fluid_vort_ll");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_th_vorticity_ll(cell),
+                                  cell.thermal_vort_ll(), "-thermal_vort_ll");
+
+                EXPECT_ARRAY_NEAR_SYMMETRIC(cell.dbeta_ll(), "dbeta is not symmetric");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_th_shear_ll(cell),
+                                  utils::s_product(cell.dbeta_ll(), utils::hbarC), "-thermal_shear_ll");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_th_shear_ll(cell),
+                                  cell.thermal_shear_ll(), "-thermal_shear_ll");
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_shear_ll(cell),
+                                cell.shear_ll(), "-shear_ll");
+            }
+            batch_start += batch_size;
+        }
+    }
+}

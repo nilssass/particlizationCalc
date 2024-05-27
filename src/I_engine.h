@@ -304,7 +304,7 @@ namespace powerhouse
         if (!_calculator)
         {
             std::lock_guard lock(_mutex);
-            _calculator = calculator_factory<C>::factory()->create_calculator(_settings);
+            _calculator = calculator_factory<C>::factory()->create(_settings);
         }
 
         _initialized = true;

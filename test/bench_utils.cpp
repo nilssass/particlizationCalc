@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <stdlib.h>
 #include "../src/utils.h"
-#include "../src/engine.h"
 #include "../src/geometry.h"
 
 const std::string PATH = "./input/beta.dat";

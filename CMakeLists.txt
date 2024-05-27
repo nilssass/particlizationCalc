@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(particilizationcalc)
 
-# set(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++)
-# set(CMAKE_LD_COMPILER /opt/homebrew/Cellar/llvm/18.1.5/bin/clang++)
-
-# GoogleTest requires at least C++17
 set(CMAKE_CXX_STANDARD 17)  
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Rlease)
 
 # Add debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
@@ -50,7 +47,6 @@ gtest_discover_tests(test_utils)
 add_executable(
     test_cells
     test/test_cells.cpp 
-    test/ibjorken.cpp
     src/utils.cpp   
     src/geometry.cpp
     src/fcell.cpp
@@ -62,6 +58,23 @@ target_link_libraries(
 )
 include(GoogleTest)
 gtest_discover_tests(test_cells)
+
+#
+
+add_executable(
+    test_bjorken
+    test/test_bjorken.cpp 
+    test/ibjorken.cpp
+    src/utils.cpp   
+    src/geometry.cpp
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_bjorken
+    GTest::gtest_main
+)
+include(GoogleTest)
+gtest_discover_tests(test_bjorken)
 
 
 add_executable(
@@ -82,7 +95,7 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(test_engine_design)
 
-Check if OpenMP is found
+#Check if OpenMP is found
 if(OpenMP_CXX_FOUND)
     # If OpenMP is found, add the OpenMP flags to the compiler options
     target_compile_options(test_engine_design PUBLIC ${OpenMP_CXX_FLAGS})
@@ -100,17 +113,24 @@ add_executable(
 )
 target_link_libraries(bench_utils benchmark::benchmark)
 
-# add_executable(
-#     bench_cells
-#     test/bench_cells.cpp
-#     src/utils.cpp
-#     src/geometry.cpp
-#     src/fcell.cpp
-#     src/element.cpp
-#     src/surface.cpp
-#     src/t_surface.cpp
-# )
-# target_link_libraries(bench_cells benchmark::benchmark)
+add_executable(
+    bench_cells
+    test/bench_cells.cpp
+    src/utils.cpp
+    src/geometry.cpp
+    src/fcell.cpp
+    src/element.cpp
+    src/surface.cpp
+    src/t_surface.cpp
+)
+target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
+
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_cells PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 
 # Add the main executable target

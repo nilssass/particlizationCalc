@@ -377,7 +377,7 @@ namespace hydro
         }
     }
     template <typename C, typename V, typename T>
-    class It_analytical_sol
+    class I_solution
     {
     public:
         virtual void populate() = 0;
@@ -388,11 +388,19 @@ namespace hydro
         virtual T exp_f_vorticity_ll(const C &) const = 0;
         virtual T exp_th_vorticity_ll(const C &) const = 0;
         virtual T exp_th_shear_ll(const C &) const = 0;
+        virtual T exp_gradu_ll(const C &) const = 0;
+        virtual T exp_delta_ll(const C &) const = 0;
+        virtual T exp_delta_ul(const C &) const = 0;
+        virtual T exp_delta_uu(const C &) const = 0;
         virtual double exp_theta(const C &) const = 0;
         virtual double exp_b_theta(const C &) const = 0;
         virtual int count() const = 0;
+        virtual hydro::hypersurface<C> data() const = 0;
+        virtual ~I_solution() {}
 
     protected:
+
+        virtual C solve(const C& prim) = 0;
         static_assert(is_template_base_of<I_cell, C>::value,
                       "C class in surface_stat must be derived from Icell<V,T>");
     };

@@ -478,19 +478,6 @@ double utils::dot_tltl(r2_tensor t1_ll, r2_tensor t2_ll)
     return pr;
 }
 
-double utils::trace_ll(r2_tensor tensor)
-{
-    double tr = 0;
-    for (size_t i = 0; i < 4; i++)
-    {
-        for (size_t j = 0; j < 4; j++)
-        {
-            tr += utils::gmunu[i][j] * tensor[i][j];
-        }
-    }
-    return tr;
-}
-
 int utils::g(int mu, int nu)
 {
     if (mu > 3 || mu < 0 || nu > 3 || nu < 0)

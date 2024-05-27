@@ -80,7 +80,7 @@ namespace hydro
         double mub() const { return _mub; }
         double mus() const { return _mus; }
         utils::geometry::four_vector milne_coords() const override { return utils::geometry::four_vector({_tau, _x, _y, _eta}, false); }
-        utils::geometry::four_vector thermodynamics() const override { return utils::geometry::four_vector({_T, _mub, _muq, _mus}); }
+        utils::geometry::four_vector thermodynamics() const override { return utils::geometry::four_vector({_T, _mub, _muq, _mus}, false); }
         utils::geometry::four_vector mink_coords() const { return utils::geometry::four_vector({t(), _x, _y, z()}, false); }
         utils::r2_tensor du_ll() const override { return _du; }
         utils::r2_tensor dbeta_ll() const override { return _dbeta; }
@@ -103,7 +103,7 @@ namespace hydro
         utils::r2_tensor delta_ll();
         utils::r2_tensor delta_uu();
         utils::r2_tensor delta_ul();
-
+        utils::r2_tensor gradu_ll();
         double gradu_ll(int mu, int nu);
         /// @brief Rank-4 project with mu and nu up, a and b down
         /// @param mu
@@ -211,7 +211,7 @@ namespace hydro
         std::unique_ptr<double> _acc_norm;
     };
 
-    class I_analytical_sol : public It_analytical_sol<fcell, utils::geometry::four_vector, utils::r2_tensor>
+    class I_analytical_sol : public I_solution<fcell, utils::geometry::four_vector, utils::r2_tensor>
     {
     public:
         I_analytical_sol() {}

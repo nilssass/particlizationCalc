@@ -4,44 +4,52 @@
 #pragma once
 namespace hydro
 {
-    typedef std::shared_ptr<I_analytical_sol> (*solution_creator)(void);
+
+    template <typename C, typename V, typename T>
     class solution_factory
     {
-    private:
-        solution_factory() {}
-        solution_factory(const solution_factory &rs) {}
-        solution_factory &operator=(const solution_factory &rs)
-        {
-            return *this;
-        }
-        typedef std::map<std::string, solution_creator> factory_map;
-        factory_map _factory_map;
-
     public:
-        ~solution_factory() { _factory_map.clear(); }
-        void register_solution(const std::string &name, solution_creator creator)
+        using solution_creator = std::function<std::unique_ptr<I_solution<C, V, T>>()>;
+        std::unique_ptr<I_solution<C, V, T>> create(const std::string &name)
         {
-            _factory_map[name] = creator;
-        }
-        std::shared_ptr<I_analytical_sol> create(const std::string &name)
-        {
-            factory_map::iterator it = _factory_map.find(name);
-            if (it != _factory_map.end())
+            const auto &it = _map.find(name);
+            if (it != _map.end())
             {
                 return it->second();
             }
-
-            return nullptr;
+            else
+            {
+                throw std::runtime_error("Solution not found!");
+            }
         }
-
-        static std::shared_ptr<solution_factory> &get_factory()
+        void regsiter_solution(const std::string &name, solution_creator creator)
         {
-            static std::shared_ptr<solution_factory> _factory_instance = nullptr;
-            if (!_factory_instance)
-                _factory_instance.reset(new solution_factory());
-            return _factory_instance;
+            _map[name] = std::move(creator);
         }
+        static std::shared_ptr<solution_factory<C, V, T>> &factory()
+        {
+            std::call_once(
+                only_one,
+                []()
+                {
+                    solution_factory<C, V, T>::_factory_instance.reset(new solution_factory());
+                });
+            return solution_factory<C, V, T>::_factory_instance;
+        }
+        ~solution_factory() { _map.clear(); }
+
+    private:
+        solution_factory() {}
+        solution_factory(const solution_factory<C, V, T> &rs) = delete;
+        solution_factory &operator=(const solution_factory<C, V, T> &rs) = delete;
+        std::unordered_map<std::string, solution_creator> _map;
+        static std::once_flag only_one;
+        static std::shared_ptr<solution_factory<C, V, T>> _factory_instance;
     };
+    template <typename C, typename V, typename T>
+    std::shared_ptr<solution_factory<C, V, T>> solution_factory<C, V, T>::_factory_instance = nullptr;
+    template <typename C, typename V, typename T>
+    std::once_flag solution_factory<C, V, T>::only_one;
 }
 
 namespace powerhouse
@@ -51,11 +59,11 @@ namespace powerhouse
     {
     public:
         using calculator_creator = std::function<std::unique_ptr<I_calculator<C>>()>;
-        std::unique_ptr<I_calculator<C>> create_calculator(const utils::program_options &options)
+        std::unique_ptr<I_calculator<C>> create(const utils::program_options &options)
         {
             calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
 
-            const auto& it = _map.find(key);
+            const auto &it = _map.find(key);
             if (it != _map.end())
             {
                 return it->second();
@@ -83,14 +91,14 @@ namespace powerhouse
                 });
             return calculator_factory<C>::_factory_instance;
         }
-        static std::once_flag only_one;
-        static std::shared_ptr<calculator_factory<C>> _factory_instance;
 
     private:
         calculator_factory() {}
         calculator_factory(const calculator_factory<C> &rs) = delete;
         calculator_factory &operator=(const calculator_factory<C> &rs) = delete;
         std::unordered_map<calculator_key, calculator_creator> _map;
+        static std::once_flag only_one;
+        static std::shared_ptr<calculator_factory<C>> _factory_instance;
     };
     template <typename C>
     std::shared_ptr<calculator_factory<C>> calculator_factory<C>::_factory_instance = nullptr;
