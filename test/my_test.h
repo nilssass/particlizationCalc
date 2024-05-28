@@ -12,10 +12,11 @@ class my_test : public testing::Test
 {
 
 protected:
-    const double abs_error = 1e-6;
+    const static double abs_error;
 
     const std::string PATH = "./input/beta.dat";
-    const std::string BJORKEN = "./bjorken.dat";
+    const std::string BJORKEN = "./input/bjorken.dat";
+    const std::string RIGID_CYL = "./input/rigid.dat";
     void EXPECT_ARRAY_EQ(utils::four_vec x, utils::four_vec y, std::string msg = "")
     {
         ASSERT_EQ(x.size(), y.size()) << "Vectors x and y are of unequal length" << msg;
@@ -26,13 +27,13 @@ protected:
         }
     }
 
-    void EXPECT_ARRAY_NEAR(utils::four_vec x, utils::four_vec y, std::string msg = "")
+    void EXPECT_ARRAY_NEAR(utils::four_vec x, utils::four_vec y, std::string msg = "", double tolerance = abs_error)
     {
         ASSERT_EQ(x.size(), y.size()) << "Vectors x and y are of unequal length" << msg;
 
         for (int i = 0; i < x.size(); ++i)
         {
-            EXPECT_NEAR(x[i], y[i], abs_error) << "Vectors x and y differ at index " << i << msg;
+            EXPECT_NEAR(x[i], y[i], tolerance) << "Vectors x and y differ at index " << i << msg;
         }
     }
 
@@ -48,17 +49,29 @@ protected:
             }
         }
     }
-    void EXPECT_ARRAY_NEAR_SYMMETRIC(utils::r2_tensor x, std::string msg = "")
+    void EXPECT_ARRAY_NEAR_SYMMETRIC(utils::r2_tensor x, std::string msg = "", double tolerance = abs_error)
     {
-        EXPECT_ARRAY_NEAR(x, x, msg);
+        for (int i = 0; i < 4; ++i)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                EXPECT_NEAR(x[i][j] - x[j][i], 0, tolerance) << " index [" << i << ',' << j << "]" << msg;
+            }
+        }
     }
 
-    void EXPECT_ARRAY_NEAR_ANTISYMMETRIC(utils::r2_tensor x, std::string msg = "")
+    void EXPECT_ARRAY_NEAR_ANTISYMMETRIC(utils::r2_tensor x, std::string msg = "", double tolerance = abs_error)
     {
-        EXPECT_ARRAY_NEAR(x, utils::s_product(x, -1.), msg);
+        for (int i = 0; i < 4; ++i)
+        {
+            for (size_t j = 0; j < 4; j++)
+            {
+                EXPECT_NEAR(x[i][j] + x[j][i], 0, tolerance) << " index [" << i << ',' << j << "]" << msg;
+            }
+        }
     }
 
-    void EXPECT_ARRAY_NEAR(utils::r2_tensor x, utils::r2_tensor y, std::string msg = "")
+    void EXPECT_ARRAY_NEAR(utils::r2_tensor x, utils::r2_tensor y, std::string msg = "", double tolerance = abs_error)
     {
         ASSERT_EQ(x.size(), y.size()) << "Tensors x and y are of unequal length" << msg;
 
@@ -66,7 +79,7 @@ protected:
         {
             for (size_t j = 0; j < 4; j++)
             {
-                EXPECT_NEAR(x[i][j], y[i][j], abs_error) << "Tensors x and y differ at index [" << i << ',' << j << "]" << msg;
+                EXPECT_NEAR(x[i][j], y[i][j], tolerance) << "Tensors x and y differ at index [" << i << ',' << j << "]" << msg;
             }
         }
     }
@@ -126,5 +139,7 @@ protected:
         return _surface;
     }
 };
+
+const double my_test::abs_error = 1e-6;
 
 #endif

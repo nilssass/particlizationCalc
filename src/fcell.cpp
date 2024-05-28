@@ -92,10 +92,7 @@ utils::r2_tensor hydro::fcell::delta_ul()
         {
             for (size_t j = 0; j < 4; j++)
             {
-                for (size_t k = 0; k < 4; k++)
-                {
-                    _[i][j] += delta_ll()[i][k] * utils::g(k, j);
-                }
+                _[i][j] = utils::kr_delta(i,j) - _u[i] * ( j == 0 ? _u[j] : -_u[j]);
             }
         }
         // const auto &u0 = _u[0];
@@ -133,7 +130,7 @@ utils::r2_tensor hydro::fcell::gradu_ll()
                 _[i][j] = 0;
                 for (size_t rho = 0; rho < 4; rho++)
                 {
-                    _[i][j] += delta_ul()[i][rho] * _du[rho][j];
+                    _[i][j] += delta_ul()[rho][i] * _du[j][rho];
                 }
             }
         }
@@ -353,16 +350,16 @@ void hydro::fcell::calculate_th_shear()
 
 void hydro::fcell::calculte_ac()
 {
-    ug::four_vector _(false);
+    ug::four_vector _(true);
     for (size_t i = 0; i < 4; i++)
     {
         _[i] = 0;
         for (size_t j = 0; j < 4; j++)
         {
-            _[i] += _u[j] * _du[j][i] * utils::gmumu[i];
+            _[i] += _u[j] * _du[i][j];
         }
     }
-    _acc = std::make_unique<ug::four_vector>(_);
+    _acc = std::make_unique<ug::four_vector>(_.to_upper());
 }
 
 std::istream &hydro::operator>>(std::istream &stream, fcell &cell)

@@ -3,8 +3,8 @@ project(particilizationcalc)
 
 set(CMAKE_CXX_STANDARD 17)  
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_BUILD_TYPE Rlease)
+set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Rlease)
 
 # Add debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
@@ -76,6 +76,24 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(test_bjorken)
 
+#
+
+add_executable(
+    test_rigid
+    test/test_rigid.cpp 
+    test/rigidcylinder.cpp
+    src/utils.cpp   
+    src/geometry.cpp
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_rigid
+    GTest::gtest_main
+)
+include(GoogleTest)
+gtest_discover_tests(test_rigid)
+
+#
 
 add_executable(
     test_engine_design

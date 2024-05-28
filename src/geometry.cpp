@@ -60,6 +60,20 @@ double ug::four_vector::operator*(const ug::four_vector &vec2)
     return res;
 }
 
+utils::geometry::four_vector utils::geometry::four_vector::operator*(const r2_tensor &tensor)
+{
+    const auto &v = this->to_upper().vec();
+    double res[4] = {0};
+    for (size_t i = 0; i < 4; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            res[i] += v[j]*tensor[j][i];
+        }
+    }
+    return four_vector(res, 4, true);
+}
+
 bool ug::four_vector::operator==(const ug::four_vector &other) const
 {
     auto res = _lower == other._lower;

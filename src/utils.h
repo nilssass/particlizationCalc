@@ -107,6 +107,11 @@ namespace utils
         return a > 0 ? 1.0 : -1.0;
     }
 
+    constexpr double kr_delta(int i, int j)
+    {
+        return (i==j) ? 1 : 0;
+    }
+
     const double Gevtofm = 5.067728853;
     const double hbarC = 1. / 5.067728853; //=0.197 Gev*fm
     const double PI = std::acos(-1);

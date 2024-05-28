@@ -62,6 +62,7 @@ namespace utils::geometry
         }
         four_vector &operator-=(const four_vector &rhs);
         double operator*(const four_vector &vec2);
+        four_vector operator*(const r2_tensor &tensor);
         four_vector operator*(const double &x) { return four_vector({x * _data[0], x * _data[1], x * _data[2], x * _data[3]}, _lower); }
         bool operator==(const four_vector &other) const;
         /// @brief Outer product

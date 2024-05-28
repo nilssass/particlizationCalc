@@ -166,7 +166,67 @@ namespace
                                   cell.thermal_shear_ll(), "-thermal_shear_ll");
 
                 EXPECT_ARRAY_NEAR(bjorken->exp_shear_ll(cell),
-                                cell.shear_ll(), "-shear_ll");
+                                  cell.shear_ll(), "-shear_ll");
+            }
+            batch_start += batch_size;
+        }
+    }
+    TEST_F(BjorkenTest, NilsShearAgBjorken)
+    {
+        auto nils_shear = [](hydro::fcell &cell, const int &mu, const int &nu)
+        {
+            const auto &u = cell.four_vel().to_lower().to_array();
+            const double u_[4] = {u[0], -u[1], -u[2], -u[3]};
+            const auto &dmuCart = cell.du_ll();
+            double term_3 = 0., term_4 = 0., term_5 = 0., term_6 = 0., term_7 = 0., term_10 = 0., term_11 = 0.;
+
+            for (int alpha = 0; alpha < 4; alpha++)
+            {
+                term_3 += u[mu] * u_[alpha] * dmuCart[alpha][nu];
+                term_4 += u[nu] * u_[alpha] * dmuCart[mu][alpha];
+                term_5 += u[mu] * u_[alpha] * dmuCart[nu][alpha];
+                term_6 += u[nu] * u_[alpha] * dmuCart[alpha][mu];
+                term_10 += utils::gmumu[alpha] * dmuCart[alpha][alpha];
+                for (int beta = 0; beta < 4; beta++)
+                {
+                    term_7 += 2. * u[mu] * u[nu] * u_[alpha] * u_[beta] * dmuCart[alpha][beta];
+                    term_11 += u_[alpha] * u_[beta] * dmuCart[alpha][beta];
+                }
+            }
+
+            const double shear = 0.5 * (dmuCart[mu][nu] + dmuCart[nu][mu] - term_3 - term_4 - term_5 - term_6 + term_7) - (1. / 3.) * (utils::gmunu[mu][nu] - u[mu] * u[nu]) * (term_10 - term_11);
+
+            return shear;
+        };
+        auto nils_shear_tensor = [&nils_shear](hydro::fcell& cell)
+        {
+            utils::r2_tensor _ = {0};
+            for (size_t i = 0; i < 4; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                {
+                    _[i][j] = nils_shear(cell, i, j);
+                }
+            }
+            return _;
+        };
+
+        int lines;
+        auto bjorken = factory->create(ibjorken::get_name());
+        bjorken->populate();
+        auto surface = bjorken->data();
+
+        const int batch_size = 100;
+        int batch_start = 0;
+        while (batch_start < surface.total())
+        {
+            int batch_end = std::min(batch_start + batch_size, static_cast<int>(surface.total()));
+            for (int i = batch_start; i < batch_end; i++)
+            {
+                auto &cell = surface.data()[i];
+
+                EXPECT_ARRAY_NEAR(bjorken->exp_shear_ll(cell),
+                                  nils_shear_tensor(cell), "-shear_ll (nils)");
             }
             batch_start += batch_size;
         }

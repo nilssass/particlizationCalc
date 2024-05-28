@@ -86,8 +86,8 @@ utils::r2_tensor ibjorken::exp_delta_ul(const hydro::fcell &cell) const
     const auto &tau = cell.tau();
     utils::r2_tensor delta = {0};
     delta[0][0] = -sh * sh;
-    delta[0][3] = -ch * sh;
-    delta[3][0] = ch * sh;
+    delta[0][3] = ch * sh;
+    delta[3][0] = -ch * sh;
     delta[1][1] = delta[2][2] = 1;
     delta[3][3] = ch * ch;
     return delta;
