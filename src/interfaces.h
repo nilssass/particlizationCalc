@@ -12,7 +12,7 @@
 #endif
 #include <limits>
 #pragma once
-
+// Template metaprogramming utility
 template <template <typename...> class C, typename... Ts>
 std::true_type is_template_base_of_impl(const C<Ts...> *);
 
@@ -24,12 +24,19 @@ using is_template_base_of = decltype(is_template_base_of_impl<C>(std::declval<T 
 
 namespace hydro
 {
+    /// @brief  Interface for a hypersurface cell
+    /// @tparam V the four-vector type
+    /// @tparam T the rank-2 tensor type
     template <typename V, typename T>
     class I_cell
     {
     public:
         virtual V milne_coords() const = 0;
+        /// @brief Cell's thermodynamics in the form (T, \mu_B, \mu_Q, \mu_S)
+        /// @return  
         virtual V thermodynamics() const = 0;
+        /// @brief \partial_\mu u_\nu 
+        /// @return  
         virtual T du_ll() const = 0;
         virtual T dbeta_ll() const = 0;
         virtual V four_vel() const = 0;
@@ -49,11 +56,15 @@ namespace hydro
         virtual double tvort_norm() = 0;
         virtual double tshear_norm() = 0;
         virtual double acc_norm() = 0;
+        /// @brief scalar product of the four velocity and the surface vector
+        /// @return 
         virtual double u_dot_n() = 0;
         virtual std::ostream &write_info(std::ostream &osm, const char delim) = 0;
         virtual std::ostream &write_back(std::ostream &os, const char delim) = 0;
         virtual ~I_cell() {}
     };
+    /// @brief This struct holds statistical data about the surface
+    /// @tparam the cell's type
     template <typename C>
     struct surface_stat
     {
@@ -82,7 +93,8 @@ namespace hydro
         static_assert(is_template_base_of<I_cell, C>::value,
                       "C class in surface_stat must be derived from Icell<V,T>");
     };
-
+    /// @brief A wrapper for the surface
+    /// @tparam C the cell's type
     template <typename C>
     class hypersurface
     {
@@ -96,6 +108,9 @@ namespace hydro
 
         C operator[](size_t i) const { return _cells[i]; }
         C &operator[](size_t i) { return _cells[i]; }
+        /// @brief reads the surface data from a file, uses parallelization if the code is compiled with OpenMP
+        /// @param i_file input file
+        /// @param mode 
         virtual void read(const std::string &i_file, utils::accept_modes mode);
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
@@ -229,7 +244,6 @@ namespace hydro
                     if (iss.fail())
                     {
                         local_failed++;
-                        // std::cerr << "I cannot read line " << local_file.tellg() << " in thread " << tid << "!" << std::endl;
 #ifdef _OPENMP
 #pragma omp critical
 #endif
@@ -376,23 +390,66 @@ namespace hydro
             _total++;
         }
     }
+
+    
+    /// @brief This interface defines methods for populating and processing hydrodynamic solutions
+    /// @tparam C the cell's type
+    /// @tparam V the four-vector's type
+    /// @tparam T the rank-2 tensor's type
     template <typename C, typename V, typename T>
     class I_solution
     {
     public:
+        /// @brief generate and store the hypersuface
         virtual void populate() = 0;
         virtual void write(std::ostream &output) = 0;
+        /// @brief expected acceleration
+        /// @param  
+        /// @return 
         virtual V exp_acc_u(const C &) const = 0;
+        /// @brief expected shear tensor
+        /// @param  
+        /// @return 
         virtual T exp_shear_ll(const C &) const = 0;
+        /// @brief expected fluid vorticity vector
+        /// @param  
+        /// @return 
         virtual V exp_f_vorticity_u(const C &) const = 0;
+        /// @brief expected fluid voritcity tensor
+        /// @param  
+        /// @return 
         virtual T exp_f_vorticity_ll(const C &) const = 0;
+        /// @brief expected thermal vorticity
+        /// @param  
+        /// @return 
         virtual T exp_th_vorticity_ll(const C &) const = 0;
+        /// @brief expected thermal shear
+        /// @param  
+        /// @return 
         virtual T exp_th_shear_ll(const C &) const = 0;
+        /// @brief expected projected gradient of u
+        /// @param  
+        /// @return 
         virtual T exp_gradu_ll(const C &) const = 0;
+        /// @brief expected projected with two lower indices
+        /// @param  
+        /// @return 
         virtual T exp_delta_ll(const C &) const = 0;
+        /// @brief expected projected with an up and a lower indices
+        /// @param  
+        /// @return 
         virtual T exp_delta_ul(const C &) const = 0;
+        /// @brief expected projected with two upper indices
+        /// @param  
+        /// @return 
         virtual T exp_delta_uu(const C &) const = 0;
+        /// @brief expected expansion scalar (divergence of u)
+        /// @param  
+        /// @return 
         virtual double exp_theta(const C &) const = 0;
+        /// @brief expected divergence of beta vector
+        /// @param  
+        /// @return 
         virtual double exp_b_theta(const C &) const = 0;
         virtual int count() const = 0;
         virtual hydro::hypersurface<C> data() const = 0;
@@ -407,11 +464,15 @@ namespace hydro
 }
 namespace powerhouse
 {
+    /// @brief Generic calculation output
+    /// @tparam C the cell's type
     template <typename C>
     struct I_output
     {
         virtual ~I_output() {}
     };
+    /// @brief Surface examination ouptput
+    /// @tparam C the cell's type
     template <typename C>
     struct exam_output : public I_output<C>
     {
@@ -493,34 +554,58 @@ namespace powerhouse
             return *this;
         }
     };
+    
+    /// @brief Polarization caclulation output
+    /// @tparam C the cell's type
     template <typename C>
     struct polarization_output : public I_output<C>
     {
         /* data */
     };
+    
+    /// @brief Yield calculation output
+    /// @tparam C the cell's type
     template <typename C>
     struct yield_output : public I_output<C>
     {
         /* data */
     };
+    /// @brief Interface for calculation
+    /// @tparam C 
     template <typename C>
     class I_calculator
     {
     public:
+        /// @brief The main calculation in a single iteration
+        /// @param cell cell
+        /// @param previous_step the output from the previous step
+        /// @return the output from this step
         virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
+        /// @brief happens before entering the loop
+        /// @param t_count the number of steps
         virtual void prepare(const size_t &t_count) = 0;
+        /// @brief happens before perform_step in each iteration
         virtual void pre_step() = 0;
+        /// @brief happens after perform_step (Polarization/Yield) or the whole iteration (Examine)
+        /// @param output the current or final output
         virtual void process_output(powerhouse::I_output<C> *output) = 0;
+        /// @brief happens before writing the results
+        /// @param os 
         virtual void pre_write(std::ostream &os) = 0;
+        /// @brief writes the results to output
+        /// @param os 
+        /// @param cell 
+        /// @param final_output 
         virtual void write(std::ostream &os, C *cell, powerhouse::I_output<C> *final_output) = 0;
         virtual ~I_calculator() {}
     };
-
+    /// @brief interface for a particle
     class I_particle
     {
     public:
         virtual ~I_particle() = 0;
         virtual double mass() = 0;
+        virtual std::string name() = 0;
         virtual int pdg_id() = 0;
         virtual double Q() = 0;
         virtual double B() = 0;
@@ -528,7 +613,7 @@ namespace powerhouse
         virtual float spin() = 0;
         virtual bool isparticle() = 0;
     };
-
+    /// @brief Unique key for calculators
     struct calculator_key
     {
         utils::program_modes program_mode;
@@ -549,6 +634,7 @@ namespace powerhouse
 }
 namespace std
 {
+    /// @brief A specialization of the std::hash template for calculator_key to allow its use in hash-based containers like std::unordered_map.
     template <>
     struct hash<powerhouse::calculator_key>
     {

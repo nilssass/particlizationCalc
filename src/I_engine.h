@@ -9,12 +9,15 @@
 #include <mutex>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #pragma once
 /*
     The engine is a singlton factory that takes care of the calculations.
 */
 namespace powerhouse
 {
+    /// @brief A singlton factory that takes care of the calculations.
+    /// @tparam C
     template <typename C>
     class I_engine
     {
@@ -41,17 +44,6 @@ namespace powerhouse
         utils::program_options settings() const { return _settings; }
         hydro::hypersurface<C> in_data() const { return _hypersurface; }
 
-        // void init(hydro::hypersurface<C> &t_hypersurface,
-        //           I_particle *t_particle_house,
-        //           int t_particle_id,
-        //           I_calculator<C> *t_calculator,
-        //           size_t t_size_pt = powerhouse::DEFAULT_SIZE_PT,
-        //           size_t t_size_phi = powerhouse::DEFAULT_SIZE_PHI,
-        //           size_t t_size_y = powerhouse::DEFAULT_SIZE_Y,
-        //           double t_y_min = powerhouse::DEFAULT_Y_MIN,
-        //           double t_y_max = powerhouse::DEFAULT_Y_MAX,
-        //           double t_pt_max = powerhouse::DEFAULT_PT_MAX);
-
         void init(hydro::hypersurface<C> &t_hypersurface,
                   I_particle *t_particle_house,
                   int t_particle_id,
@@ -62,8 +54,6 @@ namespace powerhouse
                   double t_y_max = powerhouse::DEFAULT_Y_MAX,
                   double t_pt_max = powerhouse::DEFAULT_PT_MAX);
 
-        // void init(hydro::hypersurface<C> &t_hypersurface,
-        //           I_calculator<C> *t_calculator);
         void init(hydro::hypersurface<C> &t_hypersurface);
         void reset(utils::program_options settings)
         {
@@ -179,17 +169,7 @@ namespace powerhouse
             _factory = calculator_factory<C>::factory();
         }
         I_engine(const I_engine &other) = delete;
-        // {
-        //     _engine = other._engine;
-        // }
         I_engine &operator=(const I_engine &other) = delete;
-        // {
-        //     if (this != &other)
-        //     {
-        //         _engine = other._engine;
-        //     }
-        //     return *this;
-        // }
 
         static std::shared_ptr<I_engine<C>> _engine;
         static std::once_flag only_one;
@@ -200,50 +180,6 @@ namespace powerhouse
     std::once_flag I_engine<C>::only_one;
     template <typename C>
     std::shared_ptr<I_engine<C>> I_engine<C>::_engine = nullptr;
-
-    // template <typename C>
-    // inline void I_engine<C>::init(hydro::hypersurface<C> &t_hypersurface,
-    //                               I_particle *t_particle_house, int t_particle_id,
-    //                               I_calculator<C> *t_calculator,
-    //                               size_t t_size_pt, size_t t_size_phi, size_t t_size_y, double t_y_min, double t_y_max, double t_pt_max)
-    // {
-    //     if (_initialized)
-    //         return;
-    //     assert(_settings.program_mode != utils::program_modes::Help && _settings.program_mode != utils::program_modes::Invalid);
-    //     _hypersurface = t_hypersurface;
-    //     _particle_id = t_particle_id;
-    //     _size_pt = t_size_pt;
-    //     _size_y = t_size_y;
-    //     _size_phi = t_size_phi;
-    //     _y_min = t_y_min;
-    //     _y_max = t_y_max;
-    //     _pt_max = t_pt_max;
-    //     assert(_settings.program_mode == utils::program_modes::Examine || t_particle_house);
-
-    //     if (!_particle_house)
-    //     {
-    //         std::lock_guard lock(_mutex);
-    //         _particle_house.reset(t_particle_house);
-    //     }
-    //     if (!_calculator)
-    //     {
-    //         std::lock_guard lock(_mutex);
-    //         _calculator.reset(t_calculator);
-    //     }
-
-    //     if (!_calculator)
-    //     {
-    //         throw std::runtime_error("Calculator is not initialized!");
-    //     }
-
-    //     if (_settings.program_mode != utils::program_modes::Examine)
-    //     {
-    //         _pT = utils::linspace(0, _pt_max, _size_pt);
-    //         _phi = utils::linspace(0, 2 * M_PI, _size_phi);
-    //         _y_rap = utils::linspace(_y_min, _y_max, _size_y);
-    //     }
-    //     _initialized = true;
-    // }
 
     template <typename C>
     inline void I_engine<C>::init(hydro::hypersurface<C> &t_hypersurface,
@@ -417,12 +353,65 @@ namespace powerhouse
     inline void I_engine<C>::write_examin()
     {
         std::ofstream output(_settings.out_file);
-        calculator()->pre_write(output);
-        for (auto &cell : _hypersurface.data())
+        if (!output.is_open())
         {
-            calculator()->write(output, &cell, nullptr);
+            throw std::runtime_error("Error opening output file");
         }
-        output.close();
+        const auto &count = _hypersurface.total();
+        int lastperc = -1;
+        calculator()->pre_write(output);
+#ifdef _OPENMP
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+#pragma omp parallel for
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            int tid = omp_get_thread_num();
+            auto &cell = _hypersurface[counter];
+            calculator()->write(buffer[tid], &cell, nullptr);
+#pragma omp critical
+            {
+                int perc = 100 * ((double)counter) / ((double)count) + 1;
+                if (perc > lastperc)
+                {
+                    lastperc = perc;
+                    utils::show_progress(perc > 100 ? 100 : perc);
+                }
+            }
+        }
+
+        lastperc = -1;
+        int counter = 0;
+        for (auto &oss : buffer)
+        {
+            std::string line = oss.str();
+            #pragma omp critical
+            {
+                output << line;
+                // counter ++;
+                // int perc = 100 * ((double)counter) / ((double)count) + 1;
+                // if (perc > lastperc)
+                // {
+                //     lastperc = perc;
+                //     utils::show_progress(perc > 100 ? 100 : perc);
+                // }
+            }
+        }
+        
+#else
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            auto &cell = _hypersurface[counter];
+            calculator()->write(output, &cell, nullptr);
+
+            int perc = 100 * ((double)counter) / ((double)count) + 1;
+            if (perc > lastperc)
+            {
+                lastperc = perc;
+                    utils::show_progress(perc > 100 : 100 ? perc);
+            }
+        }
+#endif
     }
     template <typename C>
     inline void I_engine<C>::write_polarization()

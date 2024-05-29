@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    573381,      15306]
-NotebookOptionsPosition[    546600,      14913]
-NotebookOutlinePosition[    547089,      14931]
-CellTagsIndexPosition[    547046,      14928]
+NotebookDataLength[    573306,      15301]
+NotebookOptionsPosition[    546526,      14908]
+NotebookOutlinePosition[    547015,      14926]
+CellTagsIndexPosition[    546972,      14923]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -12626,17 +12626,11 @@ Cell[CellGroupData[{
 Cell[BoxData[{
  RowBox[{
   RowBox[{"-", 
-   RowBox[{"Antisymmetrize", "[", 
-    RowBox[{
-     RowBox[{
-      RowBox[{"CD", "[", 
-       RowBox[{"-", "m"}], "]"}], "@", 
-      RowBox[{"beta", "[", 
-       RowBox[{"-", "n"}], "]"}]}], ",", 
-     RowBox[{"{", 
-      RowBox[{
-       RowBox[{"-", "m"}], ",", 
-       RowBox[{"-", "n"}]}], "}"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CD", "[", 
+     RowBox[{"-", "m"}], "]"}], "@", 
+    RowBox[{"beta", "[", 
+     RowBox[{"-", "n"}], "]"}]}]}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"CTensor", "[", 
    RowBox[{
@@ -12653,10 +12647,10 @@ Cell[BoxData[{
    RowBox[{"-", "m"}], ",", 
    RowBox[{"-", "n"}]}], "]"}]}], "Input",
  CellChangeTimes->{{3.92581837394551*^9, 3.9258184151459627`*^9}, {
-  3.925818534198556*^9, 3.925818539641067*^9}, {3.925907241669001*^9, 
-  3.925907247526085*^9}},
+   3.925818534198556*^9, 3.925818539641067*^9}, {3.925907241669001*^9, 
+   3.925907247526085*^9}, 3.92590746950744*^9},
  CellLabel->
-  "In[191]:=",ExpressionUUID->"03a2204d-32c9-474e-8b29-de5ac3dd8870"],
+  "In[195]:=",ExpressionUUID->"03a2204d-32c9-474e-8b29-de5ac3dd8870"],
 
 Cell[BoxData[
  TagBox[GridBox[{
@@ -12691,27 +12685,28 @@ Cell[BoxData[
                 Offset[0.2]}}],
            ShowAutoStyles->False,
            AutoSpacing->False],
-          $CellContext`T$15311[{1, -$CellContext`mnk}, {2, -$CellContext`mnk}],
+          $CellContext`T$15389[{1, -$CellContext`mnk}, {2, -$CellContext`mnk}],
           Editable->False]}
        },
        DefaultBaseStyle->"Column",
        GridBoxAlignment->{"Columns" -> {{Left}}},
        GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
       "Column"], 
-     FractionBox[
-      InterpretationBox[
-       StyleBox["\[CapitalOmega]",
-        ShowAutoStyles->False,
-        AutoSpacing->False],
-       $CellContext`om,
-       Editable->False], 
-      InterpretationBox[
-       StyleBox[
-        SubscriptBox["T", "0"],
-        ShowAutoStyles->False,
-        AutoSpacing->False],
-       $CellContext`T0,
-       Editable->False]]}
+     RowBox[{"-", 
+      FractionBox[
+       InterpretationBox[
+        StyleBox["\[CapitalOmega]",
+         ShowAutoStyles->False,
+         AutoSpacing->False],
+        $CellContext`om,
+        Editable->False], 
+       InterpretationBox[
+        StyleBox[
+         SubscriptBox["T", "0"],
+         ShowAutoStyles->False,
+         AutoSpacing->False],
+        $CellContext`T0,
+        Editable->False]]}]}
    },
    AutoDelete->False,
    GridBoxFrame->{"Columns" -> False, "Rows" -> {{True}}},
@@ -12719,9 +12714,9 @@ Cell[BoxData[
    GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{1}}}],
   "Grid"]], "Output",
  CellChangeTimes->{3.925818415586666*^9, 3.925818540114106*^9, 
-  3.925878862919869*^9, 3.925907247846386*^9},
+  3.925878862919869*^9, 3.925907247846386*^9, 3.925907470337281*^9},
  CellLabel->
-  "Out[193]=",ExpressionUUID->"c9bf176b-457d-4aee-a175-c11d933ea66c"],
+  "Out[197]=",ExpressionUUID->"b361ec5e-92c7-4ced-9e4f-a1441997b836"],
 
 Cell[BoxData[
  InterpretationBox[
@@ -12768,52 +12763,6 @@ Cell[BoxData[
            Annotation[#, {2, 2} -> 0, "Tooltip"]& ], 
           TagBox[
            TooltipBox[
-            FractionBox[
-             InterpretationBox[
-              StyleBox["\[CapitalOmega]",
-               ShowAutoStyles->False,
-               AutoSpacing->False],
-              $CellContext`om,
-              Editable->False], 
-             InterpretationBox[
-              StyleBox[
-               SubscriptBox["T", "0"],
-               ShowAutoStyles->False,
-               AutoSpacing->False],
-              $CellContext`T0,
-              Editable->False]],
-            RowBox[{
-              RowBox[{"{", 
-                RowBox[{"2", ",", "3"}], "}"}], "\[Rule]", 
-              FractionBox[
-               InterpretationBox[
-                StyleBox[
-                 RowBox[{"\[CapitalOmega]"}], AutoSpacing -> False, 
-                 ShowAutoStyles -> False], $CellContext`om, Editable -> 
-                False], 
-               InterpretationBox[
-                StyleBox[
-                 RowBox[{"\!\(\*SubscriptBox[\(T\), \(0\)]\)"}], AutoSpacing -> 
-                 False, ShowAutoStyles -> False], $CellContext`T0, Editable -> 
-                False]]}]],
-           
-           Annotation[#, {2, 3} -> $CellContext`om/$CellContext`T0, 
-            "Tooltip"]& ], 
-          TagBox[
-           TooltipBox["0",
-            RowBox[{
-              RowBox[{"{", 
-                RowBox[{"2", ",", "4"}], "}"}], "\[Rule]", "0"}]],
-           Annotation[#, {2, 4} -> 0, "Tooltip"]& ]},
-         {
-          TagBox[
-           TooltipBox["0",
-            RowBox[{
-              RowBox[{"{", 
-                RowBox[{"3", ",", "1"}], "}"}], "\[Rule]", "0"}]],
-           Annotation[#, {3, 1} -> 0, "Tooltip"]& ], 
-          TagBox[
-           TooltipBox[
             RowBox[{"-", 
              FractionBox[
               InterpretationBox[
@@ -12831,7 +12780,7 @@ Cell[BoxData[
                Editable->False]]}],
             RowBox[{
               RowBox[{"{", 
-                RowBox[{"3", ",", "2"}], "}"}], "\[Rule]", 
+                RowBox[{"2", ",", "3"}], "}"}], "\[Rule]", 
               RowBox[{"-", 
                 FractionBox[
                  InterpretationBox[
@@ -12845,7 +12794,53 @@ Cell[BoxData[
                    AutoSpacing -> False, ShowAutoStyles -> 
                    False], $CellContext`T0, Editable -> False]]}]}]],
            
-           Annotation[#, {3, 2} -> -$CellContext`om/$CellContext`T0, 
+           Annotation[#, {2, 3} -> -$CellContext`om/$CellContext`T0, 
+            "Tooltip"]& ], 
+          TagBox[
+           TooltipBox["0",
+            RowBox[{
+              RowBox[{"{", 
+                RowBox[{"2", ",", "4"}], "}"}], "\[Rule]", "0"}]],
+           Annotation[#, {2, 4} -> 0, "Tooltip"]& ]},
+         {
+          TagBox[
+           TooltipBox["0",
+            RowBox[{
+              RowBox[{"{", 
+                RowBox[{"3", ",", "1"}], "}"}], "\[Rule]", "0"}]],
+           Annotation[#, {3, 1} -> 0, "Tooltip"]& ], 
+          TagBox[
+           TooltipBox[
+            FractionBox[
+             InterpretationBox[
+              StyleBox["\[CapitalOmega]",
+               ShowAutoStyles->False,
+               AutoSpacing->False],
+              $CellContext`om,
+              Editable->False], 
+             InterpretationBox[
+              StyleBox[
+               SubscriptBox["T", "0"],
+               ShowAutoStyles->False,
+               AutoSpacing->False],
+              $CellContext`T0,
+              Editable->False]],
+            RowBox[{
+              RowBox[{"{", 
+                RowBox[{"3", ",", "2"}], "}"}], "\[Rule]", 
+              FractionBox[
+               InterpretationBox[
+                StyleBox[
+                 RowBox[{"\[CapitalOmega]"}], AutoSpacing -> False, 
+                 ShowAutoStyles -> False], $CellContext`om, Editable -> 
+                False], 
+               InterpretationBox[
+                StyleBox[
+                 RowBox[{"\!\(\*SubscriptBox[\(T\), \(0\)]\)"}], AutoSpacing -> 
+                 False, ShowAutoStyles -> False], $CellContext`T0, Editable -> 
+                False]]}]],
+           
+           Annotation[#, {3, 2} -> $CellContext`om/$CellContext`T0, 
             "Tooltip"]& ], 
           TagBox[
            TooltipBox["0",
@@ -12912,15 +12907,15 @@ Cell[BoxData[
    ShowAutoStyles->False,
    AutoSpacing->False],
   xAct`xCoba`CTensor[{{0, 0, 0, 0}, {
-    0, 0, $CellContext`om/$CellContext`T0, 0}, {
-    0, -$CellContext`om/$CellContext`T0, 0, 0}, {0, 0, 0, 
+    0, 0, -$CellContext`om/$CellContext`T0, 0}, {
+    0, $CellContext`om/$CellContext`T0, 0, 0}, {0, 0, 0, 
     0}}, {-$CellContext`mnk, -$CellContext`mnk}, 
    0][-$CellContext`m, -$CellContext`n],
   Editable->False]], "Output",
  CellChangeTimes->{3.925818415586666*^9, 3.925818540114106*^9, 
-  3.925878862919869*^9, 3.925907247853036*^9},
+  3.925878862919869*^9, 3.925907247846386*^9, 3.925907470344081*^9},
  CellLabel->
-  "Out[194]=",ExpressionUUID->"88227c0c-2770-4bbc-9bc8-b8ef1e67764c"]
+  "Out[198]=",ExpressionUUID->"bf81bf6c-1dba-4278-a730-485d8cf05c58"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -15288,24 +15283,24 @@ Cell[460712, 12572, 722, 22, 52, "Input",ExpressionUUID->"62c75b4f-24a5-43d3-827
 Cell[461437, 12596, 880, 24, 94, "Output",ExpressionUUID->"80449c07-8d10-4e05-bb5a-225e55ab6fff"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[462354, 12625, 1088, 33, 94, "Input",ExpressionUUID->"03a2204d-32c9-474e-8b29-de5ac3dd8870"],
-Cell[463445, 12660, 2246, 63, 61, "Output",ExpressionUUID->"c9bf176b-457d-4aee-a175-c11d933ea66c"],
-Cell[465694, 12725, 7080, 197, 103, "Output",ExpressionUUID->"88227c0c-2770-4bbc-9bc8-b8ef1e67764c"]
+Cell[462354, 12625, 935, 27, 94, "Input",ExpressionUUID->"03a2204d-32c9-474e-8b29-de5ac3dd8870"],
+Cell[463292, 12654, 2303, 64, 61, "Output",ExpressionUUID->"b361ec5e-92c7-4ced-9e4f-a1441997b836"],
+Cell[465598, 12720, 7102, 197, 103, "Output",ExpressionUUID->"bf81bf6c-1dba-4278-a730-485d8cf05c58"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[472811, 12927, 943, 31, 115, "Input",ExpressionUUID->"b9a1c23b-eebf-48da-b656-586cf4e04700"],
-Cell[473757, 12960, 8376, 247, 157, "Output",ExpressionUUID->"91f8ecc6-3393-4d62-9245-31bc68c1e15c"],
-Cell[482136, 13209, 24432, 611, 143, "Output",ExpressionUUID->"787a683a-6255-4f70-b298-823085a19786"]
+Cell[472737, 12922, 943, 31, 115, "Input",ExpressionUUID->"b9a1c23b-eebf-48da-b656-586cf4e04700"],
+Cell[473683, 12955, 8376, 247, 157, "Output",ExpressionUUID->"91f8ecc6-3393-4d62-9245-31bc68c1e15c"],
+Cell[482062, 13204, 24432, 611, 143, "Output",ExpressionUUID->"787a683a-6255-4f70-b298-823085a19786"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[506605, 13825, 1177, 38, 115, "Input",ExpressionUUID->"80991141-b730-4f92-9206-4e6eb7cdaef6"],
-Cell[507785, 13865, 8402, 248, 157, "Output",ExpressionUUID->"682d636e-a914-4e96-af5e-f839809a0062"],
-Cell[516190, 14115, 24458, 612, 143, "Output",ExpressionUUID->"cf65248f-a115-4770-bf92-fbdbe36a9f14"]
+Cell[506531, 13820, 1177, 38, 115, "Input",ExpressionUUID->"80991141-b730-4f92-9206-4e6eb7cdaef6"],
+Cell[507711, 13860, 8402, 248, 157, "Output",ExpressionUUID->"682d636e-a914-4e96-af5e-f839809a0062"],
+Cell[516116, 14110, 24458, 612, 143, "Output",ExpressionUUID->"cf65248f-a115-4770-bf92-fbdbe36a9f14"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[540685, 14732, 1047, 32, 112, "Input",ExpressionUUID->"df275f9d-ccca-43ac-b134-9a3e45b893d9"],
-Cell[541735, 14766, 2452, 71, 61, "Output",ExpressionUUID->"e219d3c0-f826-4946-9970-f1c534369177"],
-Cell[544190, 14839, 2382, 70, 61, "Output",ExpressionUUID->"dbfd40a6-a9cb-43df-9957-fe6588b14984"]
+Cell[540611, 14727, 1047, 32, 112, "Input",ExpressionUUID->"df275f9d-ccca-43ac-b134-9a3e45b893d9"],
+Cell[541661, 14761, 2452, 71, 61, "Output",ExpressionUUID->"e219d3c0-f826-4946-9970-f1c534369177"],
+Cell[544116, 14834, 2382, 70, 61, "Output",ExpressionUUID->"dbfd40a6-a9cb-43df-9957-fe6588b14984"]
 }, Open  ]]
 }, Open  ]]
 }

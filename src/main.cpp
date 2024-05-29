@@ -48,6 +48,7 @@ int main(int argc, char **argv)
     engine->run();
     auto finish = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    engine->write();
     if (settings.verbose)
     {
         std::cout << std::endl

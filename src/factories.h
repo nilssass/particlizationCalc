@@ -4,7 +4,10 @@
 #pragma once
 namespace hydro
 {
-
+    /// @brief singleton factory that is used for registeration and creation of analytical solution
+    /// @tparam C the cell's type
+    /// @tparam V the four-vector's type
+    /// @tparam T the rank-2 tenosor's type
     template <typename C, typename V, typename T>
     class solution_factory
     {
@@ -54,6 +57,8 @@ namespace hydro
 
 namespace powerhouse
 {
+    /// @brief singleton factory that is used for registeration and creation of calculators
+    /// @tparam C the cell's type
     template <typename C>
     class calculator_factory
     {

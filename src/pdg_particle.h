@@ -4,7 +4,8 @@
 #pragma once
 // A modified version of Andrea's code
 #include <string>
-namespace utils
+#include "interfaces.h"
+namespace powerhouse
 {
     const std::string DATABASE = "pdg_database/baryons_mesons.dat";
 
@@ -13,7 +14,7 @@ namespace utils
         LAMBDA = 3122,
         PION = 211
     };
-    class pdg_particle
+    class pdg_particle : public I_particle
     {
     private:
         int _id;
@@ -38,15 +39,15 @@ namespace utils
             this->_s = other._s;
             this->_spin = other._spin;
         };
-        ~pdg_particle();
-        std::string name() { return _name; };
-        double mass() { return _mass; };
-        double pdg_id() { return _id; };
-        double Q() { return _q; };
-        double B() { return _b; };
-        double S() { return _s; };
-        float spin() { return _spin; };
-        bool isparticle() { return _particle; };
+        ~pdg_particle() override;
+        std::string name() override { return _name; };
+        double mass() override { return _mass; };
+        int pdg_id() override { return _id; };
+        double Q() override { return _q; };
+        double B() override { return _b; };
+        double S() override { return _s; };
+        float spin() override { return _spin; };
+        bool isparticle() override { return _particle; };
 
         friend std::istream &operator>>(std::istream &stream, pdg_particle &particle)
         {

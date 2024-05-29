@@ -210,30 +210,5 @@ namespace hydro
         std::unique_ptr<double> _tshear_norm;
         std::unique_ptr<double> _acc_norm;
     };
-
-    class I_analytical_sol : public I_solution<fcell, utils::geometry::four_vector, utils::r2_tensor>
-    {
-    public:
-        I_analytical_sol() {}
-        I_analytical_sol(
-            utils::geometry::four_vector coordsteps,
-            utils::geometry::four_vector mincoords,
-            utils::geometry::four_vector maxcoords) : _coordsteps(coordsteps),
-                                                      _mincoords(mincoords),
-                                                      _maxcoords(maxcoords)
-        {
-        }
-        virtual ~I_analytical_sol() {}
-        int count() const override { return _count; }
-
-        virtual hydro::fcell generate_cell(double T, double x, double y, double eta) = 0;
-
-    protected:
-        size_t _count;
-        utils::geometry::four_vector _mincoords;
-        utils::geometry::four_vector _maxcoords;
-        utils::geometry::four_vector _coordsteps;
-        hydro::hypersurface<hydro::fcell> _cells;
-    };
 }
 #endif
