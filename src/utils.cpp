@@ -27,8 +27,9 @@ std::vector<double> utils::linspace(double min, double max, int size)
 {
     // returns a vector of doubles from min to max (included), equally spaced with spacing max-min/size
     std::vector<double> result;
-    double interval = (max - min) / size;
-    double tmp_min = min;
+    result.reserve(size+1);
+    const double&& interval = (max - min) / (double) size;
+    auto& tmp_min = min;
     for (int i = 0; i <= size; i++)
     {
         result.push_back(tmp_min);
@@ -145,11 +146,29 @@ utils::polarization_modes get_polarization_mode(cli::Parser &parser)
     return mode;
 }
 
+int get_particle_id(cli::Parser &parser)
+{
+    int pdg = 0;
+    if (parser.doesArgumentExist("pn", "particle"))
+    {
+        auto &&pdg_name = parser.get<std::string>("pn");
+        pdg = powerhouse::particle_from_string(pdg_name);
+    }
+    else if (parser.doesArgumentExist("pdg", "particle"))
+    {
+        pdg = parser.get<int>("pdg");
+    }
+    return pdg;
+}
+
 void configure_parser(cli::Parser &parser)
 {
     parser.set_optional<std::string>("i", "surface_file", "", "surface file");
 
     parser.set_optional<std::string>("o", "output_file", "", "output file (needed for polarization and yield)");
+
+    parser.set_optional<std::string>("pn", "particle_name", "", "particle name");
+    parser.set_optional<int>("pdg", "particle_id", 0, "pdg id");
 
     parser.set_optional<bool>("e", "examine", false, "Examine mode");
     parser.set_optional<bool>("y", "yield", false, "Yield mode");
@@ -213,6 +232,25 @@ utils::program_options utils::read_cmd(int argc, char **argv)
         else if (opts.polarization_mode == polarization_modes::ModEqSpinHydro)
         {
             opts.modifier = parser.get<double>("m");
+        }
+        switch (opts.program_mode)
+        {
+        case program_modes::Examine:
+            opts.yield_mode = yield_modes::NA;
+            opts.polarization_mode = polarization_modes::NA;
+            break;
+        case program_modes::Polarization:
+            opts.yield_mode = yield_modes::NA;
+            break;
+        case program_modes::Yield:
+            opts.polarization_mode = polarization_modes::NA;
+            break;
+        }
+        opts.particle_id = get_particle_id(parser);
+        if (opts.program_mode == program_modes::Polarization || opts.program_mode == program_modes::Yield && opts.particle_id == 0)
+        {
+            opts.program_mode = program_modes::Invalid;
+            what_stream << "A known particle id must be provided for the chosen program mode!" << std::endl;
         }
     }
     else

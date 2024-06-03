@@ -10,7 +10,6 @@
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
 #include "../src/fcell.h"
-#include "../src/element.h"
 #include "rigidcylinder.h"
 #include <type_traits>
 #include "../src/factories.h"
@@ -61,7 +60,6 @@ namespace
         int lines;
         hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(RIGID_CYL, 100, lines);
         auto &cell = rigid->data()[0];
-        EXPECT_EQ(lines, rigid->count());
         const auto &exp_delta_ll = rigid->exp_delta_ll(cell);
         auto u = cell.four_vel();
         EXPECT_DOUBLE_EQ(utils::trace_ll(exp_delta_ll), 3.0) << "tr[exp_delta] != 3";

@@ -86,7 +86,7 @@ namespace hydro
         utils::r2_tensor dbeta_ll() const override { return _dbeta; }
         void print();
         utils::geometry::four_vector four_vel() const override { return _u; }
-        utils::geometry::four_vector dsigma() const override { return _dsigma; }
+        const utils::geometry::four_vector dsigma() const override { return _dsigma; }
         double u_dot_n() override { return _u * _dsigma; }
         double normal_sq() override
         {

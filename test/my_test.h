@@ -5,7 +5,6 @@
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
 #include "../src/fcell.h"
-#include "../src/element.h"
 #pragma once
 
 class my_test : public testing::Test
@@ -116,10 +115,13 @@ protected:
         std::ifstream file(path);
         std::string line;
 
-        lines = std::count(std::istreambuf_iterator<char>(file),
-                           std::istreambuf_iterator<char>(), '\n');
+        // lines = std::count(std::istreambuf_iterator<char>(file),
+        //                    std::istreambuf_iterator<char>(), '\n');
+
         file.seekg(0);
         int _counter = 0;
+
+        _surface.clear();
 
         while (std::getline(file, line) && _counter < count)
         {
@@ -135,7 +137,7 @@ protected:
             iss >> cell;
             _surface.add(cell, utils::accept_modes::AcceptAll);
         }
-        file.close();
+        lines = _counter;
         return _surface;
     }
 };

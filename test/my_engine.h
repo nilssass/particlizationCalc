@@ -5,12 +5,13 @@
 #include "../src/interfaces.h"
 #include "../src/I_engine.h"
 #include "../src/geometry.h"
+#include "../src/pdg_particle.h"
 #include <map>
 #include <memory>
 #include <mutex>
 #pragma once
 
-class my_engine : public powerhouse::I_engine<hydro::fcell>
+class my_engine : public powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>
 {
 public:
     ~my_engine() override
@@ -20,7 +21,7 @@ public:
     void run() override;
     void write() override;
 };
-class mock_calculator : public powerhouse::I_calculator<hydro::fcell>
+class mock_calculator : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>
 {
 private:
     size_t _count;
@@ -75,14 +76,14 @@ public:
         return new powerhouse::exam_output(data);
     }
 
-    void prepare(const size_t &t_count) override
+    void init(const size_t &t_count, const powerhouse::pdg_particle* p, const utils::program_options &opts) override
     {
         _count = t_count;
         _step_size = _count / 100 - 1;
         _perc = 0;
         _local_cell_counter = 0;
     }
-    void pre_step() override
+    bool pre_step(hydro::fcell& cell, powerhouse::I_output<hydro::fcell> * ptr) override
     {
         if (_local_cell_counter % _step_size == 0)
         {

@@ -9,10 +9,10 @@
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
 #include "../src/fcell.h"
-#include "../src/element.h"
 #include "../src/examiner.h"
 #include "../src/I_engine.h"
 #include "../src/factories.h"
+#include "../src/pdg_particle.h"
 #include "my_test.h"
 namespace ug = utils::geometry;
 
@@ -33,10 +33,10 @@ namespace
         opts.accept_mode = utils::accept_modes::AcceptAll;
         opts.program_mode = utils::program_modes::Polarization;
         opts.polarization_mode = utils::polarization_modes::EqSpinHydro;
-        auto engine = powerhouse::I_engine<hydro::fcell>::get(opts);
+        auto engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>::get();
         int lines;
         hydro::hypersurface<hydro::fcell> cells = read_cells<hydro::fcell>(PATH, 10, lines);
-        EXPECT_THROW(engine->init(cells), std::runtime_error);
+        EXPECT_THROW(engine->init(opts, cells), std::runtime_error);
         EXPECT_THROW(engine->run(), std::runtime_error);
         EXPECT_THROW(engine->write(), std::runtime_error);
     }
@@ -48,14 +48,14 @@ namespace
         opts.program_mode = utils::program_modes::Examine;
         opts.out_file = "./exam.txt";
 
-        powerhouse::calculator_factory<hydro::fcell>::factory()
+        powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()
             ->register_calculator(opts,
                                   []()
                                   {
                                       return std::make_unique<powerhouse::examiner>();
                                   });
 
-        auto engine = powerhouse::I_engine<hydro::fcell>::get();
+        auto engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>::get();
         engine->reset(opts);
         ASSERT_FALSE(engine->executed());
         EXPECT_EQ(engine->settings().program_mode, utils::program_modes::Examine);
@@ -63,7 +63,7 @@ namespace
         hydro::hypersurface<hydro::fcell> cells = read_cells<hydro::fcell>(PATH, 10, lines);
         ASSERT_FALSE(cells.data().empty());
 
-        EXPECT_NO_THROW(engine->init(cells));
+        EXPECT_NO_THROW(engine->init(opts, cells));
         EXPECT_TRUE(engine->in_data().total() > 0);
         EXPECT_NO_THROW(engine->run());
         ASSERT_TRUE(engine->executed());

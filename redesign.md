@@ -191,20 +191,27 @@ if (!_particle_house)
 
 ## Program modes
 
+### Help:
+
+<code>
+./build/calc --help
+</code>
+
 ### Examine:
 
 <code>
 ./build/calc -i input/input_file_name -o output/output_file_name -e [accept mode]
 </code>
 
+### Yield: 
+
+<code>
+./build/calc -i input/input_file_name -o output/output_file_name -y [accept mode] [-pn particle name | -pdg particle id]
+</code>
+
 ### Polarization: (not implemented yet)
 
 <code>
-./build/calc -i input/input_file_name -o output/output_file_name -p [accept mode] [polarization mode]
+./build/calc -i input/input_file_name -o output/output_file_name -p [accept mode] [polarization mode] [-pn particle name | -pdg particle id]
 </code>
 
-### Yield: (not implemented yet)
-
-<code>
-./build/calc -i input/input_file_name -o output/output_file_name -y [accept mode]
-</code>

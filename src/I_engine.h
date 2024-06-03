@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <atomic>
 #pragma once
 /*
     The engine is a singlton factory that takes care of the calculations.
@@ -17,51 +18,50 @@
 namespace powerhouse
 {
     /// @brief A singlton factory that takes care of the calculations.
-    /// @tparam C
-    template <typename C>
+    /// @tparam C cell type
+    /// @tparam P particle type
+    template <typename C, typename P>
     class I_engine
     {
     public:
+        static_assert(std::is_base_of<I_particle, P>::value, "P must inherit from I_particle");
+        static_assert(is_template_base_of<hydro::I_cell, C>::value, "C must inherit from I_cell");
         virtual ~I_engine()
         {
             _pT.clear();
+            _y_rap.clear();
+            _phi.clear();
+            _hypersurface.clear();
+            _calculator.reset();
         }
-        static std::shared_ptr<I_engine<C>> get(utils::program_options settings)
+        static std::shared_ptr<I_engine<C, P>> get()
         {
             std::call_once(
-                I_engine<C>::only_one,
-                [](utils::program_options opts)
+                I_engine<C, P>::only_one,
+                [&]()
                 {
-                    I_engine<C>::_engine.reset(new I_engine<C>(opts));
-                },
-                settings);
-            return I_engine<C>::_engine;
+                    I_engine<C, P>::_engine.reset(new I_engine<C, P>());
+                });
+            return I_engine<C, P>::_engine;
         }
-        static std::shared_ptr<I_engine<C>> get()
-        {
-            return I_engine<C>::_engine;
-        }
+
         utils::program_options settings() const { return _settings; }
         hydro::hypersurface<C> in_data() const { return _hypersurface; }
 
-        void init(hydro::hypersurface<C> &t_hypersurface,
-                  I_particle *t_particle_house,
-                  int t_particle_id,
+        void init(utils::program_options settings,
+                  hydro::hypersurface<C> &t_hypersurface,
                   size_t t_size_pt = powerhouse::DEFAULT_SIZE_PT,
                   size_t t_size_phi = powerhouse::DEFAULT_SIZE_PHI,
                   size_t t_size_y = powerhouse::DEFAULT_SIZE_Y,
                   double t_y_min = powerhouse::DEFAULT_Y_MIN,
                   double t_y_max = powerhouse::DEFAULT_Y_MAX,
                   double t_pt_max = powerhouse::DEFAULT_PT_MAX);
-
-        void init(hydro::hypersurface<C> &t_hypersurface);
         void reset(utils::program_options settings)
         {
             _settings = settings;
             _initialized = false;
             _hypersurface.clear();
-            _calculator = nullptr;
-            _particle_house = nullptr;
+            _calculator.reset();
             _executed = false;
         }
 
@@ -93,6 +93,7 @@ namespace powerhouse
                 break;
             case utils::program_modes::Yield:
                 calculate_yield();
+                break;
             default:
                 throw std::runtime_error("Invalid program mode!");
                 break;
@@ -125,6 +126,30 @@ namespace powerhouse
                 break;
             }
         }
+        std::vector<polarization_output<C>> polarization_output()
+        {
+            if (_settings.program_mode != utils::program_modes::Polarization)
+            {
+                throw std::runtime_error("Not available in this mode!");
+            }
+            if (!_executed)
+            {
+                throw std::runtime_error("No output has been produced yet");
+            }
+            return _polarization_output;
+        }
+        std::vector<yield_output<C>> yield_output()
+        {
+            if (_settings.program_mode != utils::program_modes::Yield)
+            {
+                throw std::runtime_error("Not available in this mode!");
+            }
+            if (!_executed)
+            {
+                throw std::runtime_error("No output has been produced yet");
+            }
+            return _yield_output;
+        }
 
     protected:
         size_t _size_pt;
@@ -136,21 +161,21 @@ namespace powerhouse
         std::vector<double> _pT;
         std::vector<double> _phi;
         std::vector<double> _y_rap;
-        std::vector<polarization_output<C>> _polarization_output;
-        std::vector<yield_output<C>> _yield_output;
+        std::vector<powerhouse::polarization_output<C>> _polarization_output;
+        std::vector<powerhouse::yield_output<C>> _yield_output;
         exam_output<C> _exam_output;
         bool _initialized = false;
         bool _executed = false;
         int _particle_id;
         utils::program_options _settings;
         hydro::hypersurface<C> _hypersurface;
-        I_calculator<C> *calculator()
+        I_calculator<C, P> *calculator()
         {
             return _calculator.get();
         }
-        I_particle *particle_house()
+        P *particle()
         {
-            return _particle_house.get();
+            return _particle.get();
         }
         virtual void examine();
         virtual void calculate_polarizatio();
@@ -158,56 +183,63 @@ namespace powerhouse
         virtual void write_examin();
         virtual void write_polarization();
         virtual void write_yield();
-        std::shared_ptr<powerhouse::calculator_factory<C>> _factory;
+        std::shared_ptr<powerhouse::calculator_factory<C, P>> _factory;
+        virtual void create_phase_space();
 
     private:
         static std::mutex _mutex;
-        std::unique_ptr<powerhouse::I_calculator<C>> _calculator;
-        std::unique_ptr<powerhouse::I_particle> _particle_house;
-        I_engine(utils::program_options settings) : _settings(std::move(settings)), _calculator(nullptr), _particle_house(nullptr)
+        std::unique_ptr<powerhouse::I_calculator<C, P>> _calculator;
+        std::unique_ptr<P> _particle;
+        I_engine() : _calculator(nullptr), _particle(nullptr)
         {
-            _factory = calculator_factory<C>::factory();
+            _factory = calculator_factory<C, P>::factory();
         }
         I_engine(const I_engine &other) = delete;
         I_engine &operator=(const I_engine &other) = delete;
 
-        static std::shared_ptr<I_engine<C>> _engine;
+        static std::shared_ptr<I_engine<C, P>> _engine;
         static std::once_flag only_one;
     };
-    template <typename C>
-    std::mutex I_engine<C>::_mutex;
-    template <typename C>
-    std::once_flag I_engine<C>::only_one;
-    template <typename C>
-    std::shared_ptr<I_engine<C>> I_engine<C>::_engine = nullptr;
+    template <typename C, typename P>
+    std::mutex I_engine<C, P>::_mutex;
+    template <typename C, typename P>
+    std::once_flag I_engine<C, P>::only_one;
+    template <typename C, typename P>
+    std::shared_ptr<I_engine<C, P>> I_engine<C, P>::_engine = nullptr;
 
-    template <typename C>
-    inline void I_engine<C>::init(hydro::hypersurface<C> &t_hypersurface,
-                                  I_particle *t_particle_house, int t_particle_id,
-                                  size_t t_size_pt, size_t t_size_phi, size_t t_size_y, double t_y_min, double t_y_max, double t_pt_max)
+    template <typename C, typename P>
+    inline void I_engine<C, P>::init(
+        utils::program_options settings,
+        hydro::hypersurface<C> &t_hypersurface,
+        size_t t_size_pt,
+        size_t t_size_phi,
+        size_t t_size_y,
+        double t_y_min,
+        double t_y_max,
+        double t_pt_max)
     {
         if (_initialized)
             return;
+        _settings = settings;
         assert(_settings.program_mode != utils::program_modes::Help && _settings.program_mode != utils::program_modes::Invalid);
         _hypersurface = t_hypersurface;
-        _particle_id = t_particle_id;
         _size_pt = t_size_pt;
         _size_y = t_size_y;
         _size_phi = t_size_phi;
         _y_min = t_y_min;
         _y_max = t_y_max;
         _pt_max = t_pt_max;
-        assert(_settings.program_mode == utils::program_modes::Examine || t_particle_house);
 
-        if (!_particle_house)
+        if (!_particle && settings.program_mode != utils::program_modes::Examine)
         {
             std::lock_guard lock(_mutex);
-            _particle_house.reset(t_particle_house);
+            _particle = std::make_unique<P>(settings.particle_id);
+            _particle_id = _particle->pdg_id();
         }
         if (!_calculator)
         {
             std::lock_guard lock(_mutex);
-            _calculator = calculator_factory<C>::factory()->create_calculator(_settings);
+            _calculator = calculator_factory<C, P>::factory()->create(_settings);
         }
 
         if (!_calculator)
@@ -224,31 +256,10 @@ namespace powerhouse
         _initialized = true;
     }
 
-    template <typename C>
-    inline void I_engine<C>::init(hydro::hypersurface<C> &t_hypersurface) //, I_calculator<C> *t_calculator)
+    template <typename C, typename P>
+    inline void I_engine<C, P>::examine()
     {
-        if (_initialized)
-            return;
-        assert(_settings.program_mode != utils::program_modes::Help && _settings.program_mode != utils::program_modes::Invalid);
-
-        if (_settings.program_mode != utils::program_modes::Examine)
-        {
-            throw std::runtime_error("Wrong initializer called!");
-        }
-
-        _hypersurface = t_hypersurface;
-        if (!_calculator)
-        {
-            std::lock_guard lock(_mutex);
-            _calculator = calculator_factory<C>::factory()->create(_settings);
-        }
-
-        _initialized = true;
-    }
-    template <typename C>
-    inline void I_engine<C>::examine()
-    {
-        calculator()->prepare(_hypersurface.total());
+        calculator()->init(_hypersurface.data().size());
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -256,18 +267,19 @@ namespace powerhouse
             std::shared_ptr<powerhouse::I_output<C>> local_output = nullptr;
 
 #pragma omp for
-            for (size_t i = 0; i < _hypersurface.total(); i++)
+            for (size_t i = 0; i < _hypersurface.data().size(); i++)
             {
                 auto &cell = _hypersurface[i];
-                calculator()->pre_step();
-
-                if (local_output)
+                if (calculator()->pre_step(cell, nullptr))
                 {
-                    local_output.reset(calculator()->perform_step(cell, local_output.get()));
-                }
-                else
-                {
-                    local_output.reset(calculator()->perform_step(cell, nullptr));
+                    if (local_output)
+                    {
+                        local_output.reset(calculator()->perform_step(cell, local_output.get()));
+                    }
+                    else
+                    {
+                        local_output.reset(calculator()->perform_step(cell, nullptr));
+                    }
                 }
             }
 
@@ -281,18 +293,19 @@ namespace powerhouse
         std::shared_ptr<powerhouse::I_output<C>> local_output = nullptr;
         auto local_exam_output = std::make_shared<exam_output<C>>();
 
-        for (size_t i = 0; i < _hypersurface.total(); i++)
+        for (size_t i = 0; i < _hypersurface.data().size(); i++)
         {
             auto &cell = _hypersurface[i];
-            calculator()->pre_step();
-
-            if (local_output)
+            if(calculator()->pre_step(cell, nullptr)
             {
-                local_output.reset(calculator()->perform_step(cell, local_output.get()));
-            }
-            else
-            {
-                local_output.reset(calculator()->perform_step(cell, nullptr));
+                if (local_output)
+                {
+                    local_output.reset(calculator()->perform_step(cell, local_output.get()));
+                }
+                else
+                {
+                    local_output.reset(calculator()->perform_step(cell, nullptr));
+                }
             }
         }
 
@@ -303,61 +316,111 @@ namespace powerhouse
         calculator()->process_output(&_exam_output);
     }
 
-    template <typename C>
-    inline void I_engine<C>::calculate_polarizatio()
+    template <typename C, typename P>
+    inline void I_engine<C, P>::calculate_polarizatio()
     {
-        calculator()->prepare(_hypersurface.total());
-        std::shared_ptr<powerhouse::I_output<C>> output = nullptr;
-
-        for (auto &cell : _hypersurface.data())
-        {
-            calculator()->pre_step();
-
-            if (output)
-            {
-                output.reset(calculator()->perform_step(cell, output.get()));
-            }
-            else
-            {
-                output.reset(calculator()->perform_step(cell, nullptr));
-            }
-            calculator()->process_output(output.get());
-            auto data = *(dynamic_cast<powerhouse::polarization_output<C> *>(output.get()));
-            _polarization_output.push_back(data);
-        }
     }
-    template <typename C>
-    inline void I_engine<C>::calculate_yield()
+    template <typename C, typename P>
+    inline void I_engine<C, P>::calculate_yield()
     {
-        calculator()->prepare(_hypersurface.total());
-        std::shared_ptr<powerhouse::I_output<C>> output = nullptr;
-
-        for (auto &cell : _hypersurface.data())
+        std::cout << "Building the phase space ..." << std::endl;
+        create_phase_space();
+        std::cout << "Calculating the yield ..." << std::endl;
+        auto total_size = _yield_output.size();
+        calculator()->init(total_size, particle(), settings());
+#if _OPENMP
+        int threads_count = omp_get_max_threads();
+        auto chunk_size = total_size / (double)threads_count;
+        std::atomic<size_t> progress(0);
+#pragma omp parallel
         {
-            calculator()->pre_step();
+            int tid = omp_get_thread_num();
+            std::vector<powerhouse::yield_output<C>> thread_output;
+            thread_output.reserve(chunk_size);
 
-            if (output)
+#pragma omp for schedule(dynamic)
+            for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
-                output.reset(calculator()->perform_step(cell, output.get()));
+                auto &&local_output = _yield_output[id_x];
+                local_output.dNd3p = 0;
+                auto local_output_ptr = std::make_shared<powerhouse::yield_output<C>>(local_output);
+
+                size_t current_progress = ++progress;
+                if (tid == 0 && current_progress % (total_size / 100) == 0)
+                {
+                    utils::show_progress((100 * current_progress / total_size));
+                }
+
+                for (size_t i = 0; i < _hypersurface.data().size(); i++)
+                {
+                    auto &cell = _hypersurface[i];
+                    if (calculator()->pre_step(cell, local_output_ptr.get()))
+                    {
+                        auto raw_ptr = dynamic_cast<powerhouse::yield_output<C> *>(calculator()->perform_step(cell, local_output_ptr.get()));
+                        local_output_ptr.reset(raw_ptr);
+                        if (!local_output_ptr)
+                        {
+                            throw std::runtime_error("Error in casting I_output to yield_output!");
+                        }
+                    }
+                }
+
+                local_output = *local_output_ptr;
+                thread_output.push_back(local_output);
             }
-            else
+#pragma omp critical
             {
-                output.reset(calculator()->perform_step(cell, nullptr));
+                _yield_output.insert(_yield_output.end(), thread_output.begin(), thread_output.end());
+                utils::show_progress(100);
             }
-            calculator()->process_output(output.get());
-            auto data = *(dynamic_cast<powerhouse::yield_output<C> *>(output.get()));
-            _yield_output.push_back(data);
         }
+
+#else
+        std::cout << "Calculating the yield ..." << std::endl;
+        size_t progress = 0;
+        for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
+        {
+            auto &&local_output = _yield_output[id_x];
+            local_output.dNd3p = 0;
+            auto local_output_ptr = std::make_shared<powerhouse::yield_output<C>>(local_output);
+
+            for (size_t i = 0; i < _hypersurface.total(); i++)
+            {
+                auto &cell = _hypersurface[i];
+                if (calculator()->pre_step(cell, local_output_ptr.get()))
+                {
+                    auto raw_ptr = dynamic_cast<powerhouse::yield_output<C> *>(calculator()->perform_step(cell, local_output_ptr.get()));
+                    local_output_ptr.reset(raw_ptr);
+                    if (!local_output_ptr)
+                    {
+                        throw std::runtime_error("Error in casting I_output to yield_output!");
+                    }
+                }
+            }
+
+            size_t curren_progress = ++progress;
+            if (current_progress % (total_steps / 100) == 0)
+            {
+
+                utils::show_progress((100 * current_progress / total_count));
+            }
+
+            local_output = *local_output_ptr;
+            _yield_output.push_back(local_output);
+        }
+
+#endif
     }
-    template <typename C>
-    inline void I_engine<C>::write_examin()
+
+    template <typename C, typename P>
+    inline void I_engine<C, P>::write_examin()
     {
         std::ofstream output(_settings.out_file);
         if (!output.is_open())
         {
             throw std::runtime_error("Error opening output file");
         }
-        const auto &count = _hypersurface.total();
+        const auto &count = _hypersurface.data().size();
         int lastperc = -1;
         calculator()->pre_write(output);
 #ifdef _OPENMP
@@ -385,19 +448,12 @@ namespace powerhouse
         for (auto &oss : buffer)
         {
             std::string line = oss.str();
-            #pragma omp critical
+#pragma omp critical
             {
                 output << line;
-                // counter ++;
-                // int perc = 100 * ((double)counter) / ((double)count) + 1;
-                // if (perc > lastperc)
-                // {
-                //     lastperc = perc;
-                //     utils::show_progress(perc > 100 ? 100 : perc);
-                // }
             }
         }
-        
+
 #else
         for (size_t counter = 0; counter < count; counter++)
         {
@@ -408,13 +464,14 @@ namespace powerhouse
             if (perc > lastperc)
             {
                 lastperc = perc;
-                    utils::show_progress(perc > 100 : 100 ? perc);
+                utils::show_progress(perc > 100 ? 100 : perc);
             }
         }
 #endif
     }
-    template <typename C>
-    inline void I_engine<C>::write_polarization()
+
+    template <typename C, typename P>
+    inline void I_engine<C, P>::write_polarization()
     {
         std::ofstream output(_settings.out_file);
         calculator()->pre_write(output);
@@ -425,17 +482,83 @@ namespace powerhouse
         }
         output.close();
     }
-    template <typename C>
-    inline void I_engine<C>::write_yield()
+    template <typename C, typename P>
+    inline void I_engine<C, P>::write_yield()
     {
         std::ofstream output(_settings.out_file);
-        calculator()->pre_write(output);
-        for (auto &element : _yield_output)
+        if (!output.is_open())
         {
-            auto ptr = dynamic_cast<powerhouse::I_output<C> *>(&element);
-            calculator()->write(output, nullptr, ptr);
+            throw std::runtime_error("Error opening output file");
         }
-        output.close();
+        const auto &count = _yield_output.size();
+        int lastperc = -1;
+        calculator()->pre_write(output);
+#ifdef _OPENMP
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+#pragma omp parallel for
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            int tid = omp_get_thread_num();
+            auto &row = _yield_output[counter];
+            calculator()->write(buffer[tid], nullptr, &row);
+#pragma omp critical
+            {
+                int perc = 100 * ((double)counter) / ((double)count) + 1;
+                if (perc > lastperc)
+                {
+                    lastperc = perc;
+                    utils::show_progress(perc > 100 ? 100 : perc);
+                }
+            }
+        }
+
+        lastperc = -1;
+        int counter = 0;
+        for (auto &oss : buffer)
+        {
+            std::string line = oss.str();
+#pragma omp critical
+            {
+                output << line;
+            }
+        }
+
+#else
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            auto &row = _yield_output[counter];
+            calculator()->write(output, nullptr, &row);
+
+            int perc = 100 * ((double)counter) / ((double)count) + 1;
+            if (perc > lastperc)
+            {
+                lastperc = perc;
+                utils::show_progress(perc > 100 ? 100 : perc);
+            }
+        }
+#endif
+    }
+    template <typename C, typename P>
+    inline void powerhouse::I_engine<C, P>::create_phase_space()
+    {
+        _yield_output.clear();
+        static const double &mass = particle()->mass();
+        for (size_t pt_c = 0; pt_c < _pT.size(); pt_c++)
+        {
+            for (size_t y_c = 0; y_c < _y_rap.size(); y_c++)
+            {
+                for (size_t phi_c = 0; phi_c < _phi.size(); phi_c++)
+                {
+                    powerhouse::yield_output<C> pcell;
+                    pcell.pT = _pT[pt_c];
+                    pcell.y_p = _y_rap[y_c];
+                    pcell.phi_p = _phi[pt_c];
+                    pcell.mT = sqrt(mass * mass + _pT[pt_c] * _pT[pt_c]);
+                    _yield_output.push_back(pcell);
+                }
+            }
+        }
     }
 }
 #endif

@@ -8,13 +8,14 @@
 #include <filesystem>
 #include "utils.h"
 #include "fcell.h"
-#include "surface.h"
 #include "I_engine.h"
 #include "pdg_particle.h"
 #include "examiner.h"
+#include "yield_calculator.h"
 typedef hydro::hypersurface<hydro::fcell> surface;
 bool load_hypersurface(utils::program_options opts, surface &hypersurface);
 bool should_exit(utils::program_options &settings, int argc, char **argv);
+void configure();
 
 int main(int argc, char **argv)
 {
@@ -26,6 +27,9 @@ int main(int argc, char **argv)
         return (settings.program_mode != utils::program_modes::Help);
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
+    auto engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>::get();
+
     surface hypersurface;
 
     if (!load_hypersurface(settings, hypersurface))
@@ -33,22 +37,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    powerhouse::calculator_factory<hydro::fcell>::factory()
-        ->register_calculator(settings,
-                              []()
-                              {
-                                  return std::make_unique<powerhouse::examiner>();
-                              });
+    configure();
 
-    auto engine = powerhouse::I_engine<hydro::fcell>::get(settings);
+    engine->init(settings, hypersurface);
 
-    engine->init(hypersurface);
-
-    auto start = std::chrono::high_resolution_clock::now();
     engine->run();
+    engine->write();
+
     auto finish = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    engine->write();
     if (settings.verbose)
     {
         std::cout << std::endl
@@ -80,6 +77,24 @@ bool should_exit(utils::program_options &settings, int argc, char **argv)
     }
 
     return _exit;
+}
+
+void configure()
+{
+    powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()
+        ->register_calculator({.program_mode = utils::program_modes::Examine, .polarization_mode = utils::polarization_modes::NA, 
+        .yield_mode = utils::yield_modes::NA},
+                              []()
+                              {
+                                  return std::make_unique<powerhouse::examiner>();
+                              });
+    powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()
+        ->register_calculator({.program_mode = utils::program_modes::Yield, .polarization_mode = utils::polarization_modes::NA, 
+        .yield_mode = utils::yield_modes::GlobalEq},
+                              []()
+                              {
+                                  return std::make_unique<powerhouse::yield_calculator>();
+                              });
 }
 
 bool load_hypersurface(utils::program_options opts, surface &hypersurface)

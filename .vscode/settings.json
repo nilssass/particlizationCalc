@@ -71,6 +71,14 @@
         "strstream": "cpp",
         "__tree": "cpp",
         "map": "cpp",
-        "charconv": "cpp"
-    }
+        "charconv": "cpp",
+        "utility": "cpp",
+        "set": "cpp",
+        "any": "cpp",
+        "condition_variable": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp",
+        "cassert": "cpp"
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

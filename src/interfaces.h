@@ -12,15 +12,6 @@
 #endif
 #include <limits>
 #pragma once
-// Template metaprogramming utility
-template <template <typename...> class C, typename... Ts>
-std::true_type is_template_base_of_impl(const C<Ts...> *);
-
-template <template <typename...> class C>
-std::false_type is_template_base_of_impl(...);
-
-template <template <typename...> class C, typename T>
-using is_template_base_of = decltype(is_template_base_of_impl<C>(std::declval<T *>()));
 
 namespace hydro
 {
@@ -33,14 +24,14 @@ namespace hydro
     public:
         virtual V milne_coords() const = 0;
         /// @brief Cell's thermodynamics in the form (T, \mu_B, \mu_Q, \mu_S)
-        /// @return  
+        /// @return
         virtual V thermodynamics() const = 0;
-        /// @brief \partial_\mu u_\nu 
-        /// @return  
+        /// @brief \partial_\mu u_\nu
+        /// @return
         virtual T du_ll() const = 0;
         virtual T dbeta_ll() const = 0;
         virtual V four_vel() const = 0;
-        virtual V dsigma() const = 0;
+        const virtual V dsigma() const = 0;
         virtual V acceleration() = 0;
         virtual T shear_ll() = 0;
         virtual V fluid_vort_vec() = 0;
@@ -57,7 +48,7 @@ namespace hydro
         virtual double tshear_norm() = 0;
         virtual double acc_norm() = 0;
         /// @brief scalar product of the four velocity and the surface vector
-        /// @return 
+        /// @return
         virtual double u_dot_n() = 0;
         virtual std::ostream &write_info(std::ostream &osm, const char delim) = 0;
         virtual std::ostream &write_back(std::ostream &os, const char delim) = 0;
@@ -93,6 +84,7 @@ namespace hydro
         static_assert(is_template_base_of<I_cell, C>::value,
                       "C class in surface_stat must be derived from Icell<V,T>");
     };
+
     /// @brief A wrapper for the surface
     /// @tparam C the cell's type
     template <typename C>
@@ -110,7 +102,7 @@ namespace hydro
         C &operator[](size_t i) { return _cells[i]; }
         /// @brief reads the surface data from a file, uses parallelization if the code is compiled with OpenMP
         /// @param i_file input file
-        /// @param mode 
+        /// @param mode
         virtual void read(const std::string &i_file, utils::accept_modes mode);
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
@@ -134,12 +126,12 @@ namespace hydro
 
     private:
         std::vector<C> _cells;
-        int _skipped;
-        int _rejected;
-        int _timelikes;
-        int _total;
-        int _failed;
-        int _lines;
+        int _skipped = 0;
+        int _rejected = 0;
+        int _timelikes = 0;
+        int _total = 0;
+        int _failed = 0;
+        int _lines = 0;
 
     protected:
         static_assert(is_template_base_of<I_cell, C>::value,
@@ -391,7 +383,6 @@ namespace hydro
         }
     }
 
-    
     /// @brief This interface defines methods for populating and processing hydrodynamic solutions
     /// @tparam C the cell's type
     /// @tparam V the four-vector's type
@@ -400,66 +391,64 @@ namespace hydro
     class I_solution
     {
     public:
+        static_assert(is_template_base_of<hydro::I_cell, C>::value, "C must inherit from I_cell");
         /// @brief generate and store the hypersuface
         virtual void populate() = 0;
         virtual void write(std::ostream &output) = 0;
         /// @brief expected acceleration
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual V exp_acc_u(const C &) const = 0;
         /// @brief expected shear tensor
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_shear_ll(const C &) const = 0;
         /// @brief expected fluid vorticity vector
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual V exp_f_vorticity_u(const C &) const = 0;
         /// @brief expected fluid voritcity tensor
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_f_vorticity_ll(const C &) const = 0;
         /// @brief expected thermal vorticity
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_th_vorticity_ll(const C &) const = 0;
         /// @brief expected thermal shear
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_th_shear_ll(const C &) const = 0;
         /// @brief expected projected gradient of u
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_gradu_ll(const C &) const = 0;
         /// @brief expected projected with two lower indices
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_delta_ll(const C &) const = 0;
         /// @brief expected projected with an up and a lower indices
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_delta_ul(const C &) const = 0;
         /// @brief expected projected with two upper indices
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual T exp_delta_uu(const C &) const = 0;
         /// @brief expected expansion scalar (divergence of u)
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual double exp_theta(const C &) const = 0;
         /// @brief expected divergence of beta vector
-        /// @param  
-        /// @return 
+        /// @param
+        /// @return
         virtual double exp_b_theta(const C &) const = 0;
         virtual int count() const = 0;
         virtual hydro::hypersurface<C> data() const = 0;
         virtual ~I_solution() {}
 
     protected:
-
-        virtual C solve(const C& prim) = 0;
-        static_assert(is_template_base_of<I_cell, C>::value,
-                      "C class in surface_stat must be derived from Icell<V,T>");
+        virtual C solve(const C &prim) = 0;
     };
 }
 namespace powerhouse
@@ -469,7 +458,7 @@ namespace powerhouse
     template <typename C>
     struct I_output
     {
-        virtual ~I_output() {}
+        virtual ~I_output() = default;
     };
     /// @brief Surface examination ouptput
     /// @tparam C the cell's type
@@ -554,56 +543,44 @@ namespace powerhouse
             return *this;
         }
     };
-    
+
     /// @brief Polarization caclulation output
     /// @tparam C the cell's type
     template <typename C>
     struct polarization_output : public I_output<C>
     {
-        /* data */
+        /// @brief names of different terms
+        double pT;
+        double phi_p;
+        double y_p;
+        double dNdpT;
+        /// @brief the pauli lubanski which can be written in pieces
+        std::vector<utils::four_vec> pauli_lubanski;
+        ~polarization_output() override {}
     };
-    
+
     /// @brief Yield calculation output
     /// @tparam C the cell's type
     template <typename C>
     struct yield_output : public I_output<C>
     {
-        /* data */
+        double mT;
+        double pT;
+        double phi_p;
+        double y_p;
+        double dNd3p;
+        double yield()
+        {
+            return dNd3p / (utils::hbarC * utils::hbarC * utils::hbarC);
+        }
+        ~yield_output() override {}
     };
-    /// @brief Interface for calculation
-    /// @tparam C 
-    template <typename C>
-    class I_calculator
-    {
-    public:
-        /// @brief The main calculation in a single iteration
-        /// @param cell cell
-        /// @param previous_step the output from the previous step
-        /// @return the output from this step
-        virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
-        /// @brief happens before entering the loop
-        /// @param t_count the number of steps
-        virtual void prepare(const size_t &t_count) = 0;
-        /// @brief happens before perform_step in each iteration
-        virtual void pre_step() = 0;
-        /// @brief happens after perform_step (Polarization/Yield) or the whole iteration (Examine)
-        /// @param output the current or final output
-        virtual void process_output(powerhouse::I_output<C> *output) = 0;
-        /// @brief happens before writing the results
-        /// @param os 
-        virtual void pre_write(std::ostream &os) = 0;
-        /// @brief writes the results to output
-        /// @param os 
-        /// @param cell 
-        /// @param final_output 
-        virtual void write(std::ostream &os, C *cell, powerhouse::I_output<C> *final_output) = 0;
-        virtual ~I_calculator() {}
-    };
+
     /// @brief interface for a particle
     class I_particle
     {
     public:
-        virtual ~I_particle() = 0;
+        virtual ~I_particle() = default;
         virtual double mass() = 0;
         virtual std::string name() = 0;
         virtual int pdg_id() = 0;
@@ -612,6 +589,58 @@ namespace powerhouse
         virtual double S() = 0;
         virtual float spin() = 0;
         virtual bool isparticle() = 0;
+        /// @brief
+        /// @return 1 if Fermi, -1 if Bose statistics
+        virtual int statistics()
+        {
+            const double dim_spin = 2 * spin() + 1;
+            if (dim_spin != (int)dim_spin)
+            {
+                throw std::runtime_error("Wrong spin dimensions!");
+            }
+            if ((int)dim_spin % 2 == 0)
+            {
+                return 1;
+            }
+            else if ((int)dim_spin % 2 == 1)
+            {
+                return -1;
+            }
+            return 0;
+        }
+    };
+    /// @brief Interface for calculation
+    /// @tparam C
+    template <typename C, typename P>
+    class I_calculator
+    {
+    public:
+        static_assert(std::is_base_of<powerhouse::I_particle, P>::value, "P must inherit from I_particle");
+        static_assert(is_template_base_of<hydro::I_cell, C>::value, "C must inherit from I_cell");
+        /// @brief The main calculation in a single iteration
+        /// @param cell cell
+        /// @param previous_step the output from the previous step
+        /// @return the output from this step
+        virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
+        /// @brief happens before entering the loop
+        /// @param t_count the number of steps
+        virtual void init(const size_t &t_count, const P *particle, const utils::program_options &options) = 0;
+        virtual void init(const size_t &t_count) = 0;
+        /// @brief happens before perform_step in each iteration
+        /// @returns false if this iteration is rejected
+        virtual bool pre_step(C& cell, powerhouse::I_output<C> *previous_step) = 0;
+        /// @brief happens after perform_step (Polarization/Yield) or the whole iteration (Examine)
+        /// @param output the current or final output
+        virtual void process_output(powerhouse::I_output<C> *output) = 0;
+        /// @brief happens before writing the results
+        /// @param os
+        virtual void pre_write(std::ostream &os) = 0;
+        /// @brief writes the results to output
+        /// @param os
+        /// @param cell
+        /// @param final_output
+        virtual void write(std::ostream &os, C *cell, powerhouse::I_output<C> *final_output) = 0;
+        virtual ~I_calculator() = default;
     };
     /// @brief Unique key for calculators
     struct calculator_key

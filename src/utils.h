@@ -29,6 +29,17 @@
 #include <strstream>
 #include <initializer_list>
 #include <algorithm>
+#include <unordered_map>
+
+// Template metaprogramming utility
+template <template <typename...> class C, typename... Ts>
+std::true_type is_template_base_of_impl(const C<Ts...> *);
+
+template <template <typename...> class C>
+std::false_type is_template_base_of_impl(...);
+
+template <template <typename...> class C, typename T>
+using is_template_base_of = decltype(is_template_base_of_impl<C>(std::declval<T *>()));
 namespace utils
 {
     const std::string MILNE[4] = {"tau", "x", "y", "eta"};
@@ -67,11 +78,13 @@ namespace utils
         EqSpinHydro,    // spin hydro in equilibrium -eqsh
         ModEqSpinHydro, // Modified spin hydro in equilibrium -meqdsh
         SpinHydro,      // Real spin hydro -sh
-        Invalid
+        Invalid,
+        NA
     };
     enum class yield_modes
     {
-        GlobalEq
+        GlobalEq,
+        NA
     };
     enum class examine_modes
     {
@@ -93,6 +106,7 @@ namespace utils
         void show_help();
         bool decay;   // Use feeddown -d
         bool verbose; // Default is true use -q for quiet mode
+        int particle_id;
     };
 
     // Random engine type
@@ -109,7 +123,7 @@ namespace utils
 
     constexpr double kr_delta(int i, int j)
     {
-        return (i==j) ? 1 : 0;
+        return (i == j) ? 1 : 0;
     }
 
     const double Gevtofm = 5.067728853;
@@ -286,6 +300,30 @@ namespace utils
         }
         return equal;
     }
+    inline bool is_string_int(const std::string &str, int *number)
+    {
+        int num = 0;
+        bool is = false;
+        try
+        {
+            size_t pos;
+            num = std::stoi(str, &pos);
+            is = pos == str.size(); // Ensure the whole string was converted
+        }
+        catch (std::invalid_argument &e)
+        {
+            is = false; // Not a valid integer
+        }
+        catch (std::out_of_range &e)
+        {
+            is = false; // Out of range for an integer
+        }
+        if (is && number != nullptr)
+        {
+            *number = num;
+        }
+        return is;
+    }
 }
 namespace powerhouse
 {
@@ -294,6 +332,46 @@ namespace powerhouse
     constexpr size_t DEFAULT_SIZE_Y = 20;
     constexpr double DEFAULT_Y_MIN = -1.0;
     constexpr double DEFAULT_Y_MAX = 1.0;
-    constexpr double DEFAULT_PT_MAX = -1.0;
+    constexpr double DEFAULT_PT_MAX = 6.2;
+
+    enum particle_names : int
+    {
+        LAMBDA = 3122,
+        LAMBDA_BAR = -3122,
+        PION_PLUS = 211,
+        PION_MINUS = -211,
+        PION_ZERO = 111,
+        ETA = 221,
+        KAON_PLUS = 321,
+        KAON_MINUS = -321,
+        KAON_ZERO = 311,
+        PROTON = 2212,
+        NEUTRON = 2112
+    };
+    static std::unordered_map<std::string, particle_names> string_to_particle_map =
+        {
+            {"lambda", particle_names::LAMBDA},
+            {"lambdabar", particle_names::LAMBDA_BAR},
+            {"pi+", particle_names::PION_PLUS},
+            {"pi-", particle_names::PION_MINUS},
+            {"pi0", particle_names::PION_ZERO},
+            {"k+", particle_names::KAON_PLUS},
+            {"k-", particle_names::KAON_MINUS},
+            {"k0", particle_names::KAON_ZERO},
+            {"eta", particle_names::ETA},
+            {"p", particle_names::PROTON},
+            {"n", particle_names::NEUTRON}};
+    inline int particle_from_string(const std::string &str)
+    {
+        auto it = string_to_particle_map.find(str);
+        if (it != string_to_particle_map.end())
+        {
+            return (int)it->second;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 }
 #endif

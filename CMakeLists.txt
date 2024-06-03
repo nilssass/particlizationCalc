@@ -50,7 +50,7 @@ add_executable(
     src/utils.cpp   
     src/geometry.cpp
     src/fcell.cpp
-    src/element.cpp
+    # src/element.cpp
 )
 target_link_libraries(
     test_cells
@@ -102,7 +102,7 @@ add_executable(
     src/utils.cpp   
     src/geometry.cpp
     src/fcell.cpp
-    src/element.cpp
+    # src/element.cpp
 )
 target_link_libraries(
     test_engine_design
@@ -121,6 +121,32 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(test_engine_design PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
+#
+
+add_executable(
+    test_yield
+    test/test_yield.cpp 
+    src/utils.cpp   
+    src/geometry.cpp
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_yield
+    PUBLIC
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_yield)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 find_package(benchmark REQUIRED)
 
 add_executable(
@@ -137,9 +163,6 @@ add_executable(
     src/utils.cpp
     src/geometry.cpp
     src/fcell.cpp
-    src/element.cpp
-    src/surface.cpp
-    src/t_surface.cpp
 )
 target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
 

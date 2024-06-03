@@ -55,12 +55,12 @@ namespace
                 std::cout << std::endl;
             }
         }
-        void print (utils::four_vec vec)
+        void print(utils::four_vec vec)
         {
             std::cout << "(";
             for (size_t i = 0; i < 4; i++)
             {
-                std::cout  << vec[i] << (i ==3 ? ")" : ",");
+                std::cout << vec[i] << (i == 3 ? ")" : ",");
             }
             std::cout << std::endl;
         }
@@ -108,5 +108,18 @@ namespace
         AreApproximatelyEqual(u_dot_delta, zero, "u.\\Delta not approximately zero.");
         auto _g = utils::add_tensors({delta, uu});
         AreEqual(_g, utils::metric);
+    }
+
+    TEST_F(UtilsTest, LinSpace)
+    {
+        const auto& count = 10;
+        auto &&data = utils::linspace(0, 2.0, 10);
+        EXPECT_EQ(data.size(), count + 1);
+        EXPECT_DOUBLE_EQ(data[0], 0);
+        EXPECT_DOUBLE_EQ(data[count], 2.0);
+        for (auto &&el : data)
+        {
+            ASSERT_GE(el , 0);
+        }
     }
 }

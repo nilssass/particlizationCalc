@@ -5,15 +5,11 @@
 // A modified version of Andrea's code
 #include <string>
 #include "interfaces.h"
+#include "util.h"
 namespace powerhouse
 {
     const std::string DATABASE = "pdg_database/baryons_mesons.dat";
 
-    enum particle_names : int
-    {
-        LAMBDA = 3122,
-        PION = 211
-    };
     class pdg_particle : public I_particle
     {
     private:
@@ -27,8 +23,58 @@ namespace powerhouse
         bool _particle;
 
     public:
-        pdg_particle();
-        pdg_particle(int id);
+        pdg_particle() : _id(0) {}
+        pdg_particle(int id)
+        {
+            if (!std::filesystem::exists(DATABASE))
+            {
+                throw std::runtime_error("PDG database was not found.");
+            }
+
+            std::ifstream input(DATABASE);
+            if (!input.is_open())
+            {
+                throw std::runtime_error("Failed to open PDG database.");
+            }
+            pdg_particle temp;
+            _particle = id > 0;
+            id = abs(id);
+            std::string line;
+            while (std::getline(input, line))
+            {
+                if (line.empty() || line[0] == '#')
+                {
+                    continue; // skip empty or comment lines
+                }
+                std::istringstream iss(line);
+                if (!iss.fail())
+                {
+                    iss >> temp;
+
+                    if (temp._id == id)
+                    {
+                        this->_b = temp._b * (_particle ? 1 : -1);
+                        ;
+                        this->_id = id;
+                        this->_mass = temp._mass;
+                        this->_name = temp._name;
+                        this->_q = temp._q * (_particle ? 1 : -1);
+                        this->_s = temp._s * (_particle ? 1 : -1);
+                        this->_spin = temp._spin;
+                        if (!_particle)
+                        {
+                            _name = _name.insert(0, "anti-");
+                        }
+                        break;
+                    }
+                }
+            }
+            if (temp._id == 0)
+            {
+                throw std::runtime_error("Particle not found");
+            }
+        }
+
         pdg_particle(pdg_particle &other)
         {
             this->_b = other._b;
@@ -39,7 +85,9 @@ namespace powerhouse
             this->_s = other._s;
             this->_spin = other._spin;
         };
-        ~pdg_particle() override;
+        ~pdg_particle() override
+        {
+        }
         std::string name() override { return _name; };
         double mass() override { return _mass; };
         int pdg_id() override { return _id; };

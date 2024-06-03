@@ -1,10 +1,11 @@
 #include "interfaces.h"
 #include "fcell.h"
 #include "geometry.h"
+#include "pdg_particle.h"
 #pragma once
 namespace powerhouse
 {
-    class examiner : public powerhouse::I_calculator<hydro::fcell>
+    class examiner : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>
     {
     private:
         size_t _step_size;
@@ -17,13 +18,18 @@ namespace powerhouse
 
         ~examiner() override {}
 
-        void prepare(const size_t &t_count) override
+        void init(const size_t &t_count) override
         {
             _count = t_count;
             _step_size = t_count / 100 - 1;
         }
 
-        void pre_step() override
+        void init(const size_t &t_count, const pdg_particle * particle, const utils::program_options &opts) override
+        {
+            throw std::runtime_error("Invalid method call!");
+        }
+
+        bool pre_step(hydro::fcell& cell, powerhouse::I_output<hydro::fcell> * ptr) override
         {
             if (_local_cell_counter % _step_size == 0)
             {
@@ -39,6 +45,7 @@ namespace powerhouse
                 utils::show_progress((_percentage > 100) ? 100 : _percentage);
             }
             _local_cell_counter++;
+            return true;
         }
 
         powerhouse::I_output<hydro::fcell> *perform_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override

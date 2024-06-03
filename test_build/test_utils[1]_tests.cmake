@@ -1,7 +1,0 @@
-add_test([=[LeviTest.BasicAssertions]=]  /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build/test_utils [==[--gtest_filter=LeviTest.BasicAssertions]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[LeviTest.BasicAssertions]=]  PROPERTIES WORKING_DIRECTORY /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-add_test([=[FourVecTest.IndexStructure]=]  /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build/test_utils [==[--gtest_filter=FourVecTest.IndexStructure]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[FourVecTest.IndexStructure]=]  PROPERTIES WORKING_DIRECTORY /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-add_test([=[UtilsTest.FourVecProducts]=]  /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build/test_utils [==[--gtest_filter=UtilsTest.FourVecProducts]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[UtilsTest.FourVecProducts]=]  PROPERTIES WORKING_DIRECTORY /Users/masoudshokri/Documents/GitHub/particlizationCalc/test_build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
-set(  test_utils_TESTS LeviTest.BasicAssertions FourVecTest.IndexStructure UtilsTest.FourVecProducts)
