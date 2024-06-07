@@ -134,3 +134,4 @@ googlemock/gtest
 *.csv
 *.dat
 *.cmake
+*.png

@@ -569,11 +569,20 @@ namespace powerhouse
         double phi_p;
         double y_p;
         double dNd3p;
-        double yield()
+        double local_yield()
         {
             return dNd3p / (utils::hbarC * utils::hbarC * utils::hbarC);
         }
         ~yield_output() override {}
+    };
+
+    template <typename C>
+    struct yield_integrated_output : public I_output<C>
+    {
+        double pT;
+        double dNdpT;
+        double v1;
+        double v2;
     };
 
     /// @brief interface for a particle
@@ -624,8 +633,8 @@ namespace powerhouse
         virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
         /// @brief happens before entering the loop
         /// @param t_count the number of steps
-        virtual void init(const size_t &t_count, const P *particle, const utils::program_options &options) = 0;
-        virtual void init(const size_t &t_count) = 0;
+        virtual void init(const size_t &t_count, const P *particle, const utils::program_options &options) {}
+        virtual void init(const size_t &t_count) {}
         /// @brief happens before perform_step in each iteration
         /// @returns false if this iteration is rejected
         virtual bool pre_step(C& cell, powerhouse::I_output<C> *previous_step) = 0;

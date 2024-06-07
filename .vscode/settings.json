@@ -78,7 +78,8 @@
         "condition_variable": "cpp",
         "forward_list": "cpp",
         "unordered_set": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "__memory": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

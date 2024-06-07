@@ -330,7 +330,7 @@ namespace powerhouse
         calculator()->init(total_size, particle(), settings());
 #if _OPENMP
         int threads_count = omp_get_max_threads();
-        auto chunk_size = total_size / (double)threads_count;
+        size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
 #pragma omp parallel
         {
@@ -346,9 +346,9 @@ namespace powerhouse
                 auto local_output_ptr = std::make_shared<powerhouse::yield_output<C>>(local_output);
 
                 size_t current_progress = ++progress;
-                if (tid == 0 && current_progress % (total_size / 100) == 0)
+                if (tid == 0 && current_progress % (chunk_size / 100) == 0)
                 {
-                    utils::show_progress((100 * current_progress / total_size));
+                    utils::show_progress((100 * current_progress / chunk_size));
                 }
 
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)

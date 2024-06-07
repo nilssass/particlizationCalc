@@ -22,17 +22,17 @@ namespace powerhouse
 
         ~yield_calculator() override {}
 
+        
+        /// @brief Initializing 
+        /// @param t_count number of iterations
+        /// @param particle the particle
+        /// @param opts program options
         void init(const size_t &t_count, const pdg_particle *particle, const utils::program_options &opts) override
         {
             _count = t_count;
             _step_size = t_count / 100 - 1;
             _particle = *particle;
             _settings = opts;
-        }
-
-        void init(const size_t &t_count) override
-        {
-            throw std::runtime_error("Invalid method call!");
         }
 
         bool pre_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
@@ -130,7 +130,7 @@ namespace powerhouse
         {
             auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(final_output);
             output << yield_output_ptr->pT << '\t' << yield_output_ptr->phi_p << '\t'
-                   << yield_output_ptr->y_p << '\t' << yield_output_ptr->yield() << std::endl;
+                   << yield_output_ptr->y_p << '\t' << yield_output_ptr->local_yield() << std::endl;
         }
     };
 }

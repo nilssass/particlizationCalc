@@ -102,9 +102,7 @@ namespace
         auto uu = utils::mat_product(u_l, u_l);
         auto delta = utils::add_tensors({utils::metric,
                                          utils::s_product(uu, -1)});
-        // print(delta);
         auto u_dot_delta = utils::dot_utl(u, delta);
-        // AreEqual(u_dot_delta, zero, "u.\\Delta not exactly zero.");
         AreApproximatelyEqual(u_dot_delta, zero, "u.\\Delta not approximately zero.");
         auto _g = utils::add_tensors({delta, uu});
         AreEqual(_g, utils::metric);

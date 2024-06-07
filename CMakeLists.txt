@@ -3,8 +3,8 @@ project(particilizationcalc)
 
 set(CMAKE_CXX_STANDARD 17)  
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_BUILD_TYPE Rlease)
+# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Rlease)
 
 # Add debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
@@ -97,8 +97,7 @@ gtest_discover_tests(test_rigid)
 
 add_executable(
     test_engine_design
-    test/test_engine_design.cpp 
-    test/my_engine.cpp
+    test/test_static_engine_design.cpp 
     src/utils.cpp   
     src/geometry.cpp
     src/fcell.cpp
@@ -157,6 +156,7 @@ add_executable(
 )
 target_link_libraries(bench_utils benchmark::benchmark)
 
+# bench cells
 add_executable(
     bench_cells
     test/bench_cells.cpp
@@ -173,6 +173,42 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
+# bench yield
+
+add_executable(
+    bench_yield
+    test/bench_yield.cpp
+    src/utils.cpp
+    src/geometry.cpp
+    src/fcell.cpp
+)
+target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
+
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+
+# bench yield static
+
+add_executable(
+    bench_static_yield
+    test/bench_static_yield.cpp
+    src/utils.cpp
+    src/geometry.cpp
+    src/fcell.cpp
+)
+target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
+
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_static_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_static_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # Add the main executable target
 add_executable(
