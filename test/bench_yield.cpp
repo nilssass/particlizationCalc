@@ -12,6 +12,7 @@
 #include "../src/pdg_particle.h"
 #include "../src/factories.h"
 #include "../src/yield_calculator.h"
+#include "../src/vhll_engine_helper.h"
 #include <omp.h>
 const std::string PATH = "./input/beta.dat";
 class YieldFixture : public benchmark::Fixture
@@ -21,7 +22,7 @@ private:
 
 protected:
     std::vector<powerhouse::yield_output<hydro::fcell>> _yield_output;
-    std::unique_ptr<powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>> _calculator;
+    std::unique_ptr<vhlle::I_yield_calculator> _calculator;
     std::vector<double> _pT;
     std::vector<double> _phi;
     std::vector<double> _y_rap;
@@ -88,15 +89,14 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_yield_Benchmark)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
 #pragma omp parallel
         {
             int tid = omp_get_thread_num();
-            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
-            thread_output.reserve(chunk_size);
+            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output(chunk_size);
         }
     }
 }
@@ -109,15 +109,14 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_Benchmark)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
 #pragma omp parallel
         {
             int tid = omp_get_thread_num();
-            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
-            thread_output.reserve(chunk_size);
+            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output(chunk_size);
             #pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
@@ -130,67 +129,67 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_Benchmark)
 BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_Benchmark)->Name("(3) Iterating the phase space doing nothing");;
 
 
-BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_ptr_Benchmark)
-(benchmark::State &state)
-{
-    for (auto _ : state)
-    {
-        create_phase_space();
-        auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
-        int threads_count = omp_get_max_threads();
-        size_t chunk_size = total_size / (double)threads_count;
-        std::atomic<size_t> progress(0);
-#pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
-            thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
-            for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
-            {
-                auto &&local_output = _yield_output[id_x];
-                local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
+// BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_ptr_Benchmark)
+// // (benchmark::State &state)
+// // {
+// //     for (auto _ : state)
+// //     {
+// //         create_phase_space();
+// //         auto total_size = _yield_output.size();
+// //         _calculator->init(_particle.get(), _settings);
+// //         int threads_count = omp_get_max_threads();
+// //         size_t chunk_size = total_size / (double)threads_count;
+// //         std::atomic<size_t> progress(0);
+// // #pragma omp parallel
+// //         {
+// //             int tid = omp_get_thread_num();
+// //             std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
+// //             thread_output.reserve(chunk_size);
+// //             #pragma omp for schedule(dynamic)
+// //             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
+// //             {
+// //                 auto &&local_output = _yield_output[id_x];
+// //                 local_output.dNd3p = 0;
+// //                 auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
 
-                local_output = *local_output_ptr;
-                thread_output.push_back(local_output);
-            }
-        }
-    }
-}
-BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_ptr_Benchmark)->Name("(4.a) Iterating the phase space with shared pointer assignment");
+// //                 local_output = *local_output_ptr;
+// //                 thread_output.push_back(local_output);
+// //             }
+// //         }
+// //     }
+// // }
+// // BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_ptr_Benchmark)->Name("(4.a) Iterating the phase space with shared pointer assignment");
 
-BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_raw_ptr_Benchmark)
-(benchmark::State &state)
-{
-    for (auto _ : state)
-    {
-        create_phase_space();
-        auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
-        int threads_count = omp_get_max_threads();
-        size_t chunk_size = total_size / (double)threads_count;
-        std::atomic<size_t> progress(0);
-#pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
-            thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
-            for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
-            {
-                auto &&local_output = _yield_output[id_x];
-                local_output.dNd3p = 0;
-                auto local_output_ptr = &local_output;
+// BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_raw_ptr_Benchmark)
+// (benchmark::State &state)
+// {
+//     for (auto _ : state)
+//     {
+//         create_phase_space();
+//         auto total_size = _yield_output.size();
+//         _calculator->init(_particle.get(), _settings);
+//         int threads_count = omp_get_max_threads();
+//         size_t chunk_size = total_size / (double)threads_count;
+//         std::atomic<size_t> progress(0);
+// #pragma omp parallel
+//         {
+//             int tid = omp_get_thread_num();
+//             std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
+//             thread_output.reserve(chunk_size);
+//             #pragma omp for schedule(dynamic)
+//             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
+//             {
+//                 auto &&local_output = _yield_output[id_x];
+//                 local_output.dNd3p = 0;
+//                 auto local_output_ptr = &local_output;
 
-                local_output = *local_output_ptr;
-                thread_output.push_back(local_output);
-            }
-        }
-    }
-}
-BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_ptr_Benchmark)->Name("(4.b) Iterating the phase space with raw pointer work");
+//                 local_output = *local_output_ptr;
+//                 thread_output.push_back(local_output);
+//             }
+//         }
+//     }
+// }
+// BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_ptr_Benchmark)->Name("(4.b) Iterating the phase space with raw pointer work");
 
 
 BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
@@ -200,7 +199,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
@@ -214,7 +213,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
             {
                 auto &&local_output = _yield_output[id_x];
                 local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
 
                 size_t current_progress = ++progress;
                 if (tid == 0 && current_progress % (chunk_size / 100) == 0)
@@ -222,7 +220,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
                     auto prog = 100 * current_progress / chunk_size;
                 }
 
-                local_output = *local_output_ptr;
                 thread_output.push_back(local_output);
             }
         }
@@ -237,7 +234,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
@@ -251,7 +248,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
             {
                 auto &&local_output = _yield_output[id_x];
                 local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
 
                 size_t current_progress = ++progress;
                 if (tid == 0 &&  current_progress % (chunk_size / 100) == 0)
@@ -263,8 +259,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
                 {
                     auto &cell = _hypersurface[i];
                 }
-
-                local_output = *local_output_ptr;
                 thread_output.push_back(local_output);
             }
         }
@@ -280,7 +274,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
@@ -294,7 +288,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
             {
                 auto &&local_output = _yield_output[id_x];
                 local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
 
                 size_t current_progress = ++progress;
                 if (tid == 0 && current_progress % (chunk_size / 100) == 0)
@@ -305,12 +298,10 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
                 {
                     auto &cell = _hypersurface[i];
-                    if (_calculator->pre_step(cell, local_output_ptr.get()))
+                    if (_calculator->pre_step(cell, local_output))
                     {
                     }
                 }
-
-                local_output = *local_output_ptr;
                 thread_output.push_back(local_output);
             }
         }
@@ -326,7 +317,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
     {
         create_phase_space();
         auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
+        _calculator->init(_particle.get(), _settings);
         int threads_count = omp_get_max_threads();
         size_t chunk_size = total_size / (double)threads_count;
         std::atomic<size_t> progress(0);
@@ -340,7 +331,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
             {
                 auto &&local_output = _yield_output[id_x];
                 local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
 
                 size_t current_progress = ++progress;
                 if (tid == 0 && current_progress % (chunk_size / 100) == 0)
@@ -351,13 +341,12 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
                 {
                     auto &cell = _hypersurface[i];
-                    if (_calculator->pre_step(cell, local_output_ptr.get()))
+                    if (_calculator->pre_step(cell, local_output))
                     {
-                        auto raw_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(_calculator->perform_step(cell, local_output_ptr.get()));
+                        _calculator->perform_step(cell, local_output);
                     }
                 }
 
-                local_output = *local_output_ptr;
                 thread_output.push_back(local_output);
             }
         }
@@ -366,63 +355,63 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
 BENCHMARK_REGISTER_F(YieldFixture, bm_step)->Name("(8) Iterating and performing the step");
 
 
-BENCHMARK_DEFINE_F(YieldFixture, bm_step_and_use)
-(benchmark::State &state)
-{
-    for (auto _ : state)
-    {
-        // Creating the phase space (1)
-        create_phase_space();
-        // Preparing to enter the phase loop (2) 
-        auto total_size = _yield_output.size();
-        _calculator->init(total_size, _particle.get(), _settings);
-        int threads_count = omp_get_max_threads();
-        size_t chunk_size = total_size / (double)threads_count;
-        std::atomic<size_t> progress(0);
-#pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
-            thread_output.reserve(chunk_size);
-            //Iterating the phase space (3)
-            #pragma omp for schedule(dynamic)
-            for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
-            {
-                // ... with pointer work (4)
-                auto &&local_output = _yield_output[id_x];
-                local_output.dNd3p = 0;
-                auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
-                // ... and measuring progress (5)
-                size_t current_progress = ++progress;
-                if (tid == 0 && current_progress % (chunk_size / 100) == 0)
-                {
-                    auto prog = 100 * current_progress / chunk_size;
-                }
-                // Iterating a small hypersurface (6)
-                for (size_t i = 0; i < _hypersurface.data().size(); i++)
-                {
-                    auto &cell = _hypersurface[i];
-                    // performing pre step (7)
-                    if (_calculator->pre_step(cell, local_output_ptr.get()))
-                    {
-                        //  performing the step (8)
-                        auto raw_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(_calculator->perform_step(cell, local_output_ptr.get()));
-                        // ... and storing it (9)
-                        local_output_ptr.reset(raw_ptr);
-                        if (!local_output_ptr)
-                        {
-                            throw std::runtime_error("Error in casting I_output to yield_output!");
-                        }
-                    }
-                }
+// BENCHMARK_DEFINE_F(YieldFixture, bm_step_and_use)
+// (benchmark::State &state)
+// {
+//     for (auto _ : state)
+//     {
+//         // Creating the phase space (1)
+//         create_phase_space();
+//         // Preparing to enter the phase loop (2) 
+//         auto total_size = _yield_output.size();
+//         _calculator->init(total_size, _particle.get(), _settings);
+//         int threads_count = omp_get_max_threads();
+//         size_t chunk_size = total_size / (double)threads_count;
+//         std::atomic<size_t> progress(0);
+// #pragma omp parallel
+//         {
+//             int tid = omp_get_thread_num();
+//             std::vector<powerhouse::yield_output<hydro::fcell>> thread_output;
+//             thread_output.reserve(chunk_size);
+//             //Iterating the phase space (3)
+//             #pragma omp for schedule(dynamic)
+//             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
+//             {
+//                 // ... with pointer work (4)
+//                 auto &&local_output = _yield_output[id_x];
+//                 local_output.dNd3p = 0;
+//                 auto local_output_ptr = std::make_shared<powerhouse::yield_output<hydro::fcell>>(local_output);
+//                 // ... and measuring progress (5)
+//                 size_t current_progress = ++progress;
+//                 if (tid == 0 && current_progress % (chunk_size / 100) == 0)
+//                 {
+//                     auto prog = 100 * current_progress / chunk_size;
+//                 }
+//                 // Iterating a small hypersurface (6)
+//                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
+//                 {
+//                     auto &cell = _hypersurface[i];
+//                     // performing pre step (7)
+//                     if (_calculator->pre_step(cell, local_output_ptr.get()))
+//                     {
+//                         //  performing the step (8)
+//                         auto raw_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(_calculator->perform_step(cell, local_output_ptr.get()));
+//                         // ... and storing it (9)
+//                         local_output_ptr.reset(raw_ptr);
+//                         if (!local_output_ptr)
+//                         {
+//                             throw std::runtime_error("Error in casting I_output to yield_output!");
+//                         }
+//                     }
+//                 }
 
-                local_output = *local_output_ptr;
-                thread_output.push_back(local_output);
-            }
-        }
-    }
-}
-BENCHMARK_REGISTER_F(YieldFixture, bm_step_and_use)->Name("(9) Iterating, performing the step and storing it");
+//                 local_output = *local_output_ptr;
+//                 thread_output.push_back(local_output);
+//             }
+//         }
+//     }
+// }
+// BENCHMARK_REGISTER_F(YieldFixture, bm_step_and_use)->Name("(9) Iterating, performing the step and storing it");
 
 
 BENCHMARK_MAIN();
@@ -439,7 +428,7 @@ void YieldFixture::init()
     if (!_calculator)
     {
         std::lock_guard lock(_mutex);
-        _calculator = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()->create(_settings);
+        _calculator = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>::factory()->create(_settings);
     }
 
     if (!_calculator)
@@ -454,9 +443,10 @@ void YieldFixture::init()
 
 void YieldFixture::configure()
 {
-    powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()
-        ->register_calculator({.program_mode = utils::program_modes::Yield, .polarization_mode = utils::polarization_modes::NA, .yield_mode = utils::yield_modes::GlobalEq},
-                              []()
+    vhlle::yield_factory::factory()
+        ->register_calculator({
+            .program_mode = utils::program_modes::Yield, .polarization_mode = utils::polarization_modes::NA, .yield_mode = utils::yield_modes::GlobalEq},
+                              [&]()
                               {
                                   return std::make_unique<powerhouse::yield_calculator>();
                               });

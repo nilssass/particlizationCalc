@@ -5,99 +5,57 @@
 #pragma once
 namespace powerhouse
 {
-    class examiner : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>
+    class examiner : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle,  powerhouse::exam_output<hydro::fcell>>
     {
-    private:
-        size_t _step_size;
-        size_t _percentage;
-        size_t _local_cell_counter;
-        size_t _count;
-
-    public:
-        examiner() : _percentage(0), _local_cell_counter(0) {}
+        private :
+        int _count;
+       public:
+        examiner() {}
 
         ~examiner() override {}
 
-        void init(const size_t &t_count) override
+        void init(int t_count) override
         {
             _count = t_count;
-            _step_size = t_count / 100 - 1;
         }
 
-        void init(const size_t &t_count, const pdg_particle * particle, const utils::program_options &opts) override
+        void perform_step(hydro::fcell &cell, powerhouse::exam_output<hydro::fcell> &previous_step) override
         {
-            throw std::runtime_error("Invalid method call!");
-        }
-
-        bool pre_step(hydro::fcell& cell, powerhouse::I_output<hydro::fcell> * ptr) override
-        {
-            if (_local_cell_counter % _step_size == 0)
-            {
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-                _percentage++;
-
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-
-                utils::show_progress((_percentage > 100) ? 100 : _percentage);
-            }
-            _local_cell_counter++;
-            return true;
-        }
-
-        powerhouse::I_output<hydro::fcell> *perform_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
-        {
-            powerhouse::exam_output<hydro::fcell> data;
-            if (previous_step)
-            {
-                auto exam_output_ptr = dynamic_cast<powerhouse::exam_output<hydro::fcell> *>(previous_step);
-                if (exam_output_ptr)
-                {
-                    data = *exam_output_ptr;
-                }
-                else
-                {
-                    throw std::runtime_error("Unknown error");
-                }
-            }
 
             auto sigma = cell.shear_ll();
 
             if (!utils::is_zero(utils::trace_ll(sigma)))
             {
-                data.tr_sigma++;
+                previous_step.tr_sigma++;
             }
             auto u = cell.four_vel();
 
             if (!utils::is_zero(utils::dot_utl(u.vec(), sigma)))
             {
-                data.longi_sigma++;
+                previous_step.longi_sigma++;
             }
 
             if (cell.acceleration() * u != 0)
             {
-                data.u_dot_a_not_zero++;
+                previous_step.u_dot_a_not_zero++;
             }
 
             if (cell.theta() < 0)
             {
-                data.neg_theta++;
+                previous_step.neg_theta++;
             }
 
-            data.theta_sum += cell.theta();
+            previous_step.theta_sum += cell.theta();
 
-            data.sigma2_sum += cell.sigma_norm();
+            previous_step.sigma2_sum += cell.sigma_norm();
 
             // acc
 
             if (cell.acc_norm() > 0)
             {
-                data.timelike_a++;
+                previous_step.timelike_a++;
             }
-            data.a2_sum += cell.acc_norm();
+            previous_step.a2_sum += cell.acc_norm();
             // omega
 
             auto omega = cell.fluid_vort_ll();
@@ -107,16 +65,16 @@ namespace powerhouse
 
             if (o2 > 0)
             {
-                data.timelike_omega++;
+                previous_step.timelike_omega++;
             }
 
-            data.fvort2_sum += cell.fvort_norm();
+            previous_step.fvort2_sum += cell.fvort_norm();
 
-            data.btheta_sum += cell.b_theta();
+            previous_step.btheta_sum += cell.b_theta();
 
-            data.th_vort_2_sum += cell.tvort_norm();
+            previous_step.th_vort_2_sum += cell.tvort_norm();
 
-            data.th_shear_2_sum += cell.tshear_norm();
+            previous_step.th_shear_2_sum += cell.tshear_norm();
 
             // check decomposition
 
@@ -126,31 +84,16 @@ namespace powerhouse
                                            omega});
             if (!utils::are_equal(rhs, cell.du_ll()))
             {
-                data.decomp_failed++;
+                previous_step.decomp_failed++;
             }
-
-            return new powerhouse::exam_output(data);
         }
 
-        void process_output(powerhouse::I_output<hydro::fcell> *output) override
+        void process_output(powerhouse::exam_output<hydro::fcell> &data) override
         {
-            powerhouse::exam_output<hydro::fcell> data;
-            if (output)
-            {
-                auto exam_output_ptr = dynamic_cast<powerhouse::exam_output<hydro::fcell> *>(output);
-                if (exam_output_ptr)
-                {
-                    data = *exam_output_ptr;
-                }
-                else
-                {
-                    throw std::runtime_error("Unknown error");
-                }
-            }
             std::cout << std::endl
                       << "Basic information" << std::endl;
             // How % of timelikes
-            std::cout << *data.basic_info << std::endl;
+            std::cout << *(data.basic_info) << std::endl;
 
             std::cout << std::endl
                       << "Report:" << std::endl;
@@ -173,12 +116,12 @@ namespace powerhouse
 
         void pre_write(std::ostream &output) override
         {
-            std::cout << "Writing to output ..," << std::endl;
+            std::cout << "Writing to output ..." << std::endl;
             output
                 << "# tau,x,y,eta,theta,sqrt(sigma^2),sqrt(-omega^2),div.beta,sqrt(-varpi^2),sqrt(xi^2),sqrt(-a^2)" << std::endl;
         }
 
-        void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::I_output<hydro::fcell> *final_output) override
+        void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::exam_output<hydro::fcell> *final_output) override
         {
             auto cell = *cell_ptr;
             output << cell.tau() << "," << cell.x() << "," << cell.y() << "," << cell.eta()

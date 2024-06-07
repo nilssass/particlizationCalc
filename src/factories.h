@@ -62,16 +62,18 @@ namespace powerhouse
     /// @brief singleton factory that is used for registeration and creation of calculators
     /// @tparam C the cell's type
     /// @tparam P particle's type
-    template <typename C, typename P>
+    /// @tparam O output's type
+    template <typename C, typename P, typename O>
     class calculator_factory
     {
     public:
-         static_assert(std::is_base_of<I_particle, P>::value, "P must inherit from I_particle");
+        static_assert(std::is_base_of<powerhouse::I_particle, P>::value, "P must inherit from I_particle");
         static_assert(is_template_base_of<hydro::I_cell, C>::value, "C must inherit from I_cell");
-        using calculator_creator = std::function<std::unique_ptr<I_calculator<C, P>>()>;
-        std::unique_ptr<I_calculator<C, P>> create(const utils::program_options &options)
+        static_assert(is_template_base_of<powerhouse::I_output, O>::value, "O must inherit from I_output");
+        using calculator_creator = std::function<std::unique_ptr<I_calculator<C, P, O>>()>;
+        std::unique_ptr<I_calculator<C, P, O>> create(const utils::program_options &options)
         {
-            calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
+            powerhouse::calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
 
             const auto &it = _map.find(key);
             if (it != _map.end())
@@ -87,31 +89,31 @@ namespace powerhouse
 
         void register_calculator(utils::program_options options, calculator_creator creator)
         {
-            calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
+            powerhouse ::calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
             _map[key] = std::move(creator);
         }
 
-        static std::shared_ptr<calculator_factory<C, P>> &factory()
+        static std::shared_ptr<calculator_factory<C, P, O>> &factory()
         {
             std::call_once(
                 only_one,
                 []()
                 {
-                    calculator_factory<C, P>::_factory_instance.reset(new calculator_factory<C, P>());
+                    calculator_factory<C, P, O>::_factory_instance.reset(new calculator_factory<C, P, O>());
                 });
-            return calculator_factory<C, P>::_factory_instance;
+            return calculator_factory<C, P, O>::_factory_instance;
         }
 
     private:
         calculator_factory() {}
-        calculator_factory(const calculator_factory<C, P> &rs) = delete;
-        calculator_factory &operator=(const calculator_factory<C, P> &rs) = delete;
-        std::unordered_map<calculator_key, calculator_creator> _map;
+        calculator_factory(const calculator_factory<C, P, O> &rs) = delete;
+        calculator_factory &operator=(const calculator_factory<C, P, O> &rs) = delete;
+        std::unordered_map<powerhouse::calculator_key, calculator_creator> _map;
         static std::once_flag only_one;
-        static std::shared_ptr<calculator_factory<C, P>> _factory_instance;
+        static std::shared_ptr<calculator_factory<C, P, O>> _factory_instance;
     };
-    template <typename C, typename P>
-    std::shared_ptr<calculator_factory<C, P>> calculator_factory<C, P>::_factory_instance = nullptr;
-    template <typename C, typename P>
-    std::once_flag calculator_factory<C, P>::only_one;
+    template <typename C, typename P, typename O>
+    std::shared_ptr<calculator_factory<C, P, O>> calculator_factory<C, P, O>::_factory_instance = nullptr;
+    template <typename C, typename P, typename O>
+    std::once_flag calculator_factory<C, P, O>::only_one;
 }

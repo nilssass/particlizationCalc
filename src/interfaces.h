@@ -15,6 +15,7 @@
 
 namespace hydro
 {
+    constexpr int ESTIMATED_LINE_COUNT = 800000;
     /// @brief  Interface for a hypersurface cell
     /// @tparam V the four-vector type
     /// @tparam T the rank-2 tensor type
@@ -103,7 +104,7 @@ namespace hydro
         /// @brief reads the surface data from a file, uses parallelization if the code is compiled with OpenMP
         /// @param i_file input file
         /// @param mode
-        virtual void read(const std::string &i_file, utils::accept_modes mode);
+        virtual void read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count = ESTIMATED_LINE_COUNT);
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
         std::vector<C> &data() { return _cells; }
@@ -139,9 +140,9 @@ namespace hydro
     };
 
     template <typename C>
-    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode)
+    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count)
     {
-        const int estimated_line_count = 900000; // Rough estimate of the number of lines
+        const int estimated_line_count = t_estimated_line_count;
         const int step_size = estimated_line_count / 100 - 1;
 
         std::vector<std::streampos> file_positions;
@@ -619,28 +620,31 @@ namespace powerhouse
         }
     };
     /// @brief Interface for calculation
-    /// @tparam C
-    template <typename C, typename P>
+    /// @tparam C is the cell type
+    /// @tparam P is the particle type
+    /// @tparam O is the output type
+    template <typename C, typename P, typename O>
     class I_calculator
     {
     public:
         static_assert(std::is_base_of<powerhouse::I_particle, P>::value, "P must inherit from I_particle");
         static_assert(is_template_base_of<hydro::I_cell, C>::value, "C must inherit from I_cell");
+        static_assert(is_template_base_of<powerhouse::I_output, O>::value, "P must inherit from I_output");
         /// @brief The main calculation in a single iteration
         /// @param cell cell
         /// @param previous_step the output from the previous step
         /// @return the output from this step
-        virtual I_output<C> *perform_step(C &cell, powerhouse::I_output<C> *previous_step) = 0;
+        virtual void perform_step(C &cell, O &previous_step) = 0;
         /// @brief happens before entering the loop
-        /// @param t_count the number of steps
-        virtual void init(const size_t &t_count, const P *particle, const utils::program_options &options) {}
-        virtual void init(const size_t &t_count) {}
+        virtual void init(int t_count) {}
+        /// @brief happens before entering the loop
+        virtual void init(const P *particle, const utils::program_options &options) {}
         /// @brief happens before perform_step in each iteration
         /// @returns false if this iteration is rejected
-        virtual bool pre_step(C& cell, powerhouse::I_output<C> *previous_step) = 0;
+        virtual bool pre_step(C &cell, O &previous_step) {return true;}
         /// @brief happens after perform_step (Polarization/Yield) or the whole iteration (Examine)
         /// @param output the current or final output
-        virtual void process_output(powerhouse::I_output<C> *output) = 0;
+        virtual void process_output(O &output) = 0;
         /// @brief happens before writing the results
         /// @param os
         virtual void pre_write(std::ostream &os) = 0;
@@ -648,7 +652,7 @@ namespace powerhouse
         /// @param os
         /// @param cell
         /// @param final_output
-        virtual void write(std::ostream &os, C *cell, powerhouse::I_output<C> *final_output) = 0;
+        virtual void write(std::ostream &os, C *cell, O *final_output) = 0;
         virtual ~I_calculator() = default;
     };
     /// @brief Unique key for calculators

@@ -5,37 +5,28 @@
 #pragma once
 namespace powerhouse
 {
-    class yield_calculator : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>
+    class yield_calculator : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>
     {
     private:
-        size_t _step_size;
-        size_t _percentage;
-        size_t _local_cell_counter;
-        size_t _count;
-        pdg_particle _particle;
+        powerhouse::pdg_particle _particle;
         double _pdotdsigma;
         double _pdotu;
         utils::program_options _settings = {};
 
     public:
-        yield_calculator() : _percentage(0), _local_cell_counter(0) {}
+        yield_calculator() {}
 
-        ~yield_calculator() override {}
-
-        
-        /// @brief Initializing 
+        /// @brief Initializing
         /// @param t_count number of iterations
         /// @param particle the particle
         /// @param opts program options
-        void init(const size_t &t_count, const pdg_particle *particle, const utils::program_options &opts) override
+        void init(const powerhouse::pdg_particle *particle, const utils::program_options &opts) override
         {
-            _count = t_count;
-            _step_size = t_count / 100 - 1;
             _particle = *particle;
             _settings = opts;
         }
 
-        bool pre_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
+        bool pre_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
         {
             bool reject = false;
             if (_settings.accept_mode != utils::accept_modes::AcceptAll)
@@ -49,8 +40,7 @@ namespace powerhouse
                     reject = cell.u_dot_n() < 0;
                     break;
                 case utils::accept_modes::RejectNegativePDSigma:
-                    auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(previous_step);
-                    auto&& p = get_p_vector(yield_output_ptr);
+                    auto &&p = get_p_vector(previous_step);
                     const auto &pdotdsigma = p * cell.dsigma();
                     reject = pdotdsigma < 0;
                     break;
@@ -59,36 +49,19 @@ namespace powerhouse
             return !reject;
         }
 
-        utils::geometry::four_vector get_p_vector(powerhouse::yield_output<hydro::fcell> *yield_output_ptr)
+        utils::geometry::four_vector get_p_vector(const powerhouse::yield_output<hydro::fcell> &yield_output)
         {
-            const double &pT = yield_output_ptr->pT;
-            const auto &y = yield_output_ptr->y_p;
-            const auto &phi = yield_output_ptr->phi_p;
+            const double &pT = yield_output.pT;
+            const auto &y = yield_output.y_p;
+            const auto &phi = yield_output.phi_p;
 
-            const auto& mT = yield_output_ptr->mT;
+            const auto &mT = yield_output.mT;
             utils::geometry::four_vector p({mT * cosh(y), pT * cos(phi), pT * sin(phi), mT * sinh(y)});
             return p;
         }
 
-        powerhouse::I_output<hydro::fcell> *perform_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
+        void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
         {
-            powerhouse::yield_output<hydro::fcell> data;
-            if (previous_step)
-            {
-                auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(previous_step);
-                if (yield_output_ptr)
-                {
-                    data = *yield_output_ptr;
-                }
-                else
-                {
-                    throw std::runtime_error("Error in casting I_output to yield_output!");
-                }
-            }
-            else
-            {
-                throw std::runtime_error("Initial or previous step is null.");
-            }
 
             const static auto &mass = _particle.mass();
             const static auto &b = _particle.B();
@@ -97,36 +70,33 @@ namespace powerhouse
             const static auto &spin = _particle.spin();
             const static auto &stat = _particle.statistics();
 
-            const double &pT = data.pT;
-            const auto &y = data.y_p;
-            const auto &phi = data.phi_p;
+            const double &pT = previous_step.pT;
+            const auto &y = previous_step.y_p;
+            const auto &phi = previous_step.phi_p;
 
-            const auto& mT = data.mT;
+            const auto &mT = previous_step.mT;
             utils::geometry::four_vector p({mT * cosh(y), pT * cos(phi), pT * sin(phi), mT * sinh(y)});
             const auto &pdotdsigma = p * cell.dsigma();
             const auto &pdotu = p * cell.four_vel();
 
-            const double&& total_mu = cell.mub() * b + cell.muq() * q + cell.mus() * s;
+            const double &&total_mu = cell.mub() * b + cell.muq() * q + cell.mus() * s;
 
-            const double&& f = (1 / (pow(2 * M_PI, 3))) * 1 / (exp((pdotu - total_mu) / cell.T()) + stat);
+            const double &&f = (1 / (pow(2 * M_PI, 3))) * 1 / (exp((pdotu - total_mu) / cell.T()) + stat);
 
-            data.dNd3p += pdotdsigma * f;
-
-            return new powerhouse::yield_output<hydro::fcell>(data);
+            previous_step.dNd3p += pdotdsigma * f;
         }
 
-        void process_output(powerhouse::I_output<hydro::fcell> *output) override
+        void process_output(powerhouse::yield_output<hydro::fcell> &output) override
         {
         }
 
         void pre_write(std::ostream &output) override
         {
-            std::cout << "Writing to output ..," << std::endl;
             output
                 << "# pT\tphi_p\ty_p\tdNd3p" << std::endl;
         }
 
-        void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::I_output<hydro::fcell> *final_output) override
+        void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::yield_output<hydro::fcell> *final_output) override
         {
             auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(final_output);
             output << yield_output_ptr->pT << '\t' << yield_output_ptr->phi_p << '\t'

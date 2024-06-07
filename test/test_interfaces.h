@@ -153,7 +153,6 @@ namespace powerhouse_test
         }
     };
 
-
     class test_examiner : public powerhouse_test::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::exam_output<hydro::fcell>>
     {
     private:
@@ -173,22 +172,8 @@ namespace powerhouse_test
             _step_size = t_count / 100 - 1;
         }
 
-        bool pre_step(hydro::fcell& cell, powerhouse::exam_output<hydro::fcell> &row) override
+        bool pre_step(hydro::fcell &cell, powerhouse::exam_output<hydro::fcell> &row) override
         {
-            if (_local_cell_counter % _step_size == 0)
-            {
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-                _percentage++;
-
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-
-                utils::show_progress((_percentage > 100) ? 100 : _percentage);
-            }
-            _local_cell_counter++;
             return true;
         }
 
@@ -263,11 +248,11 @@ namespace powerhouse_test
 
         void process_output(powerhouse::exam_output<hydro::fcell> &data) override
         {
-        
+
             std::cout << std::endl
                       << "Basic information" << std::endl;
             // How % of timelikes
-            std::cout << data.basic_info << std::endl;
+            std::cout << *(data.basic_info) << std::endl;
 
             std::cout << std::endl
                       << "Report:" << std::endl;
@@ -290,7 +275,7 @@ namespace powerhouse_test
 
         void pre_write(std::ostream &output) override
         {
-            std::cout << "Writing to output ..," << std::endl;
+            std::cout << "Writing to output ..." << std::endl;
             output
                 << "# tau,x,y,eta,theta,sqrt(sigma^2),sqrt(-omega^2),div.beta,sqrt(-varpi^2),sqrt(xi^2),sqrt(-a^2)" << std::endl;
         }

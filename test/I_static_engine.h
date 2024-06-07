@@ -22,6 +22,7 @@ namespace powerhouse_test
     /// @brief A singlton factory that takes care of the calculations.
     /// @tparam C cell type
     /// @tparam P particle type
+    /// @tparam O output type
     template <typename C, typename P, typename O>
     class I_engine
     {
@@ -231,7 +232,7 @@ namespace powerhouse_test
 
         if (!_calculator)
         {
-            throw std::runtime_error("Calculator is not initialized!");
+            throw std::runtime_error("Calculator is not found!");
         }
 
         if (_settings.program_mode != utils::program_modes::Examine)
@@ -248,13 +249,15 @@ namespace powerhouse_test
     {
         if constexpr (is_template_base_of<powerhouse::exam_output, O>::value)
         {
-            calculator()->init(_hypersurface.data().size());
+            int total_count = _hypersurface.data().size();
+            calculator()->init(total_count);
 
 #ifdef _OPENMP
+            std::atomic<size_t> progress(0);
 #pragma omp parallel
             {
                 O local_output;
-
+                int tid = omp_get_thread_num();
 #pragma omp for
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
                 {
@@ -262,6 +265,11 @@ namespace powerhouse_test
                     if (calculator()->pre_step(cell, local_output))
                     {
                         calculator()->perform_step(cell, local_output);
+                        size_t current_progress = ++progress;
+                        if (tid == 0 && current_progress % (total_count / 100) == 0)
+                        {
+                            utils::show_progress((100 * current_progress / total_count));
+                        }
                     }
                 }
 
@@ -269,21 +277,29 @@ namespace powerhouse_test
 #pragma omp critical
                 {
                     _single_output += local_output;
+                    utils::show_progress(100);
                 }
             }
 #else
             O local_output;
-
+            size_t progress = 0;
             for (size_t i = 0; i < _hypersurface.data().size(); i++)
             {
                 auto &cell = _hypersurface[i];
                 if (calculator()->pre_step(cell, O))
                 {
                     calculator()->perform_step(cell, local_output);
+                    size_t curren_progress = ++progress;
+                    if (current_progress % (total_steps / 100) == 0)
+                    {
+
+                        utils::show_progress((100 * current_progress / total_count));
+                    }
                 }
             }
 
-            _single_output += local_output;
+            _single_output = local_output;
+            utils::show_progress(100);
 #endif
 
             _single_output.basic_info.reset(new hydro::surface_stat<C>(_hypersurface.readinfo()));
@@ -388,7 +404,7 @@ namespace powerhouse_test
                 throw std::runtime_error("Error opening output file");
             }
             const auto &count = _hypersurface.data().size();
-            int lastperc = -1;
+            std::atomic<int> lastperc(-1);
             calculator()->pre_write(output);
 #ifdef _OPENMP
             std::vector<std::ostringstream> buffer(omp_get_max_threads());
@@ -401,14 +417,18 @@ namespace powerhouse_test
                 calculator()->write(buffer[tid], &cell, nullptr);
 #pragma omp critical
                 {
-                    int perc = 100 * ((double)counter) / ((double)count) + 1;
-                    if (perc > lastperc)
+                    if (tid == 0)
                     {
-                        lastperc = perc;
-                        utils::show_progress(perc > 100 ? 100 : perc);
+                        int perc = 100 * ((double)counter) / ((double)count) + 1;
+                        if (perc > lastperc)
+                        {
+                            lastperc = perc;
+                            utils::show_progress(perc > 100 ? 100 : perc);
+                        }
                     }
                 }
             }
+            utils::show_progress(100);
 
             lastperc = -1;
             int counter = 0;
@@ -435,6 +455,7 @@ namespace powerhouse_test
                 }
             }
 #endif
+            std::cout.flush();
         }
     }
 

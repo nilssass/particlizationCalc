@@ -6,31 +6,29 @@
 #include "../src/yield_calculator.h"
 #include "../src/pdg_particle.h"
 #include "my_test.h"
+#include "../src/vhll_engine_helper.h"
 namespace
 {
     namespace ug = utils::geometry;
     class YieldTest : public my_test
     {
     protected:
-        std::shared_ptr<powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>> engine;
+        vhlle::engine_helper engine;
         utils::program_options opts;
         YieldTest()
+        {
+
+        }
+        void SetUp() override
         {
             opts.accept_mode = utils::accept_modes::AcceptAll;
             opts.program_mode = utils::program_modes::Yield;
             opts.yield_mode = utils::yield_modes::GlobalEq;
+            opts.polarization_mode = utils::polarization_modes::NA;
             opts.in_file = "./input/beta.dat";
             opts.out_file = "./output/yield_sample.dat";
-            engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>::get();
-        }
-        void SetUp() override
-        {
-            powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle>::factory()
-                ->register_calculator(opts,
-                                      []()
-                                      {
-                                          return std::make_unique<powerhouse::yield_calculator>();
-                                      });
+            engine = vhlle::engine_helper(opts);
+            engine.configure();
         }
         void TearDown() override
         {
@@ -89,18 +87,18 @@ namespace
     TEST_F(YieldTest, TestIfYieldWorks)
     {
         int lines;
-        auto surface = read_cells<hydro::fcell>(opts.in_file, 5, lines);
+        auto surface = read_cells<hydro::fcell>("./input/beta.dat", 5, lines);
         opts.particle_id = powerhouse::particle_names::PION_PLUS;
         EXPECT_EQ(surface.total(), surface.data().size());
-        EXPECT_NO_THROW(engine->init(opts, surface));
-        engine->run();
-        const auto& output = engine->yield_output();
+        EXPECT_NO_THROW(engine.init(surface));
+        engine.run();
+        const auto&& output = engine.yield_output();
         for (auto &&row : output)
         {
             ASSERT_TRUE(row.dNd3p >=0) << "at (" << row.pT << "," << row.phi_p <<
             "," << row.y_p << ") dN/d3p = " << row.dNd3p;
         }
-        engine->write();
+        engine.write();
     }
 
     // TEST_F(YieldTest, TestIfResultsAreUnique)

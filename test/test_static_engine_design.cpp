@@ -67,9 +67,9 @@ namespace
                                       return std::make_unique<powerhouse_test::test_yield_calculator>();
                                   });
         exam_factory::factory()
-            ->register_calculator({.program_mode = utils::program_modes::Yield,
+            ->register_calculator({.program_mode = utils::program_modes::Examine,
                                    .polarization_mode = utils::polarization_modes::NA,
-                                   .yield_mode = utils::yield_modes::GlobalEq},
+                                   .yield_mode = utils::yield_modes::NA},
                                   []()
                                   {
                                       return std::make_unique<powerhouse_test::test_examiner>();
