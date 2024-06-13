@@ -248,7 +248,7 @@ namespace powerhouse
     {
         if constexpr (is_template_base_of<powerhouse::exam_output, O>::value)
         {
-            int&& total_count = _hypersurface.data().size();
+            int &&total_count = _hypersurface.data().size();
             calculator()->init(total_count);
 #ifdef _OPENMP
             std::atomic<size_t> progress(0);
@@ -280,14 +280,15 @@ namespace powerhouse
             }
 #else
             O local_output;
+            auto total_steps = _hypersurface.data().size();
             size_t progress = 0;
             for (size_t i = 0; i < _hypersurface.data().size(); i++)
             {
                 auto &cell = _hypersurface[i];
-                if (calculator()->pre_step(cell, O))
+                if (calculator()->pre_step(cell, local_output))
                 {
                     calculator()->perform_step(cell, local_output);
-                    size_t curren_progress = ++progress;
+                    size_t current_progress = ++progress;
                     if (current_progress % (total_steps / 100) == 0)
                     {
 
@@ -331,7 +332,6 @@ namespace powerhouse
             {
                 int tid = omp_get_thread_num();
                 std::vector<O> thread_output(chunk_size);
-
 #pragma omp for schedule(dynamic)
                 for (size_t id_x = 0; id_x < _output.size(); id_x++)
                 {
@@ -343,7 +343,6 @@ namespace powerhouse
                     {
                         utils::show_progress((100 * current_progress / total_size));
                     }
-
                     for (size_t i = 0; i < _hypersurface.data().size(); i++)
                     {
                         auto &cell = _hypersurface[i];
@@ -362,10 +361,13 @@ namespace powerhouse
             }
 
 #else
-            std::cout << "Calculating the yield in phase space ..." << std::endl;
-            size_t progress = 0;
-            for (size_t id_x = 0; id_x < _output.size(); id_x++)
+            auto step_size = (size_t)ceil((double)total_size / 100.0);
+            for (size_t id_x = 0; id_x < total_size; id_x++)
             {
+                if (id_x % step_size == 0)
+                {
+                    utils::show_progress((100 * id_x / total_size));
+                }
                 auto &&local_output = _output[id_x];
                 local_output.dNd3p = 0;
 
@@ -378,17 +380,11 @@ namespace powerhouse
                     }
                 }
 
-                size_t curren_progress = ++progress;
-                if (current_progress % (total_size / 100) == 0)
-                {
-
-                    utils::show_progress((100 * current_progress / total_size));
-                }
-
                 _output.push_back(local_output);
             }
 
 #endif
+            std::cout << std::endl;
         }
     }
 
@@ -454,7 +450,6 @@ namespace powerhouse
                 }
             }
 #endif
-            std::cout.flush();
         }
     }
 
@@ -477,6 +472,7 @@ namespace powerhouse
             }
             const auto &count = _output.size();
             int lastperc = -1;
+            
             calculator()->pre_write(output);
 #ifdef _OPENMP
             std::vector<std::ostringstream> buffer(omp_get_max_threads());

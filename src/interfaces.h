@@ -104,7 +104,7 @@ namespace hydro
         /// @brief reads the surface data from a file, uses parallelization if the code is compiled with OpenMP
         /// @param i_file input file
         /// @param mode
-        virtual void read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count = ESTIMATED_LINE_COUNT);
+        virtual void read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count = ESTIMATED_LINE_COUNT, bool quiet = false);
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
         std::vector<C> &data() { return _cells; }
@@ -140,7 +140,7 @@ namespace hydro
     };
 
     template <typename C>
-    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count)
+    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count, bool quiet)
     {
         const int estimated_line_count = t_estimated_line_count;
         const int step_size = estimated_line_count / 100 - 1;
@@ -203,7 +203,6 @@ namespace hydro
             int local_last_perc = -1;
             std::ifstream local_file(i_file);
             std::vector<C> thread_cells;
-            thread_cells.reserve(chunk_size);
 
             if (!local_file.is_open())
             {
@@ -217,10 +216,16 @@ namespace hydro
                 std::string line;
 #ifdef _OPENMP
                 while (local_file.tellg() < file_positions[tid + 1] && std::getline(local_file, line))
+                {
+                    // Ensure we do not read beyond the chunk
+                    if (local_file.tellg() > file_positions[tid + 1])
+                    {
+                        break;
+                    }
 #else
             while (std::getline(local_file, line))
+            {
 #endif
-                {
 
                     local_counter++;
                     bool reject = false;
@@ -272,11 +277,14 @@ namespace hydro
 #pragma omp critical
                     {
 #endif
-                        perc = std::max(perc, local_perc);
-                        if (perc > last_perc)
+                        if (!quiet)
                         {
-                            last_perc = perc;
-                            utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                            perc = std::max(perc, local_perc);
+                            if (perc > last_perc)
+                            {
+                                last_perc = perc;
+                                utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                            }
                         }
 #ifdef _OPENMP
                     }
@@ -295,33 +303,43 @@ namespace hydro
                 _timelikes += local_timelikes;
                 _skipped += local_skipped;
                 _lines += local_counter;
-                utils::show_progress(100);
+                if (!quiet)
+                    utils::show_progress(100);
             }
 
 #ifdef _OPENMP
         }
 #endif
         // retrying for the failed cells
+        // the second condition is required to check if the failure was real
         if (_failed > 0)
         {
-            std::string line;
-            for (auto &&pos : failed_positions)
+            if (_lines == _total + _rejected + _skipped)
             {
-                file.seekg(pos);
-                std::getline(file, line);
-                std::istringstream iss(line);
-                C cell;
-                iss >> cell;
-                if (!iss.fail())
+                _total += _failed;
+                _failed = 0;
+            }
+            else
+            {
+                std::string line;
+                for (auto &&pos : failed_positions)
                 {
-                    _cells.push_back(cell);
-                    _failed--;
-                    _total++;
+                    file.seekg(pos);
+                    std::getline(file, line);
+                    std::istringstream iss(line);
+                    C cell;
+                    iss >> cell;
+                    if (!iss.fail())
+                    {
+                        _cells.push_back(cell);
+                        _failed--;
+                        _total++;
+                    }
                 }
             }
         }
-
-        std::cout << std::endl;
+        if(!quiet)
+            std::cout << std::endl;
     }
 
     template <typename C>
@@ -572,7 +590,7 @@ namespace powerhouse
         double dNd3p;
         double local_yield()
         {
-            return dNd3p / (utils::hbarC * utils::hbarC * utils::hbarC);
+            return dNd3p * (utils::hbarC * utils::hbarC * utils::hbarC);
         }
         ~yield_output() override {}
     };
@@ -641,7 +659,7 @@ namespace powerhouse
         virtual void init(const P *particle, const utils::program_options &options) {}
         /// @brief happens before perform_step in each iteration
         /// @returns false if this iteration is rejected
-        virtual bool pre_step(C &cell, O &previous_step) {return true;}
+        virtual bool pre_step(C &cell, O &previous_step) { return true; }
         /// @brief happens after perform_step (Polarization/Yield) or the whole iteration (Examine)
         /// @param output the current or final output
         virtual void process_output(O &output) = 0;

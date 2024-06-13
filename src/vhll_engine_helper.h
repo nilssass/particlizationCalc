@@ -55,7 +55,7 @@ namespace vhlle
 
     public:
         engine_helper() = default;
-        engine_helper(utils::program_options &settings) : _settings(std::move(settings))
+        engine_helper(utils::program_options &settings) : _settings(settings)
         {
             _engine = get_engine();
         }
@@ -141,7 +141,7 @@ namespace vhlle
 
         void inline reset(utils::program_options &new_settings)
         {
-            _settings = std::move(new_settings);
+            _settings = new_settings;
             _engine = get_engine();
             std::visit([&](auto &eng)
                        { eng->reset(_settings); }, _engine);
