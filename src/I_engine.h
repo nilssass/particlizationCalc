@@ -326,12 +326,13 @@ namespace powerhouse
             calculator()->init(particle(), settings());
 #if _OPENMP
             int threads_count = omp_get_max_threads();
-            size_t chunk_size = total_size / (double)threads_count;
+            size_t chunk_size = (total_size + threads_count - 1) / threads_count;
             std::atomic<size_t> progress(0);
+            std::vector<std::vector<O>> thread_outputs(threads_count);
 #pragma omp parallel
             {
                 int tid = omp_get_thread_num();
-                std::vector<O> thread_output(chunk_size);
+                thread_outputs[tid].reserve(chunk_size);
 #pragma omp for schedule(dynamic)
                 for (size_t id_x = 0; id_x < _output.size(); id_x++)
                 {
@@ -339,7 +340,7 @@ namespace powerhouse
                     local_output.dNd3p = 0;
 
                     size_t current_progress = ++progress;
-                    if (tid == 0 && current_progress % (total_size / 100) == 0)
+                    if (tid == 0 && (current_progress % (total_size / 100) == 0 || current_progress == 1))
                     {
                         utils::show_progress((100 * current_progress / total_size));
                     }
@@ -351,13 +352,15 @@ namespace powerhouse
                             calculator()->perform_step(cell, local_output);
                         }
                     }
-                    thread_output.push_back(local_output);
+                    thread_outputs[tid].push_back(local_output);
                 }
-#pragma omp critical
-                {
-                    _output.insert(_output.end(), thread_output.begin(), thread_output.end());
-                    utils::show_progress(100);
-                }
+            }
+            /// Flatten the thread_outputs into _output
+            _output.clear();
+            _output.reserve(total_size);
+            for (const auto &thread_output : thread_outputs)
+            {
+                _output.insert(_output.end(), thread_output.begin(), thread_output.end());
             }
 
 #else
@@ -380,7 +383,7 @@ namespace powerhouse
                     }
                 }
 
-                _output.push_back(local_output);
+                _output[id_x] = local_output;
             }
 
 #endif
@@ -472,7 +475,7 @@ namespace powerhouse
             }
             const auto &count = _output.size();
             int lastperc = -1;
-            
+
             calculator()->pre_write(output);
 #ifdef _OPENMP
             std::vector<std::ostringstream> buffer(omp_get_max_threads());

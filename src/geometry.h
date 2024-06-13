@@ -2,13 +2,14 @@
 #define GEOMETRY_H
 #include <vector>
 #include <array>
-#include <immintrin.h>
 #include "utils.h"
 #include <cassert>
 #include <initializer_list>
 #include <algorithm>
 #include <numeric>
-#include <stdexcept>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 namespace utils::geometry
 {
     /// @brief Minkowski four vector with index information
@@ -16,12 +17,14 @@ namespace utils::geometry
     class four_vector
     {
     public:
-        four_vector() :_data{0, 0, 0, 0}, _lower(false) {}
+        using four_vec = std::array<double, 4>;
+        static constexpr std::array<double, 4> gmumu = {1.0, -1.0, -1.0, -1.0}; // Example metric tensor
+
+        four_vector() : _data{0, 0, 0, 0}, _lower(false) {}
         four_vector(bool lower) : _data{0, 0, 0, 0}, _lower(lower) {}
+        four_vector(four_vec vec, bool is_lower = false) : _data(vec), _lower(is_lower) {}
 
-        four_vector(four_vec vec, bool is_lower = false) : _data(vec), _lower(is_lower){}
-
-        four_vector(double arr[], const int size, bool is_lower = false)
+        four_vector(double arr[], int size, bool is_lower = false)
         {
             if (size == 4)
             {
@@ -37,84 +40,97 @@ namespace utils::geometry
             }
         }
 
-        four_vector(const four_vector &other)
-        {
-            _data = other._data;
-            _lower = other._lower;
-        }
-        four_vector(const double &v0, const double &v1, const double &v2, const double &v3, const bool &lower) : _data({v0, v1, v2, v3}), _lower(lower)
-        {
-        }
+        four_vector(const four_vector &other) : _data(other._data), _lower(other._lower) {}
+        four_vector(double v0, double v1, double v2, double v3, bool lower) : _data{v0, v1, v2, v3}, _lower(lower) {}
 
-        four_vec vec() { return _data; }
-        bool is_lower() { return _lower; }
+        four_vec vec() const { return _data; }
+        bool is_lower() const { return _lower; }
         double *to_array() { return _data.data(); }
+        const double *to_array() const { return _data.data(); }
         double operator[](int i) const { return _data[i]; }
         double &operator[](int i) { return _data[i]; }
-        /// @brief vector addition
-        /// @param rhs
-        /// @return
+
+        // Vector addition
         four_vector &operator+=(const four_vector &rhs)
         {
             assert(rhs._lower == _lower);
-
+#ifdef _OPENMP
+#pragma omp simd
+#endif
             for (size_t i = 0; i < 4; i++)
             {
-                this->_data[i] += rhs._data[i];
+                _data[i] += rhs._data[i];
             }
             return *this;
         }
-        /// @brief vector addition
-        /// @param vec2
-        /// @return
-        four_vector operator+(four_vector &vec2)
+
+        // Vector addition
+        four_vector operator+(const four_vector &vec2) const
         {
             assert(vec2._lower == _lower);
-            return four_vector(
-                {_data[0] + vec2._data[0],
-                 _data[1] + vec2._data[1],
-                 _data[2] + vec2._data[2],
-                 _data[3] + vec2._data[3]},
-                _lower);
+            four_vector res;
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+            for (size_t i = 0; i < 4; i++)
+            {
+                res._data[i] = _data[i] + vec2._data[i];
+            }
+            res._lower = _lower;
+            return res;
         }
-        /// @brief vector subtraction
-        /// @param vec2
-        /// @return
-        four_vector operator-(const four_vector &vec2)
+
+        // Vector subtraction
+        four_vector operator-(const four_vector &vec2) const
         {
             assert(vec2._lower == _lower);
-            return four_vector(
-                {_data[0] - vec2._data[0],
-                 _data[1] - vec2._data[1],
-                 _data[2] - vec2._data[2],
-                 _data[3] - vec2._data[3]},
-                _lower);
+            four_vector res;
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+            for (size_t i = 0; i < 4; i++)
+            {
+                res._data[i] = _data[i] - vec2._data[i];
+            }
+            res._lower = _lower;
+            return res;
         }
+
         four_vector &operator-=(const four_vector &rhs)
         {
             assert(rhs._lower == _lower);
-
+#ifdef _OPENMP
+#pragma omp simd
+#endif
             for (size_t i = 0; i < 4; i++)
             {
-                this->_data[i] -= rhs._data[i];
+                _data[i] -= rhs._data[i];
             }
-
             return *this;
         }
-        double operator*(const four_vector &vec2)
+
+        // Dot product
+        double operator*(const four_vector &vec2) const
         {
             double res = 0;
-
+#ifdef _OPENMP
+#pragma omp simd reduction(+ : res)
+#endif
             for (size_t i = 0; i < 4; i++)
             {
-                res += _data[i] * vec2._data[i] * (vec2._lower == _lower ? utils::gmumu[i] : 1.);
+                res += _data[i] * vec2._data[i] * (vec2._lower == _lower ? gmumu[i] : 1.0);
             }
             return res;
         }
-        four_vector operator*(const r2_tensor &tensor)
+
+        // Tensor multiplication
+        four_vector operator*(const r2_tensor &tensor) const
         {
             const auto &v = this->to_upper().vec();
             double res[4] = {0};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
             for (size_t i = 0; i < 4; i++)
             {
                 for (size_t j = 0; j < 4; j++)
@@ -124,23 +140,40 @@ namespace utils::geometry
             }
             return four_vector(res, 4, true);
         }
-        four_vector operator*(const double &x) { return four_vector({x * _data[0], x * _data[1], x * _data[2], x * _data[3]}, _lower); }
+
+        // Scalar multiplication
+        four_vector operator*(double x) const
+        {
+            four_vector res;
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+            for (size_t i = 0; i < 4; i++)
+            {
+                res._data[i] = _data[i] * x;
+            }
+            res._lower = _lower;
+            return res;
+        }
+
         bool operator==(const four_vector &other) const
         {
-            auto res = _lower == other._lower;
+            bool res = (_lower == other._lower);
             if (res)
             {
-                for (size_t i = 0; i < 4 && res; i++)
+#ifdef _OPENMP
+#pragma omp simd reduction(& : res)
+#endif
+                for (size_t i = 0; i < 4; i++)
                 {
-                    res = res & is_zero(other._data[i] - _data[i]);
+                    res = res && other._data[i] == _data[i];
                 }
             }
             return res;
         }
-        /// @brief Outer product
-        /// @param vec2
-        /// @return a_\mu b_\nu or similar
-        r2_tensor operator&(const four_vector &vec2)
+
+        // Outer product
+        r2_tensor operator&(const four_vector &vec2) const
         {
             utils::r2_tensor res = {0};
             for (size_t i = 0; i < 4; i++)
@@ -152,20 +185,26 @@ namespace utils::geometry
             }
             return res;
         }
-        static four_vector add_vectors(std::vector<four_vector> vecs)
+
+        static four_vector add_vectors(const std::vector<four_vector> &vecs)
         {
-            auto sum = std::accumulate(vecs.begin(), vecs.end(), vecs[0]);
+            auto sum = std::accumulate(vecs.begin(), vecs.end(), four_vector(vecs[0].is_lower()));
             return sum;
         }
-        double norm_sq()
+
+        double norm_sq() const
         {
             return (*this) * (*this);
         }
-        four_vector to_lower()
+
+        four_vector to_lower() const
         {
-            auto res = four_vector(*this);
+            four_vector res = *this;
             if (!_lower)
             {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
                 for (size_t i = 0; i < 4; i++)
                 {
                     res._data[i] *= gmumu[i];
@@ -174,10 +213,14 @@ namespace utils::geometry
             }
             return res;
         }
+
         void lower()
         {
             if (!_lower)
             {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
                 for (size_t i = 0; i < 4; i++)
                 {
                     _data[i] *= gmumu[i];
@@ -185,11 +228,15 @@ namespace utils::geometry
                 _lower = true;
             }
         }
-        four_vector to_upper()
+
+        four_vector to_upper() const
         {
-            auto res = four_vector(*this);
+            four_vector res = *this;
             if (_lower)
             {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
                 for (size_t i = 0; i < 4; i++)
                 {
                     res._data[i] *= gmumu[i];
@@ -198,10 +245,14 @@ namespace utils::geometry
             }
             return res;
         }
+
         void raise()
         {
             if (_lower)
             {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
                 for (size_t i = 0; i < 4; i++)
                 {
                     _data[i] *= gmumu[i];
@@ -209,6 +260,7 @@ namespace utils::geometry
                 _lower = false;
             }
         }
+
         /// @brief Lorentz boost (not implemented)
         /// @param four_velocity
         /// @return
@@ -223,6 +275,7 @@ namespace utils::geometry
             stream >> vector._data[0] >> vector._data[1] >> vector._data[2] >> vector._data[3];
             return stream;
         }
+
         friend std::ostream &operator<<(std::ostream &stream, const four_vector &vector)
         {
             stream << "(" << vector[0] << "," << vector[1] << ","
@@ -233,6 +286,11 @@ namespace utils::geometry
     private:
         std::array<double, 4> _data;
         bool _lower;
+
+        inline bool is_zero(double val) const
+        {
+            return std::abs(val) < 1e-9;
+        }
     };
 
     class t_r2_tensor

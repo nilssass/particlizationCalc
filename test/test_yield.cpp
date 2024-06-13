@@ -110,8 +110,9 @@ namespace
     {
         std::cout << "Building the phase space ..." << std::endl;
         create_phase_space();
-        std::cout << "Calculating the yield in phase space ..." << std::endl;
+        std::cout << "Calculating the yield in phase space (single) ..." << std::endl;
         auto total_size = _output.size();
+        std::cout << "total size: " << total_size << std::endl;
 
         auto step_size = (size_t)ceil((double)total_size / 100.0);
         for (size_t id_x = 0; id_x < total_size; id_x++)
@@ -125,17 +126,18 @@ namespace
                 perform_step(cell, local_output);
             }
 
-            _output.push_back(local_output);
+            _output[id_x] = local_output;
         }
     }
     void YieldTest::yield_open_mp()
     {
         std::cout << "Building the phase space ..." << std::endl;
         create_phase_space();
-        std::cout << "Calculating the yield in phase space ..." << std::endl;
+        std::cout << "Calculating the yield in phase space (omp) ..." << std::endl;
         auto total_size = _output.size();
+        std::cout << "total size: " << total_size << std::endl;
         int threads_count = omp_get_max_threads();
-        size_t chunk_size = total_size / (double)threads_count;
+        size_t chunk_size = (total_size + threads_count - 1) / threads_count;
         std::atomic<size_t> progress(0);
         std::vector<std::vector<powerhouse::yield_output<hydro::fcell>>> thread_outputs(threads_count);
 #pragma omp parallel
@@ -143,7 +145,7 @@ namespace
             int tid = omp_get_thread_num();
             thread_outputs[tid].reserve(chunk_size);
 #pragma omp for schedule(dynamic)
-            for (size_t id_x = 0; id_x < _output.size(); id_x++)
+            for (size_t id_x = 0; id_x < total_size; id_x++)
             {
                 powerhouse::yield_output<hydro::fcell> local_output = _output[id_x];
                 local_output.dNd3p = 0;
@@ -157,13 +159,10 @@ namespace
         }
         // Flatten the thread_outputs into _output
         _output.clear();
-#pragma omp parallel for schedule(dynamic)
-        for (int tid = 0; tid < threads_count; tid++)
+        _output.reserve(total_size);
+        for (const auto &thread_output : thread_outputs)
         {
-            for (size_t i = 0; i < thread_outputs[i].size(); i++)
-            {
-                _output[tid * chunk_size + i] = thread_outputs[tid][i];
-            }
+            _output.insert(_output.end(), thread_output.begin(), thread_output.end());
         }
     }
     void YieldTest::write()
@@ -229,7 +228,8 @@ namespace
         _settings.out_file = "./output/test_open_mp_yeild.dat";
         yield_open_mp();
         write();
-        std::cout << "comparing ..." << std::endl;
+        EXPECT_EQ(_output.size(), _yield_single_output.size());
+        std::cout << "Comparing ..." << std::endl;
         for (const auto &row : _output)
         {
             auto it = std::find_if(_yield_single_output.begin(), _yield_single_output.end(), [&](yout &rhs)

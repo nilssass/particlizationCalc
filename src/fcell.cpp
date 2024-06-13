@@ -88,11 +88,14 @@ utils::r2_tensor hydro::fcell::delta_ul()
     if (!_delta_ul)
     {
         utils::r2_tensor _ = {0};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
         for (size_t i = 0; i < 4; i++)
         {
             for (size_t j = 0; j < 4; j++)
             {
-                _[i][j] = utils::kr_delta(i,j) - _u[i] * ( j == 0 ? _u[j] : -_u[j]);
+                _[i][j] = utils::kr_delta(i, j) - _u[i] * (j == 0 ? _u[j] : -_u[j]);
             }
         }
         // const auto &u0 = _u[0];
@@ -123,6 +126,9 @@ utils::r2_tensor hydro::fcell::gradu_ll()
     if (!_gradu)
     {
         utils::r2_tensor _ = {{0}};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
         for (size_t i = 0; i < 4; i++)
         {
             for (size_t j = 0; j < 4; j++)
@@ -130,7 +136,7 @@ utils::r2_tensor hydro::fcell::gradu_ll()
                 _[i][j] = 0;
                 for (size_t rho = 0; rho < 4; rho++)
                 {
-                    _[i][j] += delta_ul()[rho][i] * _du[j][rho];
+                    _[i][j] += delta_ul()[rho][i] * _du[rho][j];
                 }
             }
         }
@@ -278,6 +284,9 @@ double hydro::fcell::acc_norm()
 void hydro::fcell::calculate_shear()
 {
     utils::r2_tensor _ = {{0}};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
     for (size_t mu = 0; mu < 4; mu++)
     {
         for (size_t nu = 0; nu < 4; nu++)
@@ -291,15 +300,25 @@ void hydro::fcell::calculate_shear()
 void hydro::fcell::calculate_fvorticity_vec()
 {
     ug::four_vector _(false);
+    const auto u_l = _u.to_lower();
+#ifdef _OPENMP
+#pragma omp simd
+#endif
     for (size_t mu = 0; mu < 4; mu++)
     {
         _[mu] = 0;
         for (size_t nu = 0; nu < 4; nu++)
         {
+            if (nu == mu || u_l[nu] == 0)
+                continue;
             for (size_t a = 0; a < 4; a++)
             {
+                if (a == mu || a == nu)
+                    continue;
                 for (size_t b = 0; b < 4; b++)
                 {
+                    if (b == mu || b == nu || b == a || _du[a][b] == 0)
+                        continue;
                     _[mu] += 0.5 * utils::levi(mu, nu, a, b) * _u[nu] * _du[a][b];
                 }
             }
@@ -312,6 +331,9 @@ void hydro::fcell::calculate_fvorticity()
 {
     utils::r2_tensor _ = {{0}};
     const auto &grad = gradu_ll();
+#ifdef _OPENMP
+#pragma omp simd
+#endif
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -325,6 +347,9 @@ void hydro::fcell::calculate_fvorticity()
 void hydro::fcell::calculate_th_vorticity()
 {
     utils::r2_tensor _ = {{0}};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -338,11 +363,14 @@ void hydro::fcell::calculate_th_vorticity()
 void hydro::fcell::calculate_th_shear()
 {
     utils::r2_tensor _ = {{0}};
+#ifdef _OPENMP
+#pragma omp simd
+#endif
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
         {
-            _[i][j] = (0.5 * _dbeta[i][j]* utils::hbarC + 0.5 * _dbeta[j][i]* utils::hbarC) ;
+            _[i][j] = (0.5 * _dbeta[i][j] * utils::hbarC + 0.5 * _dbeta[j][i] * utils::hbarC);
         }
     }
     _th_shear = std::make_unique<utils::r2_tensor>(_);
@@ -350,16 +378,10 @@ void hydro::fcell::calculate_th_shear()
 
 void hydro::fcell::calculte_ac()
 {
-    ug::four_vector _(true);
-    for (size_t i = 0; i < 4; i++)
-    {
-        _[i] = 0;
-        for (size_t j = 0; j < 4; j++)
-        {
-            _[i] += _u[j] * _du[i][j];
-        }
-    }
-    _acc = std::make_unique<ug::four_vector>(_.to_upper());
+    ug::four_vector _;
+    _ = _u * _du;
+    _.raise();
+    _acc = std::make_unique<ug::four_vector>(_);
 }
 
 std::istream &hydro::operator>>(std::istream &stream, fcell &cell)

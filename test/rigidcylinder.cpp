@@ -51,16 +51,16 @@ hydro::fcell rigid_cylinder::solve(const hydro::fcell &cell)
     utils::r2_tensor du = {{0}};
     const auto &x = cell.x();
     const auto &y = cell.y();
-    du[0][1] = pow(_gf, 3.0) * x * _om_0 * _om_0;
-    du[0][2] = pow(_gf, 3.0) * y * _om_0 * _om_0;
+    du[1][0] = pow(_gf, 3.0) * x * _om_0 * _om_0;
+    du[2][0] = pow(_gf, 3.0) * y * _om_0 * _om_0;
     du[1][1] = pow(_gf, 3.0) * y * x * _om_0 * _om_0 * _om_0;
-    du[1][2] = pow(_gf, 3.0) * _om_0 * (1. - _om_0 * _om_0 * x * x);
-    du[2][1] = -pow(_gf, 3.0) * _om_0 * (1. - _om_0 * _om_0 * y * y);
+    du[2][1] = pow(_gf, 3.0) * _om_0 * (1. - _om_0 * _om_0 * x * x);
+    du[1][2] = -pow(_gf, 3.0) * _om_0 * (1. - _om_0 * _om_0 * y * y);
     du[2][2] = -pow(_gf, 3.0) * x * y * _om_0 * _om_0 * _om_0;
 
     utils::r2_tensor dbeta = {{0}};
-    dbeta[1][2] = _om_0 / _T_0;
-    dbeta[2][1] = -_om_0 / _T_0;
+    dbeta[2][1] = _om_0 / _T_0;
+    dbeta[1][2] = -_om_0 / _T_0;
     auto mcell = hydro::fcell(
         ug::four_vector({cell.tau(), cell.x(), cell.y(), cell.eta()}),
         ug::four_vector({cell.T(), 0, 0, 0}),
@@ -73,7 +73,7 @@ hydro::fcell rigid_cylinder::solve(const hydro::fcell &cell)
 
 ug::four_vector rigid_cylinder::exp_f_vorticity_u(const hydro::fcell &cell) const
 {
-    return ug::four_vector({0, 0, 0, -_gf * _gf * _om_0}, false);
+    return ug::four_vector({0, 0, 0, _gf * _gf * _om_0}, false);
 }
 
 utils::r2_tensor rigid_cylinder::exp_f_vorticity_ll(const hydro::fcell &cell) const

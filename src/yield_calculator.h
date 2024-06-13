@@ -62,26 +62,31 @@ namespace powerhouse
 
         void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
         {
-
             const static auto &mass = _particle.mass();
             const static auto &b = _particle.B();
             const static auto &q = _particle.Q();
             const static auto &s = _particle.S();
             const static auto &spin = _particle.spin();
             const static auto &stat = _particle.statistics();
+            const static auto &factor = (1.0 / (pow(2 * M_PI, 3)));
 
             const double &pT = previous_step.pT;
-            const auto &y = previous_step.y_p;
-            const auto &phi = previous_step.phi_p;
+            const double &y = previous_step.y_p;
+            const double &phi = previous_step.phi_p;
+            const double &mT = previous_step.mT;
 
-            const auto &mT = previous_step.mT;
-            utils::geometry::four_vector p({mT * cosh(y), pT * cos(phi), pT * sin(phi), mT * sinh(y)});
-            const auto &pdotdsigma = p * cell.dsigma();
-            const auto &pdotu = p * cell.four_vel();
+            const double cosh_y = cosh(y);
+            const double sinh_y = sinh(y);
+            const double cos_phi = cos(phi);
+            const double sin_phi = sin(phi);
 
-            const double &&total_mu = cell.mub() * b + cell.muq() * q + cell.mus() * s;
+            utils::geometry::four_vector p({mT * cosh_y, pT * cos_phi, pT * sin_phi, mT * sinh_y});
+            const auto pdotdsigma = p * cell.dsigma();
+            const auto pdotu = p * cell.four_vel();
+            const double total_mu = cell.mub() * b + cell.muq() * q + cell.mus() * s;
+            const double exponent = (pdotu - total_mu) / cell.T();
 
-            const double &&f = (1 / (pow(2 * M_PI, 3))) * 1 / (exp((pdotu - total_mu) / cell.T()) + stat);
+            const double f = factor * 1.0 / (exp(exponent) + stat);
 
             previous_step.dNd3p += pdotdsigma * f;
         }

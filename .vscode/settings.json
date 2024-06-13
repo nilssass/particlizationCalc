@@ -79,7 +79,8 @@
         "forward_list": "cpp",
         "unordered_set": "cpp",
         "cassert": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "numeric": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

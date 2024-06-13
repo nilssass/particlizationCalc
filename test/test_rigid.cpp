@@ -60,7 +60,7 @@ namespace
         int lines;
         hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(RIGID_CYL, 100, lines);
         auto &cell = rigid->data()[0];
-        const auto &exp_delta_ll = rigid->exp_delta_ll(cell);
+        auto exp_delta_ll = rigid->exp_delta_ll(cell);
         auto u = cell.four_vel();
         EXPECT_DOUBLE_EQ(utils::trace_ll(exp_delta_ll), 3.0) << "tr[exp_delta] != 3";
         EXPECT_ARRAY_NEAR((u * exp_delta_ll).vec(), {0}, "exp_delta.u != 0");
@@ -80,10 +80,11 @@ namespace
         EXPECT_NEAR(rigid->exp_b_theta(cell),
                     cell.b_theta(), abs_error);
         EXPECT_ARRAY_NEAR_ANTISYMMETRIC(cell.dbeta_ll(), "dbeta is not antisymmetric");
-
+        
         const auto &exp_acc = rigid->exp_acc_u(cell).vec();
         const auto &act_acc = cell.acceleration().vec();
         EXPECT_ARRAY_NEAR(exp_acc, act_acc, "-acceleration");
+
         const auto &exp_vort_vec = rigid->exp_f_vorticity_u(cell).vec();
         const auto &act_vort_vec = cell.fluid_vort_vec().vec();
         EXPECT_ARRAY_NEAR(exp_vort_vec, act_vort_vec, "-fluid_vort_vec", 1e-2);
@@ -94,7 +95,7 @@ namespace
         EXPECT_ARRAY_NEAR(rigid->exp_delta_uu(cell), cell.delta_uu(), "-delta_uu");
         const auto &exp_grad_u = rigid->exp_gradu_ll(cell);
         const auto &act_grad_u = cell.gradu_ll();
-        EXPECT_ARRAY_NEAR(exp_grad_u, act_grad_u);
+        EXPECT_ARRAY_NEAR(exp_grad_u, act_grad_u, "-grad_u");
         const auto &exp_f_vorticity_ll = rigid->exp_f_vorticity_ll(cell);
         const auto &act_f_vorticity_ll = cell.fluid_vort_ll();
         EXPECT_ARRAY_NEAR(exp_f_vorticity_ll,

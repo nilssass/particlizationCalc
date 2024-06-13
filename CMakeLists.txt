@@ -39,10 +39,19 @@ add_executable(
 )
 target_link_libraries(
     test_utils
+    PUBLIC
     GTest::gtest_main
 )
 include(GoogleTest)
 gtest_discover_tests(test_utils)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_utils PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_utils PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 add_executable(
     test_cells
@@ -182,7 +191,14 @@ add_executable(
     test/bench_utils.cpp
     src/utils.cpp
 )
-target_link_libraries(bench_utils benchmark::benchmark)
+target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
+
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_utils PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_utils PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # bench cells
 add_executable(
