@@ -248,7 +248,7 @@ namespace powerhouse
     {
         if constexpr (is_template_base_of<powerhouse::exam_output, O>::value)
         {
-            int &&total_count = _hypersurface.data().size();
+            const int total_count = _hypersurface.data().size();
             calculator()->init(total_count);
 #ifdef _OPENMP
             std::atomic<size_t> progress(0);
