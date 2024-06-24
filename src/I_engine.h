@@ -248,7 +248,7 @@ namespace powerhouse
     {
         if constexpr (is_template_base_of<powerhouse::exam_output, O>::value)
         {
-            const int total_count = _hypersurface.data().size();
+            const int && total_count = _hypersurface.data().size();
             calculator()->init(total_count);
 #ifdef _OPENMP
             std::atomic<size_t> progress(0);
@@ -264,7 +264,7 @@ namespace powerhouse
                     {
                         calculator()->perform_step(cell, local_output);
                         size_t current_progress = ++progress;
-                        if (tid == 0 && current_progress % (total_count / 100) == 0)
+                        if (tid == 0 && current_progress % (1 + total_count / 100) == 0)
                         {
                             utils::show_progress((100 * current_progress / total_count));
                         }
