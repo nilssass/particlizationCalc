@@ -4,7 +4,10 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-               "/opt/homebrew/Cellar/tclap/1.2.5/include"
+                "/opt/homebrew/Cellar/tclap/1.2.5/include",
+                "/opt/local/include/boost/",
+                "/opt/homebrew/Cellar/boost/1.85.0/include",
+                "/opt/homebrew/Cellar/root/6.32.00_1/include"
             ],
             "defines": [],
             "macFrameworkPath": [

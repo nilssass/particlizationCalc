@@ -8,6 +8,11 @@
 #include "my_test.h"
 #include "../src/vhll_engine_helper.h"
 #include <omp.h>
+#include <TMath.h>
+#include <TGraph2D.h>
+#include <TF2.h>
+#include <TFile.h>
+
 namespace
 {
     namespace ug = utils::geometry;
@@ -38,7 +43,7 @@ namespace
         {
             configure();
             init();
-            _hypersurface.read("./input/beta-60.dat", utils::accept_modes::AcceptAll, 100, true);
+            _hypersurface.read("./input/beta-60.dat", utils::accept_modes::AcceptAll, true);
         }
         void TearDown() override
         {
@@ -63,10 +68,6 @@ namespace
             {
                 throw std::runtime_error("Calculator is not initialized!");
             }
-
-            _pT = utils::linspace(0, 1, 5);
-            _phi = utils::linspace(0, 2 * M_PI, 5);
-            _y_rap = utils::linspace(powerhouse::DEFAULT_Y_MIN, powerhouse::DEFAULT_Y_MAX, 5);
         }
 
         void configure()
@@ -81,28 +82,37 @@ namespace
 
         void create_phase_space()
         {
+            const double &&pt_step = (powerhouse::DEFAULT_PT_MAX - 0.) / (double)powerhouse::DEFAULT_SIZE_PT;
+            const double &&phi_p_step = 2 * M_PI / (double)powerhouse::DEFAULT_SIZE_PHI;
+            const double &&y_step = (powerhouse::DEFAULT_Y_MAX - powerhouse::DEFAULT_Y_MIN) / (double)powerhouse::DEFAULT_SIZE_Y;
             _output.clear();
-            static const double mass = _particle->mass();
-            for (size_t pt_c = 0; pt_c < _pT.size(); pt_c++)
+            static const double &mass_sq = _particle->mass() * _particle->mass();
+            _pT.clear();
+            for (double pT = 0; pT <= powerhouse::DEFAULT_PT_MAX; pT += pt_step)
             {
-                for (size_t y_c = 0; y_c < _y_rap.size(); y_c++)
+                _pT.push_back(pT);
+                const auto pT_sq = pT * pT;
+                for (double y = powerhouse::DEFAULT_Y_MIN; y <= powerhouse::DEFAULT_Y_MAX; y += y_step)
                 {
-                    for (size_t phi_c = 0; phi_c < _phi.size(); phi_c++)
+                    for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)
                     {
-                        powerhouse::yield_output<hydro::fcell> pcell;
-                        pcell.pT = _pT[pt_c];
-                        pcell.y_p = _y_rap[y_c];
-                        pcell.phi_p = _phi[phi_c];
-                        pcell.mT = std::sqrt(mass * mass + _pT[pt_c] * _pT[pt_c]);
+                        yout pcell;
+                        pcell.pT = pT;
+                        pcell.y_p = y;
+                        pcell.phi_p = phi;
+                        pcell.mT = sqrt(mass_sq + pT_sq);
                         _output.push_back(pcell);
                     }
                 }
             }
+            std::cout << "phase space size: " << _output.size() << std::endl;
         }
 
         void yield_signle();
         void yield_open_mp();
         void write();
+        double integrate(double pT);
+        std::function<double(double, double)> integrand(double pT);
     };
 
     std::mutex YieldTest::_mutex;
@@ -181,6 +191,55 @@ namespace
                    << row.y_p << '\t' << row.local_yield() << std::endl;
         }
     }
+
+    double YieldTest::integrate(double pT)
+    {
+        std::vector<double> phi_p_domain;
+        std::vector<double> y_p_domain;
+        std::vector<double> yield_range;
+
+        for (const auto &point : _output)
+        {
+            if (point.pT == pT)
+            {
+                phi_p_domain.push_back(point.phi_p);
+                y_p_domain.push_back(point.y_p);
+                yield_range.push_back(point.dNd3p);
+            }
+        }
+
+        phi_p_domain.erase(std::unique(phi_p_domain.begin(), phi_p_domain.end()), phi_p_domain.end());
+
+        const auto &phi_size = phi_p_domain.size();
+
+        y_p_domain.erase(std::unique(y_p_domain.begin(), y_p_domain.end()), y_p_domain.end());
+
+        const auto &y_size = y_p_domain.size();
+
+        if (phi_p_domain.empty() || y_p_domain.empty() || yield_range.empty())
+        {
+            throw std::runtime_error("Error: No data found for the given pT value.");
+        }
+
+        TGraph2D graph;
+        for (size_t i = 0; i < phi_p_domain.size(); ++i)
+        {
+            graph.SetPoint(i, phi_p_domain[i], y_p_domain[i], yield_range[i]);
+        }
+
+        double phi_p_min = graph.GetXmin();
+        double phi_p_max = graph.GetXmax();
+        double y_p_min = graph.GetYmin();
+        double y_p_max = graph.GetYmax();
+
+        TF2 interpolator("interpolator", [&graph](double *x, double *p)
+                         { return graph.Interpolate(x[0], x[1]); }, graph.GetXmin(), graph.GetXmax(), graph.GetYmin(), graph.GetYmax(), 0);
+
+        // Perform the integration
+        double result = interpolator.Integral(phi_p_min, phi_p_max, y_p_min, y_p_max);
+
+        return result;
+    }
     void YieldTest::perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step)
     {
         const static auto &mass = _particle->mass();
@@ -236,6 +295,26 @@ namespace
                                    { return rhs.pT == row.pT && rhs.phi_p == row.phi_p && rhs.y_p == row.y_p; });
             ASSERT_FALSE(it == _yield_single_output.end());
             EXPECT_DOUBLE_EQ(it->dNd3p, row.dNd3p);
+        }
+    }
+
+    TEST_F(YieldTest, test_dn_dpt)
+    {
+        auto out_file = "./output/test_open_mp_yeild_dn_dpt.dat";
+        std::ofstream file(out_file);
+
+        yield_open_mp();
+
+        file << "#pT\tdNdpT" << std::endl;
+
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+        for (size_t counter = 0; counter < _output.size(); counter++)
+        {
+            int tid = omp_get_thread_num();
+            auto &row = _output[counter];
+            auto dn_dpt = integrate(row.pT);
+            file << row.pT << '\t' << dn_dpt << std::endl;
         }
     }
 }

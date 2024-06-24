@@ -34,7 +34,7 @@ void rigid_cylinder::write(std::ostream &output)
 {
     for (auto &cell : _cells.data())
     {
-        cell.write_back(output, '\t');
+        cell.write(output, '\t');
         output << std::endl;
     }
 }

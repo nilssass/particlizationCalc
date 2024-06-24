@@ -19,27 +19,6 @@ utils::r2_tensor hydro::fcell::delta_ll()
     if (!_delta_ll)
     {
         _delta_ll = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u.to_lower() * -1.0) & _u.to_lower()}));
-        // const auto &u0 = _u[0];
-        // const auto &u1 = _u[1];
-        // const auto &u2 = _u[2];
-        // const auto &u3 = _u[3];
-
-        //  utils::r2_tensor _ = {0};
-
-        // _[0][0] = 1. - u0 * u0;
-        // _[0][1] = u0 * u1;
-        // _[1][0] = _[0][1];
-        // _[0][2] = u0 * u2;
-        // _[2][0] = _[0][2];
-        // _[0][3] = u0 * u3;
-        // _[3][0] = _[0][3];
-        // _[1][1] = -1 - u1 * u1;
-        // _[1][2] = _[2][1] = -u1 * u2;
-        // _[1][3] = _[3][1] = -u1 * u3;
-        // _[2][2] = -1. -   u2 * u2;
-        // _[2][3] = _[3][2] = -u2 * u3;
-        // _[3][3] = -1 - u3 * u3;
-        //  _delta_ll = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ll;
 }
@@ -49,36 +28,6 @@ utils::r2_tensor hydro::fcell::delta_uu()
     if (!_delta_uu)
     {
         _delta_uu = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u * -1.0) & _u}));
-        // utils::r2_tensor _ = {0};
-        // // for (size_t i = 0; i < 4; i++)
-        // // {
-        // //     for (size_t j = 0; j < 4; j++)
-        // //     {
-        // //         for (size_t k = 0; k < 4; k++)
-        // //         {
-        // //             _[i][j]+=delta_ll()[i][k]*utils::g(k,j);
-        // //         }
-        // //     }
-        // // }
-        // const auto &u0 = _u[0];
-        // const auto &u1 = _u[1];
-        // const auto &u2 = _u[2];
-        // const auto &u3 = _u[3];
-
-        // _[0][0] = 1. - u0 * u0;
-        // _[0][1] = -u0 * u1;
-        // _[1][0] = _[0][1];
-        // _[0][2] = -u0 * u2;
-        // _[2][0] = _[0][2];
-        // _[0][3] = -u0 * u3;
-        // _[3][0] = _[0][3];
-        // _[1][1] = -1 - u1 * u1;
-        // _[1][2] = _[2][1] = -u1 * u2;
-        // _[1][3] = _[3][1] = -u1 * u3;
-        // _[2][2] = -1 -   u2 * u2;
-        // _[2][3] = _[3][2] = -u2 * u3;
-        // _[3][3] = -1 - u3 * u3;
-        //  _delta_uu = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_uu;
 }
@@ -98,24 +47,6 @@ utils::r2_tensor hydro::fcell::delta_ul()
                 _[i][j] = utils::kr_delta(i, j) - _u[i] * (j == 0 ? _u[j] : -_u[j]);
             }
         }
-        // const auto &u0 = _u[0];
-        // const auto &u1 = _u[1];
-        // const auto &u2 = _u[2];
-        // const auto &u3 = _u[3];
-
-        // _[0][0] = 1. - u0 * u0;
-        // _[0][1] = u0 * u1;
-        // _[1][0] = -_[0][1];
-        // _[0][2] = u0 * u2;
-        // _[2][0] = -_[0][2];
-        // _[0][3] = u0 * u3;
-        // _[3][0] = -_[0][3];
-        // _[1][1] = 1 + u1 * u1;
-        // _[1][2] = _[2][1] = u1 * u2;
-        // _[1][3] = _[3][1] = u1 * u2;
-        // _[2][2] = 1 + u2 * u2;
-        // _[2][3] = _[3][2] = u2 * u3;
-        // _[3][3] = 1 + u3 * u3;
         _delta_ul = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ul;
@@ -232,6 +163,53 @@ double hydro::fcell::b_theta()
     return *_b_theta;
 }
 
+void hydro::fcell::read_from_binary(std::istream &stream)
+{
+    stream.read(reinterpret_cast<char *>(&_tau), sizeof(_tau));
+    stream.read(reinterpret_cast<char *>(&_x), sizeof(_x));
+    stream.read(reinterpret_cast<char *>(&_y), sizeof(_y));
+    stream.read(reinterpret_cast<char *>(&_eta), sizeof(_eta));
+    
+    stream.read(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
+    stream.read(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
+    stream.read(reinterpret_cast<char *>(&_T), sizeof(_T));
+    stream.read(reinterpret_cast<char *>(&_mub), sizeof(_mub));
+    stream.read(reinterpret_cast<char *>(&_muq), sizeof(_muq));
+    stream.read(reinterpret_cast<char *>(&_mus), sizeof(_mus));
+
+    for (int i = 0; i < 4; i++)
+    {
+        stream.read(reinterpret_cast<char *>(_dbeta[i].data()), _dbeta[i].size() * sizeof(double));
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        stream.read(reinterpret_cast<char *>(_du[i].data()), _du[i].size() * sizeof(double));
+    }
+}
+
+void hydro::fcell::read_from_text(std::istream &stream)
+{
+    stream >> _tau >> _x >> _y >> _eta;
+    stream >> _dsigma;
+    stream >> _u;
+    stream >> _T >> _mub >> _muq >> _mus;
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            stream >> _dbeta[i][j];
+        }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            stream >> _du[i][j];
+        }
+    }
+}
+
 double hydro::fcell::sigma_norm()
 {
     if (!_sigma_norm)
@@ -279,6 +257,30 @@ double hydro::fcell::acc_norm()
         _acc_norm = std::make_unique<double>(acceleration().norm_sq());
     }
     return *_acc_norm;
+}
+
+void hydro::fcell::write_to_binary(std::ostream &stream)
+{
+    stream.write(reinterpret_cast<char *>(&_tau), sizeof(_tau));
+    stream.write(reinterpret_cast<char *>(&_x), sizeof(_x));
+    stream.write(reinterpret_cast<char *>(&_y), sizeof(_y));
+    stream.write(reinterpret_cast<char *>(&_eta), sizeof(_eta));
+    
+    stream.write(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
+    stream.write(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
+    stream.write(reinterpret_cast<char *>(&_T), sizeof(_T));
+    stream.write(reinterpret_cast<char *>(&_mub), sizeof(_mub));
+    stream.write(reinterpret_cast<char *>(&_muq), sizeof(_muq));
+    stream.write(reinterpret_cast<char *>(&_mus), sizeof(_mus));
+
+    for (int i = 0; i < 4; i++)
+    {
+        stream.write(reinterpret_cast<char *>(_dbeta[i].data()), _dbeta[i].size() * sizeof(double));
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        stream.write(reinterpret_cast<char *>(_du[i].data()), _du[i].size() * sizeof(double));
+    }
 }
 
 void hydro::fcell::calculate_shear()
@@ -382,29 +384,4 @@ void hydro::fcell::calculte_ac()
     _ = _u * _du;
     _.raise();
     _acc = std::make_unique<ug::four_vector>(_);
-}
-
-std::istream &hydro::operator>>(std::istream &stream, fcell &cell)
-{
-    stream >> cell._tau >> cell._x >> cell._y >> cell._eta;
-    stream >> cell._dsigma;
-    stream >> cell._u;
-    stream >> cell._T >> cell._mub >> cell._muq >> cell._mus;
-
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            stream >> cell._dbeta[i][j];
-        }
-    }
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            stream >> cell._du[i][j];
-        }
-    }
-
-    return stream;
 }

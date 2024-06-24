@@ -15,6 +15,11 @@
 
 namespace hydro
 {
+    enum class file_format
+    {
+        Text,
+        Binary
+    };
     constexpr int ESTIMATED_LINE_COUNT = 800000;
     /// @brief  Interface for a hypersurface cell
     /// @tparam V the four-vector type
@@ -52,8 +57,48 @@ namespace hydro
         /// @return
         virtual double u_dot_n() = 0;
         virtual std::ostream &write_info(std::ostream &osm, const char delim) = 0;
-        virtual std::ostream &write_back(std::ostream &os, const char delim) = 0;
-        virtual ~I_cell() {}
+        virtual void write(std::ostream &os, const char delim, file_format format = file_format::Text)
+        {
+            if (format == file_format::Text)
+            {
+                write_to_text(os, delim);
+            }
+            else
+            {
+                write_to_binary(os);
+            }
+        }
+        virtual void read(std::istream &in, file_format format = file_format::Text)
+        {
+            if (format == file_format::Text)
+            {
+                read_from_text(in);
+            }
+            else
+            {
+                read_from_binary(in);
+            }
+        }
+        virtual ~I_cell() = default;
+        friend std::istream &operator>>(std::istream &stream, I_cell &cell)
+        {
+            cell.read(stream);
+            return stream;
+        }
+
+        friend std::ostream &operator<<(std::ostream &stream, const I_cell &cell)
+        {
+            cell.write_to_text(stream, '\t');
+            return stream;
+        }
+
+        virtual size_t size() = 0;
+
+    protected:
+        virtual void write_to_binary(std::ostream &stream) = 0;
+        virtual void write_to_text(std::ostream &stream, const char delim) const = 0;
+        virtual void read_from_binary(std::istream &stream) = 0;
+        virtual void read_from_text(std::istream &stream) = 0;
     };
     /// @brief This struct holds statistical data about the surface
     /// @tparam the cell's type
@@ -73,10 +118,10 @@ namespace hydro
                 stream << utils::MILNE[i] << " in [" << info.min_coords[i] << "," << info.max_coords[i] << "]\t";
             }
             stream << std::endl;
-            stream << "min T = " << info.min_T.thermodynamics()[0] << " @" << info.min_T << std::endl;
-            stream << "max T = " << info.max_T.thermodynamics()[0] << " @" << info.max_T << std::endl;
-            stream << "min mu_B = " << info.min_mub.thermodynamics()[1] << " @ " << info.min_mub << std::endl;
-            stream << "max mu_B = " << info.max_mub.thermodynamics()[1] << " @" << info.max_mub << std::endl;
+            stream << "min T = " << info.min_T.thermodynamics()[0] << " @" << info.min_T.milne_coords() << std::endl;
+            stream << "max T = " << info.max_T.thermodynamics()[0] << " @" << info.max_T.milne_coords() << std::endl;
+            stream << "min mu_B = " << info.min_mub.thermodynamics()[1] << " @ " << info.min_mub.milne_coords() << std::endl;
+            stream << "max mu_B = " << info.max_mub.thermodynamics()[1] << " @" << info.max_mub.milne_coords() << std::endl;
 
             return stream;
         }
@@ -104,7 +149,25 @@ namespace hydro
         /// @brief reads the surface data from a file, uses parallelization if the code is compiled with OpenMP
         /// @param i_file input file
         /// @param mode
-        virtual void read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count = ESTIMATED_LINE_COUNT, bool quiet = false);
+        virtual void read(const std::string &i_file, utils::accept_modes mode, bool quiet = false, file_format format = file_format::Text)
+        {
+            if (format == file_format::Text)
+            {
+#ifdef _OPENMP
+                read_from_text_omp(i_file, mode, quiet);
+#else
+                read_from_text(i_file, mode, quiet);
+#endif
+            }
+            else
+            {
+#ifdef _OPENMP
+                read_from_binary_omp(i_file, mode, quiet);
+#else
+                read_from_binary(i_file, mode, quiet);
+#endif
+            }
+        }
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
         std::vector<C> &data() { return _cells; }
@@ -133,214 +196,18 @@ namespace hydro
         int _total = 0;
         int _failed = 0;
         int _lines = 0;
+#ifdef _OPENMP
+        void read_from_text_omp(const std::string &i_file, utils::accept_modes mode, bool quiet);
+        void read_from_binary_omp(const std::string &i_file, utils::accept_modes mode, bool quiet);
+#else
+        void read_from_text(const std::string &i_file, utils::accept_modes mode, bool quiet);
+        void read_from_binary(const std::string &i_file, utils::accept_modes mode, bool quiet);
+#endif
 
     protected:
         static_assert(is_template_base_of<I_cell, C>::value,
                       "C class in hypersurface must be derived from Icell<V,T>");
     };
-
-    template <typename C>
-    inline void hypersurface<C>::read(const std::string &i_file, utils::accept_modes mode, int t_estimated_line_count, bool quiet)
-    {
-        const int estimated_line_count = t_estimated_line_count;
-        const int step_size = estimated_line_count / 100 - 1;
-
-        std::vector<std::streampos> file_positions;
-        std::vector<std::streampos> failed_positions;
-        std::ifstream file(i_file);
-
-        if (!file.is_open())
-        {
-            throw std::runtime_error("Input file cannot be opened!");
-        }
-
-        // Determine chunk positions
-        file.seekg(0, std::ios::end);
-        std::streampos file_size = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-#ifdef _OPENMP
-        int threads_count = omp_get_max_threads();
-#else
-        int threads_count = 1;
-        _lines = std::count(std::istreambuf_iterator<char>(file),
-                            std::istreambuf_iterator<char>(), '\n');
-        file_size = _lines;
-        file.seekg(0, std::ios::beg);
-#endif
-
-        std::streampos chunk_size = file_size / threads_count;
-        for (int i = 0; i < threads_count; ++i)
-        {
-            std::streampos start = i * chunk_size;
-            file_positions.push_back(start);
-        }
-        file_positions.push_back(file_size);
-
-        _total = 0;
-        _failed = 0;
-        _rejected = 0;
-        _timelikes = 0;
-        _skipped = 0;
-        int perc = 0;
-        int last_perc = -1;
-
-#ifdef _OPENMP
-#pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-#else
-        int tid = 0;
-#endif
-
-            int local_total = 0;
-            int local_failed = 0;
-            int local_rejected = 0;
-            int local_timelikes = 0;
-            int local_skipped = 0;
-            int local_counter = 0;
-            int local_perc = 0;
-            int local_last_perc = -1;
-            std::ifstream local_file(i_file);
-            std::vector<C> thread_cells;
-
-            if (!local_file.is_open())
-            {
-                std::cerr << "Cannot open file " << i_file << " in thread " << tid << std::endl;
-            }
-            else
-            {
-#ifdef _OPENMP
-                local_file.seekg(file_positions[tid]);
-#endif
-                std::string line;
-#ifdef _OPENMP
-                while (local_file.tellg() < file_positions[tid + 1] && std::getline(local_file, line))
-                {
-                    // Ensure we do not read beyond the chunk
-                    if (local_file.tellg() > file_positions[tid + 1])
-                    {
-                        break;
-                    }
-#else
-            while (std::getline(local_file, line))
-            {
-#endif
-
-                    local_counter++;
-                    bool reject = false;
-
-                    if (line.empty() || line[0] == '#')
-                    {
-                        local_skipped++;
-                        continue;
-                    }
-
-                    std::istringstream iss(line);
-                    C cell;
-                    iss >> cell;
-                    if (iss.fail())
-                    {
-                        local_failed++;
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-                        failed_positions.push_back(local_file.tellg());
-                        continue;
-                    }
-
-                    if (!cell.is_spacelike())
-                    {
-                        if (mode == utils::accept_modes::RejectTimelike)
-                        {
-                            reject = true;
-                        }
-                        local_timelikes++;
-                    }
-
-                    if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
-                    {
-                        reject = true;
-                    }
-                    if (!reject)
-                    {
-                        thread_cells.push_back(cell);
-                        local_total++;
-                    }
-                    else
-                    {
-                        local_rejected++;
-                    }
-                    local_perc = 100 * ((double)local_counter) / ((double)estimated_line_count);
-
-#ifdef _OPENMP
-#pragma omp critical
-                    {
-#endif
-                        if (!quiet)
-                        {
-                            perc = std::max(perc, local_perc);
-                            if (perc > last_perc)
-                            {
-                                last_perc = perc;
-                                utils::show_progress((last_perc > 100) ? 100 : last_perc);
-                            }
-                        }
-#ifdef _OPENMP
-                    }
-#endif
-                }
-            }
-
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-            {
-                _cells.insert(_cells.end(), thread_cells.begin(), thread_cells.end());
-                _total += local_total;
-                _failed += local_failed;
-                _rejected += local_rejected;
-                _timelikes += local_timelikes;
-                _skipped += local_skipped;
-                _lines += local_counter;
-                if (!quiet)
-                    utils::show_progress(100);
-            }
-
-#ifdef _OPENMP
-        }
-#endif
-        // retrying for the failed cells
-        // the second condition is required to check if the failure was real
-        if (_failed > 0)
-        {
-            if (_lines == _total + _rejected + _skipped)
-            {
-                _total += _failed;
-                _failed = 0;
-            }
-            else
-            {
-                std::string line;
-                for (auto &&pos : failed_positions)
-                {
-                    file.seekg(pos);
-                    std::getline(file, line);
-                    std::istringstream iss(line);
-                    C cell;
-                    iss >> cell;
-                    if (!iss.fail())
-                    {
-                        _cells.push_back(cell);
-                        _failed--;
-                        _total++;
-                    }
-                }
-            }
-        }
-        if(!quiet)
-            std::cout << std::endl;
-    }
 
     template <typename C>
     inline surface_stat<C> hypersurface<C>::readinfo()
@@ -469,6 +336,545 @@ namespace hydro
     protected:
         virtual C solve(const C &prim) = 0;
     };
+#ifdef _OPENMP
+
+    template <typename C>
+    inline void hypersurface<C>::read_from_text_omp(const std::string &i_file, utils::accept_modes mode, bool quiet)
+    {
+        std::vector<std::streampos> file_positions;
+        std::vector<std::streampos> failed_positions;
+        std::ifstream file(i_file);
+
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Input file cannot be opened!");
+        }
+
+        // Determine chunk position
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        std::string test_line;
+        std::getline(file, test_line);
+        const int estimated_line_count = file_size / (sizeof(char) * test_line.length());
+        file.seekg(0, std::ios::beg);
+        const int step_size = (int)ceil((double)estimated_line_count / 100.0);
+
+        int threads_count = omp_get_max_threads();
+
+        std::streampos chunk_size = file_size / threads_count;
+        for (int i = 0; i < std::min(threads_count, estimated_line_count); ++i)
+        {
+            std::streampos start = i * chunk_size;
+            // Move start to the next newline character
+            if (start != 0)
+            {
+                file.seekg(start);
+                std::string dummy;
+                std::getline(file, dummy);
+                start = file.tellg();
+            }
+            file_positions.push_back(start);
+        }
+        file_positions.push_back(file_size);
+
+        _total = 0;
+        _failed = 0;
+        _rejected = 0;
+        _timelikes = 0;
+        _skipped = 0;
+        int perc = 0;
+        int last_perc = -1;
+#pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            int local_total = 0;
+            int local_failed = 0;
+            int local_rejected = 0;
+            int local_timelikes = 0;
+            int local_skipped = 0;
+            int local_counter = 0;
+            int local_perc = 0;
+            int local_last_perc = -1;
+            std::ifstream local_file(i_file);
+            std::vector<C> thread_cells;
+
+            if (!local_file.is_open())
+            {
+                std::cerr << "Cannot open file " << i_file << " in thread " << tid << std::endl;
+            }
+            else if (tid < estimated_line_count)
+            {
+                local_file.seekg(file_positions[tid]);
+
+                std::string line;
+                while (local_file.tellg() < file_positions[tid + 1] && std::getline(local_file, line))
+                {
+                    // Ensure we do not read beyond the chunk
+                    if (local_file.tellg() > file_positions[tid + 1])
+                    {
+                        break;
+                    }
+
+                    local_counter++;
+                    bool reject = false;
+
+                    if (line.empty() || line[0] == '#')
+                    {
+                        local_skipped++;
+                        continue;
+                    }
+
+                    std::istringstream iss(line);
+                    C cell;
+                    iss >> cell;
+                    if (iss.fail())
+                    {
+                        local_failed++;
+#pragma omp critical
+                        failed_positions.push_back(local_file.tellg());
+                        continue;
+                    }
+
+                    if (!cell.is_spacelike())
+                    {
+                        if (mode == utils::accept_modes::RejectTimelike)
+                        {
+                            reject = true;
+                        }
+                        local_timelikes++;
+                    }
+
+                    if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+                    {
+                        reject = true;
+                    }
+                    if (!reject)
+                    {
+                        thread_cells.push_back(cell);
+                        local_total++;
+                    }
+                    else
+                    {
+                        local_rejected++;
+                    }
+                    local_perc = 100 * ((double)local_counter) / ((double)estimated_line_count);
+
+#pragma omp critical
+                    {
+                        if (!quiet)
+                        {
+                            perc = std::max(perc, local_perc);
+                            if (perc > last_perc)
+                            {
+                                last_perc = perc;
+                                utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                            }
+                        }
+                    }
+                }
+            }
+
+#pragma omp critical
+            {
+                _cells.insert(_cells.end(), thread_cells.begin(), thread_cells.end());
+                _total += local_total;
+                _failed += local_failed;
+                _rejected += local_rejected;
+                _timelikes += local_timelikes;
+                _skipped += local_skipped;
+                _lines += local_counter;
+                if (!quiet)
+                    utils::show_progress(100);
+            }
+        }
+        // retrying for the failed cells
+        // the second condition is required to check if the failure was real
+        if (_failed > 0)
+        {
+            if (_lines == _total + _rejected + _skipped)
+            {
+                _total += _failed;
+                _failed = 0;
+            }
+            else
+            {
+                std::string line;
+                for (auto &&pos : failed_positions)
+                {
+                    file.seekg(pos);
+                    std::getline(file, line);
+                    std::istringstream iss(line);
+                    C cell;
+                    iss >> cell;
+                    if (!iss.fail())
+                    {
+                        _cells.push_back(cell);
+                        _failed--;
+                        _total++;
+                    }
+                }
+            }
+        }
+        if (!quiet)
+            std::cout << std::endl;
+    }
+    template <typename C>
+    inline void hypersurface<C>::read_from_binary_omp(const std::string &i_file, utils::accept_modes mode, bool quiet)
+    {
+        std::vector<std::streampos> file_positions;
+        std::vector<std::streampos> failed_positions;
+        std::ifstream file(i_file);
+
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Input file cannot be opened!");
+        }
+
+        // Determine chunk position
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        C empty_cell;
+        const auto cell_size = empty_cell.size();
+        const int estimated_line_count = file_size /cell_size;
+
+        int threads_count = omp_get_max_threads();
+        // Ensure chunk_size is a multiple of cell_size
+        std::streampos chunk_size = (file_size / threads_count) / cell_size * cell_size;
+        for (int i = 0; i < std::min(estimated_line_count, threads_count); ++i)
+        {
+            std::streampos start = i * chunk_size;
+            file_positions.push_back(start);
+        }
+        file_positions.push_back(file_size);
+
+        _total = 0;
+        _failed = 0;
+        _rejected = 0;
+        _timelikes = 0;
+        _skipped = 0;
+        int perc = 0;
+        int last_perc = -1;
+#pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            int local_total = 0;
+            int local_failed = 0;
+            int local_rejected = 0;
+            int local_timelikes = 0;
+            int local_skipped = 0;
+            int local_counter = 0;
+            int local_perc = 0;
+            int local_last_perc = -1;
+            std::ifstream local_file(i_file);
+            std::vector<C> thread_cells;
+
+            if (!local_file.is_open())
+            {
+                std::cerr << "Cannot open file " << i_file << " in thread " << tid << std::endl;
+            }
+            else if (tid < estimated_line_count)
+            {
+                local_file.seekg(file_positions[tid]);
+
+                while (local_file && local_file.tellg() < file_positions[tid + 1])
+                {
+                    // Ensure we do not read beyond the chunk
+                    if (local_file.tellg() > file_positions[tid + 1])
+                    {
+                        break;
+                    }
+
+                    if (local_file)
+                    {
+                        local_counter++;
+                        bool reject = false;
+                        C cell;
+                        cell.read(local_file, hydro::file_format::Binary);
+
+                        if (local_file.fail())
+                        {
+                            local_failed++;
+#pragma omp critical
+                            failed_positions.push_back(local_file.tellg());
+                            continue;
+                        }
+
+                        if (cell.T() == 0)
+                        {
+                            local_skipped++;
+                            continue;
+                        }
+
+                        if (!cell.is_spacelike())
+                        {
+                            if (mode == utils::accept_modes::RejectTimelike)
+                            {
+                                reject = true;
+                            }
+                            local_timelikes++;
+                        }
+
+                        if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+                        {
+                            reject = true;
+                        }
+                        if (!reject)
+                        {
+                            thread_cells.push_back(cell);
+                            local_total++;
+                        }
+                        else
+                        {
+                            local_rejected++;
+                        }
+                        local_perc = 100 * ((double)local_counter) / ((double)estimated_line_count);
+
+#pragma omp critical
+                        {
+                            if (!quiet)
+                            {
+                                perc = std::max(perc, local_perc);
+                                if (perc > last_perc)
+                                {
+                                    last_perc = perc;
+                                    utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+#pragma omp critical
+            {
+                _cells.insert(_cells.end(), thread_cells.begin(), thread_cells.end());
+                _total += local_total;
+                _failed += local_failed;
+                _rejected += local_rejected;
+                _timelikes += local_timelikes;
+                _skipped += local_skipped;
+                _lines += local_counter;
+                if (!quiet)
+                    utils::show_progress(100);
+            }
+        }
+        // retrying for the failed cells
+        // the second condition is required to check if the failure was real
+        if (_failed > 0)
+        {
+            if (_lines == _total + _rejected + _skipped)
+            {
+                _total += _failed;
+                _failed = 0;
+            }
+            else
+            {
+                for (auto &&pos : failed_positions)
+                {
+                    file.seekg(pos);
+                    C cell;
+                    cell.read(file, hydro::file_format::Binary);
+                    if (file && !file.fail() && cell.T() != 0)
+                    {
+                        _cells.push_back(cell);
+                        _failed--;
+                        _total++;
+                    }
+                }
+            }
+        }
+        if (!quiet)
+            std::cout << std::endl;
+    }
+#else
+    template <typename C>
+    inline void hypersurface<C>::read_from_text(const std::string &i_file, utils::accept_modes mode, bool quiet)
+    {
+        std::ifstream file(i_file);
+
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Input file cannot be opened!");
+        }
+
+        // Determine chunk positions
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        C cell;
+        std::string test_line;
+        std::getline(file, test_line);
+        const int estimated_line_count = file_size / (sizeof(char) * test_line.length());
+        file.seekg(0, std::ios::beg);
+        const int step_size = (int)ceil((double)estimated_line_count / 100.0);
+
+        file.seekg(0, std::ios::beg);
+
+        int counter = 0;
+        std::string line;
+
+        _total = 0;
+        _failed = 0;
+        _rejected = 0;
+        _timelikes = 0;
+        _skipped = 0;
+        int perc = 0;
+        int last_perc = 0;
+
+        while (std::getline(file, line))
+        {
+            _lines++;
+            bool reject = false;
+
+            if (line.empty() || line[0] == '#')
+            {
+                _skipped++;
+                continue;
+            }
+
+            std::istringstream iss(line);
+            iss >> cell;
+            if (iss.fail())
+            {
+                _failed++;
+                continue;
+            }
+
+            if (!cell.is_spacelike())
+            {
+                if (mode == utils::accept_modes::RejectTimelike)
+                {
+                    reject = true;
+                }
+                _timelikes++;
+            }
+
+            if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+            {
+                reject = true;
+            }
+            if (!reject)
+            {
+                _cells.push_back(cell);
+                _total++;
+            }
+            else
+            {
+                _rejected++;
+            }
+            perc = 100 * ((double)_lines) / ((double)estimated_line_count);
+
+#
+            if (!quiet)
+            {
+                if (perc > last_perc)
+                {
+                    last_perc = perc;
+                    utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                }
+            }
+        }
+        if (!quiet)
+        {
+            utils::show_progress(100);
+            std::cout
+                << std::endl;
+        }
+    }
+
+    template <typename C>
+    inline void hypersurface<C>::read_from_binary(const std::string &i_file, utils::accept_modes mode, bool quiet)
+    {
+        std::ifstream file(i_file);
+
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Input file cannot be opened!");
+        }
+
+        // Determine chunk positions
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        C cell;
+        const int estimated_line_count = file_size / cell.size();
+        const int step_size = (int)ceil((double)estimated_line_count / 100.0);
+
+        file.seekg(0, std::ios::beg);
+
+        int counter = 0;
+
+        _total = 0;
+        _failed = 0;
+        _rejected = 0;
+        _timelikes = 0;
+        _skipped = 0;
+        int perc = 0;
+        int last_perc = 0;
+
+        while (file)
+        {
+            _lines++;
+            bool reject = false;
+
+            cell.read(file, hydro::file_format::Binary);
+            if (file)
+            {
+                if (file.fail())
+                {
+                    _failed++;
+                    continue;
+                }
+                if (cell.T() == 0)
+                {
+                    _skipped++;
+                    continue;
+                }
+                if (!cell.is_spacelike())
+                {
+                    if (mode == utils::accept_modes::RejectTimelike)
+                    {
+                        reject = true;
+                    }
+                    _timelikes++;
+                }
+
+                if (mode == utils::accept_modes::RejectNegativeDuDSigma && (cell.u_dot_n() < 0))
+                {
+                    reject = true;
+                }
+                if (!reject)
+                {
+                    _cells.push_back(cell);
+                    _total++;
+                }
+                else
+                {
+                    _rejected++;
+                }
+                perc = 100 * ((double)_lines) / ((double)estimated_line_count);
+
+#
+                if (!quiet)
+                {
+                    if (perc > last_perc)
+                    {
+                        last_perc = perc;
+                        utils::show_progress((last_perc > 100) ? 100 : last_perc);
+                    }
+                }
+            }
+        }
+        if (!quiet)
+        {
+            utils::show_progress(100);
+            std::cout
+                << std::endl;
+        }
+    }
+#endif
 }
 namespace powerhouse
 {

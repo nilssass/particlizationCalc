@@ -122,38 +122,21 @@ namespace hydro
         double theta() override;
         double b_theta() override;
 
-        friend std::istream &operator>>(std::istream &stream, fcell &cell);
-
-        friend std::ostream &operator<<(std::ostream &stream, const fcell &cell)
+        size_t size() override
         {
-            stream << cell.milne_coords() << "\t";
-            stream << "T = " << cell._T << "\t mu_B = " << cell._mub << "\t mu_Q = " << cell._muq << "\t mu_S = " << cell._mus;
-            return stream;
-        }
+            size_t size = sizeof(_tau) + sizeof(_x) + sizeof(_y) + sizeof(_eta) + sizeof(_T) + sizeof(_mub) + sizeof(_muq) + sizeof(_mus) + _dsigma.vec().size() * sizeof(double) + _u.vec().size() * sizeof(double);
 
-        std::ostream &write_back(std::ostream &output, const char delim) override
-        {
-            output << _tau << delim << _x << delim << _y << delim << _eta
-                   << delim << _dsigma[0] << delim << _dsigma[1] << delim << _dsigma[2]
-                   << delim << _dsigma[3]
-                   << delim << _u[0] << delim << _u[1] << delim << _u[2]
-                   << delim << _u[3];
-            for (size_t i = 0; i < 4; i++)
+            for (const auto &vec : _dbeta)
             {
-                for (size_t j = 0; j < 4; j++)
-                {
-                    output << delim << _dbeta[i][j];
-                }
-            }
-            for (size_t i = 0; i < 4; i++)
-            {
-                for (size_t j = 0; j < 4; j++)
-                {
-                    output << delim << _du[i][j];
-                }
+                size += vec.size() * sizeof(double);
             }
 
-            return output;
+            for (const auto &vec : _du)
+            {
+                size += vec.size() * sizeof(double);
+            }
+
+            return size;
         }
 
         std::ostream &write_info(std::ostream &output, const char delim) override
@@ -176,6 +159,34 @@ namespace hydro
         double tvort_norm() override;
         double tshear_norm() override;
         double acc_norm() override;
+
+    protected:
+        virtual void read_from_binary(std::istream &stream) override;
+
+        virtual void read_from_text(std::istream &stream) override;
+        void write_to_text(std::ostream &output, const char delim) const override
+        {
+            output << _tau << delim << _x << delim << _y << delim << _eta
+                   << delim << _dsigma[0] << delim << _dsigma[1] << delim << _dsigma[2]
+                   << delim << _dsigma[3]
+                   << delim << _u[0] << delim << _u[1] << delim << _u[2]
+                   << delim << _u[3];
+            for (size_t i = 0; i < 4; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                {
+                    output << delim << _dbeta[i][j];
+                }
+            }
+            for (size_t i = 0; i < 4; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                {
+                    output << delim << _du[i][j];
+                }
+            }
+        }
+        void write_to_binary(std::ostream &stream) override;
 
     private:
         double _tau, _x, _y, _eta;

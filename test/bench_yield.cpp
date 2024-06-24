@@ -35,7 +35,7 @@ public:
     {
         configure();
         init();
-        _hypersurface.read("./input/beta-60.dat", utils::accept_modes::AcceptAll, 100, true);
+        _hypersurface.read("./input/beta-60.dat", utils::accept_modes::AcceptAll, true);
     }
     void TearDown(::benchmark::State &state)
     {

@@ -12,7 +12,8 @@
 // #include "../src/surface.h"
 // #include "../src/hypersurface.h"
 #include "../src/interfaces.h"
-const std::string PATH = "./input/beta.dat";
+const std::string PATH = "./input/beta-60.dat";
+const std::string PATH_BIN = "./input/beta-60.bin";
 template <typename C>
 static C read_cell()
 {
@@ -155,15 +156,26 @@ BENCHMARK(bm_fcell_shear);
 
 // BENCHMARK(bm_read_fcells);
 
-static void bm_read__t_fcells(benchmark::State &state)
+static void bm_read_cells_text(benchmark::State &state)
 {
     for (auto _ : state)
     {
         hydro::hypersurface<hydro::fcell> surface;
-        surface.read(PATH, utils::accept_modes::AcceptAll);
+        surface.read(PATH, utils::accept_modes::AcceptAll, true);
     }
 }
 
-BENCHMARK(bm_read__t_fcells)->Name("template<C> surface");
+BENCHMARK(bm_read_cells_text)->Name("read surface from text file");
+
+static void bm_read_cells_bin(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        hydro::hypersurface<hydro::fcell> surface;
+        surface.read(PATH_BIN, utils::accept_modes::AcceptAll, true, hydro::file_format::Binary);
+    }
+}
+
+BENCHMARK(bm_read_cells_text)->Name("read surface from binary file");
 
 BENCHMARK_MAIN();

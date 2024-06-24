@@ -15,6 +15,18 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 # Alternatively, you can set debug and release flags together
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 
+# Boost
+# find_package(Boost 1.85.0 REQUIRED)
+# include_directories(${Boost_INCLUDE_DIRS})
+
+# ROOT
+
+find_package(ROOT REQUIRED)
+
+include(${ROOT_USE_FILE})
+
+include_directories(${ROOT_INCLUDE_DIRS})
+
 # Find OpenMP package
 find_package(OpenMP REQUIRED)
 
@@ -113,9 +125,7 @@ add_executable(
     test_engine_design
     test/test_static_engine_design.cpp 
     src/utils.cpp   
-    
     src/fcell.cpp
-    # src/element.cpp
 )
 target_link_libraries(
     test_engine_design
@@ -145,6 +155,7 @@ add_executable(
 target_link_libraries(
     test_yield
     PUBLIC
+    ${ROOT_LIBRARIES}
     GTest::gtest_main
 )
 
@@ -271,6 +282,24 @@ endif()
 # Include any necessary directories
 target_include_directories(
     calc
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
+)
+
+
+# Add the main executable target (without omp)
+add_executable(
+    calc_sgt  # Name of the executable
+    src/main.cpp  # Source files for the main executable
+    # Add other necessary source files here
+    src/fcell.cpp
+    src/utils.cpp
+)
+
+
+# Include any necessary directories
+target_include_directories(
+    calc_sgt
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
 )

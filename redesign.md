@@ -23,6 +23,12 @@ The project can be compiled using CMake. Use the provided bash scripts for Mac a
 
 These scripts build the main project as well as benchmarks and tests.
 
+## Boost
+
+It is easy to install
+- **Mac** `brew install boost`
+- **Ubuntu** `sudo apt-get install libboost-all-dev`
+
 ## Google Benchmark
 
 Benchmark files are located in the `./test` directory. To install Google Benchmark, follow the [installation instructions](https://github.com/google/benchmark#installation).

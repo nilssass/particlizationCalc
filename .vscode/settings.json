@@ -80,7 +80,10 @@
         "unordered_set": "cpp",
         "cassert": "cpp",
         "__memory": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "cfenv": "cpp",
+        "source_location": "cpp",
+        "span": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

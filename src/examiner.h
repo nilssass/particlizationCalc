@@ -116,7 +116,6 @@ namespace powerhouse
 
         void pre_write(std::ostream &output) override
         {
-            std::cout << "Writing to output ..." << std::endl;
             output
                 << "# tau,x,y,eta,theta,sqrt(sigma^2),sqrt(-omega^2),div.beta,sqrt(-varpi^2),sqrt(xi^2),sqrt(-a^2)" << std::endl;
         }

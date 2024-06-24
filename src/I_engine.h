@@ -234,12 +234,12 @@ namespace powerhouse
             throw std::runtime_error("Calculator is not found!");
         }
 
-        if (_settings.program_mode != utils::program_modes::Examine)
-        {
-            _pT = utils::linspace(0, _pt_max, _size_pt);
-            _phi = utils::linspace(0, 2 * M_PI, _size_phi);
-            _y_rap = utils::linspace(_y_min, _y_max, _size_y);
-        }
+        // if (_settings.program_mode != utils::program_modes::Examine)
+        // {
+        //     _pT = utils::linspace(0, _pt_max, _size_pt);
+        //     _phi = utils::linspace(0, 2 * M_PI, _size_phi);
+        //     _y_rap = utils::linspace(_y_min, _y_max, _size_y);
+        // }
         _initialized = true;
     }
 
@@ -324,10 +324,11 @@ namespace powerhouse
             std::cout << "Calculating the yield in phase space ..." << std::endl;
             auto total_size = _output.size();
             calculator()->init(particle(), settings());
+            const auto step_size = (int) ceil((double)total_size / 100.0);
 #if _OPENMP
             int threads_count = omp_get_max_threads();
             size_t chunk_size = (total_size + threads_count - 1) / threads_count;
-            std::atomic<size_t> progress(0);
+            std::atomic<size_t> progress(-1);
             std::vector<std::vector<O>> thread_outputs(threads_count);
 #pragma omp parallel
             {
@@ -340,9 +341,10 @@ namespace powerhouse
                     local_output.dNd3p = 0;
 
                     size_t current_progress = ++progress;
-                    if (tid == 0 && (current_progress % (total_size / 100) == 0 || current_progress == 1))
+                    if (tid == 0 && (current_progress % step_size == 0))
                     {
-                        utils::show_progress((100 * current_progress / total_size));
+                        const auto perc = (int) ceil(100.0 * (double)current_progress / (double) total_size);
+                        utils::show_progress(std::min(perc, 100));
                     }
                     for (size_t i = 0; i < _hypersurface.data().size(); i++)
                     {
@@ -364,7 +366,6 @@ namespace powerhouse
             }
 
 #else
-            auto step_size = (size_t)ceil((double)total_size / 100.0);
             for (size_t id_x = 0; id_x < total_size; id_x++)
             {
                 if (id_x % step_size == 0)
@@ -387,6 +388,7 @@ namespace powerhouse
             }
 
 #endif
+            utils::show_progress(100);
             std::cout << std::endl;
         }
     }
@@ -529,23 +531,28 @@ namespace powerhouse
     {
         if constexpr (is_template_base_of<powerhouse::yield_output, O>::value)
         {
+            const double&& pt_step = (_pt_max - 0.) / (double) _size_pt;
+            const double&& phi_p_step = 2* M_PI / (double) _size_phi;
+            const double&& y_step = (_y_max - _y_min) / (double)_size_y;
             _output.clear();
-            static const double &mass = particle()->mass();
-            for (size_t pt_c = 0; pt_c < _pT.size(); pt_c++)
+            static const double &mass_sq = particle()->mass()*particle()->mass();
+            for (double pT = 0; pT <= _pt_max; pT+=pt_step)
             {
-                for (size_t y_c = 0; y_c < _y_rap.size(); y_c++)
+                const auto pT_sq = pT * pT;
+                for (double y = _y_min; y <= _y_max; y+=y_step)
                 {
-                    for (size_t phi_c = 0; phi_c < _phi.size(); phi_c++)
+                    for (double phi = 0; phi < 2*M_PI; phi+=phi_p_step)
                     {
                         O pcell;
-                        pcell.pT = _pT[pt_c];
-                        pcell.y_p = _y_rap[y_c];
-                        pcell.phi_p = _phi[pt_c];
-                        pcell.mT = sqrt(mass * mass + _pT[pt_c] * _pT[pt_c]);
+                        pcell.pT = pT;
+                        pcell.y_p = y;
+                        pcell.phi_p = phi;
+                        pcell.mT = sqrt(mass_sq + pT_sq);
                         _output.push_back(pcell);
                     }
                 }
             }
+            std::cout << "phase space size: " << _output.size() << std::endl;
         }
     }
 }
