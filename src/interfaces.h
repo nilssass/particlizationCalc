@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include "utils.h"
+#include "geometry.h"
 #include <type_traits>
 #include <tuple>
 #ifdef _OPENMP
@@ -88,7 +89,7 @@ namespace hydro
 
         friend std::ostream &operator<<(std::ostream &stream, const I_cell &cell)
         {
-            cell.write_to_text(stream, '\t');
+            cell.write_to_text(stream, ' ');
             return stream;
         }
 
@@ -168,6 +169,25 @@ namespace hydro
 #endif
             }
         }
+        virtual void write(const std::string &o_file, bool quiet = false, file_format format = file_format::Text)
+        {
+            if (format == file_format::Text)
+            {
+#ifdef _OPENMP
+                write_to_text_omp(o_file, quiet);
+#else
+                write_to_text(o_file, quiet);
+#endif
+            }
+            else
+            {
+#ifdef _OPENMP
+                write_to_binary_omp(o_file, quiet);
+#else
+                write_to_binary(o_file, quiet);
+#endif
+            }
+        }
         surface_stat<C> readinfo();
         void add(C &cell, utils::accept_modes mode);
         std::vector<C> &data() { return _cells; }
@@ -199,9 +219,14 @@ namespace hydro
 #ifdef _OPENMP
         void read_from_text_omp(const std::string &i_file, utils::accept_modes mode, bool quiet);
         void read_from_binary_omp(const std::string &i_file, utils::accept_modes mode, bool quiet);
+
+        void write_to_text_omp(const std::string &o_file, bool quiet);
+        void write_to_binary_omp(const std::string &o_file, bool quiet);
 #else
         void read_from_text(const std::string &i_file, utils::accept_modes mode, bool quiet);
         void read_from_binary(const std::string &i_file, utils::accept_modes mode, bool quiet);
+        void write_to_text(const std::string &o_file, bool quiet);
+        void write_to_binary(const std::string &o_file, bool quiet);
 #endif
 
     protected:
@@ -428,10 +453,16 @@ namespace hydro
                     std::istringstream iss(line);
                     C cell;
                     iss >> cell;
-                    if (iss.fail())
+                    if (iss.fail() || !iss)
                     {
+
                         local_failed++;
 #pragma omp critical
+                        // std::cerr << "Failed to read line: " << line << std::endl;
+                        // std::cerr << "cell is: " << cell << std::endl;
+                        // std::cerr << "Stream state: fail=" << iss.fail()
+                        //           << " eof=" << iss.eof()
+                        //           << " bad=" << iss.bad() << std::endl;
                         failed_positions.push_back(local_file.tellg());
                         continue;
                     }
@@ -537,7 +568,7 @@ namespace hydro
         file.seekg(0, std::ios::beg);
         C empty_cell;
         const auto cell_size = empty_cell.size();
-        const int estimated_line_count = file_size /cell_size;
+        const int estimated_line_count = file_size / cell_size;
 
         int threads_count = omp_get_max_threads();
         // Ensure chunk_size is a multiple of cell_size
@@ -687,6 +718,91 @@ namespace hydro
         }
         if (!quiet)
             std::cout << std::endl;
+    }
+    template <typename C>
+    inline void hypersurface<C>::write_to_text_omp(const std::string &o_file, bool quiet)
+    {
+        std::ofstream output(o_file);
+        if (!output.is_open())
+        {
+            throw std::runtime_error("Error opening output file");
+        }
+        const auto &count = _cells.size();
+        int lastperc = -1;
+
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+#pragma omp parallel for
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            int tid = omp_get_thread_num();
+            auto &cell = _cells[counter];
+            buffer[tid] << cell << std::endl;
+#pragma omp critical
+            {
+                if (!quiet)
+                {
+                    int perc = 100 * ((double)counter) / ((double)count) + 1;
+                    if (perc > lastperc)
+                    {
+                        lastperc = perc;
+                        utils::show_progress(perc > 100 ? 100 : perc);
+                    }
+                }
+            }
+        }
+
+        for (auto &oss : buffer)
+        {
+            std::string line = oss.str();
+#pragma omp critical
+            {
+                output << line;
+            }
+        }
+    }
+    template <typename C>
+    inline void hypersurface<C>::write_to_binary_omp(const std::string &o_file, bool quiet)
+    {
+
+        std::ofstream output(o_file, std::ios::binary);
+        if (!output.is_open())
+        {
+            throw std::runtime_error("Error opening output file");
+        }
+        const auto &count = _cells.size();
+        int lastperc = -1;
+
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+#pragma omp parallel for
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            int tid = omp_get_thread_num();
+            auto &cell = _cells[counter];
+            cell.write(buffer[tid], 0, hydro::file_format::Binary);
+#pragma omp critical
+            {
+                if (!quiet)
+                {
+                    int perc = 100 * ((double)counter) / ((double)count) + 1;
+                    if (perc > lastperc)
+                    {
+                        lastperc = perc;
+                        utils::show_progress(perc > 100 ? 100 : perc);
+                    }
+                }
+            }
+        }
+
+        for (auto &oss : buffer)
+        {
+            std::string binary_data = oss.str();
+#pragma omp critical
+            {
+                output.write(binary_data.c_str(), binary_data.size());
+            }
+        }
     }
 #else
     template <typename C>
@@ -874,6 +990,63 @@ namespace hydro
                 << std::endl;
         }
     }
+
+    template <typename C>
+    inline void hypersurface<C>::write_to_text(const std::string &o_file, bool quiet)
+    {
+        std::ofstream output(o_file);
+        if (!output.is_open())
+        {
+            throw std::runtime_error("Error opening output file");
+        }
+        const auto &count = _cells.size();
+        std::atomic<int> lastperc(-1);
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            auto &cell = _cells[counter];
+            output << cell << std::endl;
+
+            int perc = 100 * ((double)counter) / ((double)count) + 1;
+            if (!quiet && perc > lastperc)
+            {
+                lastperc = perc;
+                utils::show_progress(perc > 100 ? 100 : perc);
+            }
+        }
+        if (!quiet)
+        {
+            utils::show_progress(100);
+            std::cout << std::endl;
+        }
+    }
+    template <typename C>
+    inline void hypersurface<C>::write_to_binary(const std::string &o_file, bool quiet)
+    {
+        std::ofstream output(o_file);
+        if (!output.is_open())
+        {
+            throw std::runtime_error("Error opening output file");
+        }
+        const auto &count = _cells.size();
+        std::atomic<int> lastperc(-1);
+        for (size_t counter = 0; counter < count; counter++)
+        {
+            auto &cell = _cells[counter];
+            cell.write(output, 0, hydro::file_format::Binary);
+
+            int perc = 100 * ((double)counter) / ((double)count) + 1;
+            if (!quiet && perc > lastperc)
+            {
+                lastperc = perc;
+                utils::show_progress(perc > 100 ? 100 : perc);
+            }
+        }
+        if (!quiet)
+        {
+            utils::show_progress(100);
+            std::cout << std::endl;
+        }
+    }
 #endif
 }
 namespace powerhouse
@@ -996,8 +1169,9 @@ namespace powerhouse
         double dNd3p;
         double local_yield()
         {
-            return dNd3p * (utils::hbarC * utils::hbarC * utils::hbarC);
+            return dNd3p / (utils::hbarC * utils::hbarC * utils::hbarC);
         }
+        utils::geometry::four_vector p;
         ~yield_output() override {}
     };
 

@@ -18,7 +18,24 @@ utils::r2_tensor hydro::fcell::delta_ll()
 {
     if (!_delta_ll)
     {
-        _delta_ll = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u.to_lower() * -1.0) & _u.to_lower()}));
+        const auto d00 = 1.0 - _u[0] * _u[0];
+        const auto d01 = _u[0] * _u[1];
+        const auto d02 = _u[0] * _u[2];
+        const auto d03 = _u[0] * _u[3];
+        const auto d11 = -1.0 - _u[1] * _u[1];
+        const auto d12 = -_u[1] * _u[2];
+        const auto d13 = -_u[1] * _u[3];
+        const auto d22 = -1.0 - _u[2] * _u[2];
+        const auto d23 = -_u[2] * _u[3];
+        const auto d33 = -1.0 - _u[3] * _u[3];
+        utils::r2_tensor _ =
+            {{
+                {d00, d01, d02, d03},
+                {d01, d11, d12, d13},
+                {d02, d12, d22, d23},
+                {d03, d13, d23, d33},
+            }};
+        _delta_ll = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ll;
 }
@@ -27,7 +44,14 @@ utils::r2_tensor hydro::fcell::delta_uu()
 {
     if (!_delta_uu)
     {
-        _delta_uu = std::make_unique<utils::r2_tensor>(utils::add_tensors({utils::metric, (_u * -1.0) & _u}));
+        utils::r2_tensor _ =
+            {{
+                {1.0 - _u[0] * _u[0], -_u[0] * _u[1], -_u[0] * _u[2], -_u[0] * _u[3]},
+                {-_u[1] * _u[0], -1.0 - _u[1] * _u[1], -_u[1] * _u[2], -_u[1] * _u[3]},
+                {-_u[2] * _u[0], -_u[2] * _u[1], -1.0 - _u[2] * _u[2], -_u[2] * _u[3]},
+                {-_u[3] * _u[0], -_u[3] * _u[1], -_u[3] * _u[2], -1.0 - _u[3] * _u[3]},
+            }};
+        _delta_uu = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_uu;
 }
@@ -36,17 +60,13 @@ utils::r2_tensor hydro::fcell::delta_ul()
 {
     if (!_delta_ul)
     {
-        utils::r2_tensor _ = {0};
-#ifdef _OPENMP
-#pragma omp simd
-#endif
-        for (size_t i = 0; i < 4; i++)
-        {
-            for (size_t j = 0; j < 4; j++)
-            {
-                _[i][j] = utils::kr_delta(i, j) - _u[i] * (j == 0 ? _u[j] : -_u[j]);
-            }
-        }
+        utils::r2_tensor _ =
+            {{
+                {1.0 - _u[0] * _u[0], _u[0] * _u[1], _u[0] * _u[2], _u[0] * _u[3]},
+                {-_u[1] * _u[0], 1.0 + _u[1] * _u[1], _u[1] * _u[2], _u[1] * _u[3]},
+                {-_u[2] * _u[0], _u[2] * _u[1], 1.0 + _u[2] * _u[2], _u[2] * _u[3]},
+                {-_u[3] * _u[0], _u[3] * _u[1], _u[3] * _u[2], 1.0 + _u[3] * _u[3]},
+            }};
         _delta_ul = std::make_unique<utils::r2_tensor>(_);
     }
     return *_delta_ul;
@@ -169,7 +189,7 @@ void hydro::fcell::read_from_binary(std::istream &stream)
     stream.read(reinterpret_cast<char *>(&_x), sizeof(_x));
     stream.read(reinterpret_cast<char *>(&_y), sizeof(_y));
     stream.read(reinterpret_cast<char *>(&_eta), sizeof(_eta));
-    
+
     stream.read(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
     stream.read(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
     stream.read(reinterpret_cast<char *>(&_T), sizeof(_T));
@@ -181,6 +201,7 @@ void hydro::fcell::read_from_binary(std::istream &stream)
     {
         stream.read(reinterpret_cast<char *>(_dbeta[i].data()), _dbeta[i].size() * sizeof(double));
     }
+
     for (int i = 0; i < 4; i++)
     {
         stream.read(reinterpret_cast<char *>(_du[i].data()), _du[i].size() * sizeof(double));
@@ -193,7 +214,6 @@ void hydro::fcell::read_from_text(std::istream &stream)
     stream >> _dsigma;
     stream >> _u;
     stream >> _T >> _mub >> _muq >> _mus;
-
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
@@ -265,7 +285,7 @@ void hydro::fcell::write_to_binary(std::ostream &stream)
     stream.write(reinterpret_cast<char *>(&_x), sizeof(_x));
     stream.write(reinterpret_cast<char *>(&_y), sizeof(_y));
     stream.write(reinterpret_cast<char *>(&_eta), sizeof(_eta));
-    
+
     stream.write(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
     stream.write(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
     stream.write(reinterpret_cast<char *>(&_T), sizeof(_T));
@@ -286,14 +306,15 @@ void hydro::fcell::write_to_binary(std::ostream &stream)
 void hydro::fcell::calculate_shear()
 {
     utils::r2_tensor _ = {{0}};
-#ifdef _OPENMP
-#pragma omp simd
-#endif
+    const auto& grad = gradu_ll();
+    const auto& delta = delta_ll();
+    const auto& th = theta() / 3.0;
     for (size_t mu = 0; mu < 4; mu++)
     {
-        for (size_t nu = 0; nu < 4; nu++)
+        for (size_t nu = mu; nu < 4; nu++)
         {
-            _[mu][nu] = 0.5 * gradu_ll()[mu][nu] + 0.5 * gradu_ll()[nu][mu] - delta_ll()[mu][nu] * theta() / 3.0;
+            _[mu][nu] = 0.5 * grad[mu][nu] + 0.5 * grad[nu][mu] - delta[mu][nu] * th;
+            _[nu][mu] = _[mu][nu];
         }
     }
     _shear = std::make_unique<utils::r2_tensor>(_);
@@ -303,76 +324,98 @@ void hydro::fcell::calculate_fvorticity_vec()
 {
     ug::four_vector _(false);
     const auto u_l = _u.to_lower();
-#ifdef _OPENMP
-#pragma omp simd
-#endif
-    for (size_t mu = 0; mu < 4; mu++)
+    for (const auto &indices : utils::non_zero_levi())
     {
-        _[mu] = 0;
-        for (size_t nu = 0; nu < 4; nu++)
-        {
-            if (nu == mu || u_l[nu] == 0)
-                continue;
-            for (size_t a = 0; a < 4; a++)
-            {
-                if (a == mu || a == nu)
-                    continue;
-                for (size_t b = 0; b < 4; b++)
-                {
-                    if (b == mu || b == nu || b == a || _du[a][b] == 0)
-                        continue;
-                    _[mu] += 0.5 * utils::levi(mu, nu, a, b) * _u[nu] * _du[a][b];
-                }
-            }
-        }
+        const auto mu = indices[0];
+        const auto nu = indices[1];
+        const auto a = indices[2];
+        const auto b = indices[3];
+        const auto levi = indices[4];
+        _[mu] += 0.5 * levi * u_l[nu] * _du[a][b];
     }
     _f_vorticity_vec = std::make_unique<ug::four_vector>(_);
 }
 
 void hydro::fcell::calculate_fvorticity()
 {
-    utils::r2_tensor _ = {{0}};
     const auto &grad = gradu_ll();
-#ifdef _OPENMP
-#pragma omp simd
-#endif
-    for (size_t i = 0; i < 4; i++)
-    {
-        for (size_t j = 0; j < 4; j++)
-        {
-            _[i][j] = 0.5 * grad[i][j] - 0.5 * grad[j][i];
-        }
-    }
+
+    const auto _01 = 0.5 * grad[0][1] - 0.5 * grad[1][0];
+    const auto _02 = 0.5 * grad[0][2] - 0.5 * grad[2][0];
+    const auto _03 = 0.5 * grad[0][3] - 0.5 * grad[3][0];
+    const auto _12 = 0.5 * grad[1][2] - 0.5 * grad[2][1];
+    const auto _13 = 0.5 * grad[1][3] - 0.5 * grad[3][1];
+    const auto _23 = 0.5 * grad[2][3] - 0.5 * grad[3][2];
+
+    utils::r2_tensor _ = {{{
+                               0,
+                               _01,
+                               _02,
+                               _03,
+                           },
+                           {
+                               -_01,
+                               0,
+                               _12,
+                               _13,
+                           },
+                           {
+                               -_02,
+                               -_12,
+                               0,
+                               _23,
+                           },
+                           {-_03, -_13, -_23, 0}
+
+    }};
     _f_vorticity = std::make_unique<utils::r2_tensor>(_);
 }
 
 void hydro::fcell::calculate_th_vorticity()
 {
-    utils::r2_tensor _ = {{0}};
-#ifdef _OPENMP
-#pragma omp simd
-#endif
-    for (size_t i = 0; i < 4; i++)
-    {
-        for (size_t j = 0; j < 4; j++)
-        {
-            _[i][j] = (-0.5 * _dbeta[i][j] * utils::hbarC + 0.5 * _dbeta[j][i] * utils::hbarC);
-        }
-    }
+    const auto _01 = (-0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
+    const auto _02 = (-0.5 * _dbeta[0][2] * utils::hbarC + 0.5 * _dbeta[2][0] * utils::hbarC);
+    const auto _03 = (-0.5 * _dbeta[0][3] * utils::hbarC + 0.5 * _dbeta[3][0] * utils::hbarC);
+    const auto _12 = (-0.5 * _dbeta[1][2] * utils::hbarC + 0.5 * _dbeta[2][1] * utils::hbarC);
+    const auto _13 = (-0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
+    const auto _23 = (-0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
+
+    utils::r2_tensor _ = {{{
+                               0,
+                               _01,
+                               _02,
+                               _03,
+                           },
+                           {
+                               -_01,
+                               0,
+                               _12,
+                               _13,
+                           },
+                           {
+                               -_02,
+                               -_12,
+                               0,
+                               _23,
+                           },
+                           {-_03, -_13, -_23, 0}
+
+    }};
     _th_vorticity = std::make_unique<utils::r2_tensor>(_);
 }
 
 void hydro::fcell::calculate_th_shear()
 {
-    utils::r2_tensor _ = {{0}};
-#ifdef _OPENMP
-#pragma omp simd
-#endif
+    // #ifdef _OPENMP
+    // #pragma omp simd
+    // #endif
+    utils::r2_tensor _;
     for (size_t i = 0; i < 4; i++)
     {
-        for (size_t j = 0; j < 4; j++)
+        for (size_t j = i; j < 4; j++)
         {
             _[i][j] = (0.5 * _dbeta[i][j] * utils::hbarC + 0.5 * _dbeta[j][i] * utils::hbarC);
+            _[j][i] = _[i][j];
         }
     }
     _th_shear = std::make_unique<utils::r2_tensor>(_);

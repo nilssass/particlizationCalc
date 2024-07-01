@@ -3,6 +3,7 @@
 #include "../src/utils.h"
 #include "../src/fcell.h"
 #include "../src/interfaces.h"
+#include "../src/surface.h"
 #include "../src/I_engine.h"
 #include "../src/geometry.h"
 #include "../src/pdg_particle.h"

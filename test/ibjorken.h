@@ -4,7 +4,6 @@
 #include "../src/fcell.h"
 #include "../src/geometry.h"
 #include "../src/utils.h"
-
 #pragma once
 namespace ug = utils::geometry;
 

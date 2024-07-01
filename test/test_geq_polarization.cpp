@@ -5,6 +5,7 @@
 #include "../src/pdg_particle.h"
 #include "my_test.h"
 #include "../src/vhll_engine_helper.h"
+#include "../src/surface.h"
 #include <omp.h>
 namespace
 {

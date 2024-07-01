@@ -15,9 +15,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 # Alternatively, you can set debug and release flags together
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 
-# Boost
-# find_package(Boost 1.85.0 REQUIRED)
-# include_directories(${Boost_INCLUDE_DIRS})
+
 
 # ROOT
 
@@ -201,6 +199,7 @@ add_executable(
     bench_utils
     test/bench_utils.cpp
     src/utils.cpp
+    src/fcell.cpp
 )
 target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
 
@@ -303,3 +302,34 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
 )
+
+# Boost
+
+# set(BOOST_ROOT "/opt/homebrew/Cellar/boost/1.85.0/include/boost/")
+# find_package(Boost 1.85.0 COMPONENTS program_options REQUIRED)
+# include_directories(${Boost_INCLUDE_DIRS})
+
+
+# message(STATUS "Boost version: ${Boost_VERSION}")
+# message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
+# message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+
+# Add the txt_to_bin executable target
+add_executable(
+    txt_to_bin  # Name of the executable
+    src/txt_to_bin.cpp  # Source files for the main executable
+    # Add other necessary source files here
+    src/fcell.cpp
+    src/utils.cpp
+)
+
+# target_link_libraries(txt_to_bin
+#  PUBLIC boost::program_options)
+
+# Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(txt_to_bin PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(txt_to_bin PUBLIC OpenMP::OpenMP_CXX)
+endif()

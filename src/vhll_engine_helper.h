@@ -76,9 +76,10 @@ namespace vhlle
                     {
                         std::cout << "Reading hypersurface from " << opts.in_file << std::endl;
 
-                        hypersurface.read(opts.in_file, opts.accept_mode);
+                        hypersurface.read(opts.in_file, opts.accept_mode, !opts.verbose,
+                                          opts.binary_file ? hydro::file_format::Binary : hydro::file_format::Text);
                     }
-                    input_file.close();
+                    // input_file.close();
                     success = true;
                 }
                 else

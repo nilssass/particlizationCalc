@@ -12,6 +12,7 @@
 #include "../src/element.h"
 #include "my_cell.hpp"
 #include "my_tests.hpp"
+#include "../src/surface.h"
 namespace ug = utils::geometry;
 // This is an old file that will not be compiled 
 namespace

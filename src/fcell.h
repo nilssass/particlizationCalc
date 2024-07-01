@@ -160,34 +160,72 @@ namespace hydro
         double tshear_norm() override;
         double acc_norm() override;
 
+        void reset()
+        {
+            _delta_ll = nullptr;
+            _delta_ul = nullptr;
+            _delta_uu = nullptr;
+            _acc = nullptr;
+            _th_vorticity = nullptr;
+            _th_shear = nullptr;
+            _shear = nullptr;
+            _f_vorticity_vec = nullptr;
+            _f_vorticity = nullptr;
+            _gradu = nullptr;
+            _sigma_norm = nullptr;
+            _fvort_norm = nullptr;
+            _tvort_norm = nullptr;
+            _tshear_norm = nullptr;
+            _acc_norm = nullptr;
+        }
+
+
     protected:
         virtual void read_from_binary(std::istream &stream) override;
 
         virtual void read_from_text(std::istream &stream) override;
         void write_to_text(std::ostream &output, const char delim) const override
         {
-            output << _tau << delim << _x << delim << _y << delim << _eta
-                   << delim << _dsigma[0] << delim << _dsigma[1] << delim << _dsigma[2]
-                   << delim << _dsigma[3]
-                   << delim << _u[0] << delim << _u[1] << delim << _u[2]
-                   << delim << _u[3];
+            const int width = 30;
+            const int precision = 16;
+            output << std::setw(width) << std::setprecision(precision) << std::fixed << _tau << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _x << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _y << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _eta << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _dsigma[0] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _dsigma[1] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _dsigma[2] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _dsigma[3] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _u[0] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _u[1] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _u[2] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _u[3] << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _T << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _mub << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _muq << delim
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << _mus;
+
             for (size_t i = 0; i < 4; i++)
             {
                 for (size_t j = 0; j < 4; j++)
                 {
-                    output << delim << _dbeta[i][j];
+                    output << delim
+                           << std::setw(width) << std::setprecision(precision) << std::fixed << _dbeta[i][j];
                 }
             }
+
             for (size_t i = 0; i < 4; i++)
             {
                 for (size_t j = 0; j < 4; j++)
                 {
-                    output << delim << _du[i][j];
+                    output << delim
+                           << std::setw(width) << std::setprecision(precision) << std::fixed << _du[i][j];
                 }
             }
         }
         void write_to_binary(std::ostream &stream) override;
 
+        
     private:
         double _tau, _x, _y, _eta;
         utils::geometry::four_vector _u;

@@ -112,14 +112,9 @@ namespace utils::geometry
         // Dot product
         double operator*(const four_vector &vec2) const
         {
-            double res = 0;
-#ifdef _OPENMP
-#pragma omp simd reduction(+ : res)
-#endif
-            for (size_t i = 0; i < 4; i++)
-            {
-                res += _data[i] * vec2._data[i] * (vec2._lower == _lower ? gmumu[i] : 1.0);
-            }
+            const auto g = vec2.is_lower() == _lower ? -1 : 1.0;
+            const auto data2 = vec2.vec();
+            double res = _data[0] * data2[0] + g * (_data[1] * data2[1] + _data[2] * data2[2] + _data[3] * data2[3]);
             return res;
         }
 
@@ -144,16 +139,7 @@ namespace utils::geometry
         // Scalar multiplication
         four_vector operator*(double x) const
         {
-            four_vector res;
-#ifdef _OPENMP
-#pragma omp simd
-#endif
-            for (size_t i = 0; i < 4; i++)
-            {
-                res._data[i] = _data[i] * x;
-            }
-            res._lower = _lower;
-            return res;
+            return four_vector ({x * _data[0], x* _data[1], x* _data[2], x* _data[3]}, _lower);
         }
 
         bool operator==(const four_vector &other) const

@@ -27,9 +27,9 @@ std::vector<double> utils::linspace(double min, double max, int size)
 {
     // returns a vector of doubles from min to max (included), equally spaced with spacing max-min/size
     std::vector<double> result;
-    result.reserve(size+1);
-    const double&& interval = (max - min) / (double) size;
-    auto& tmp_min = min;
+    result.reserve(size + 1);
+    const double &&interval = (max - min) / (double)size;
+    auto &tmp_min = min;
     for (int i = 0; i <= size; i++)
     {
         result.push_back(tmp_min);
@@ -190,6 +190,7 @@ void configure_parser(cli::Parser &parser)
 
     parser.set_optional<bool>("d", "decay", false, "Including calculations for the feed-down corrections");
     parser.set_optional<bool>("q", "quiet", false, "Quiet mode");
+    parser.set_optional<bool>("b", "binary", false, "Binary input file");
 }
 
 utils::program_options utils::read_cmd(int argc, char **argv)
@@ -244,6 +245,7 @@ utils::program_options utils::read_cmd(int argc, char **argv)
             break;
         case program_modes::Yield:
             opts.polarization_mode = polarization_modes::NA;
+            opts.yield_mode = yield_modes::GlobalEq;
             break;
         }
         opts.particle_id = get_particle_id(parser);
@@ -252,6 +254,7 @@ utils::program_options utils::read_cmd(int argc, char **argv)
             opts.program_mode = program_modes::Invalid;
             what_stream << "A known particle id must be provided for the chosen program mode!" << std::endl;
         }
+        opts.binary_file = parser.get<bool>("b");
     }
     else
     {
@@ -417,12 +420,14 @@ utils::r2_tensor utils::mat_product(utils::four_vec v1, utils::four_vec v2)
 
 utils::four_vec utils::s_product(utils::four_vec v1, double x)
 {
-    utils::four_vec prod = {0};
-    for (size_t i = 0; i < 4; i++)
-    {
-        prod[i] = v1[i] * x;
-    }
-    return prod;
+    // utils::four_vec prod = {0};
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //     prod[i] = v1[i] * x;
+    // }
+    // utils::four_vec {v1[0]*x, v1[1]*x, v1[2]*x, v1[3]};
+    // return prod;
+    return utils::four_vec{v1[0] * x, v1[1] * x, v1[2] * x, v1[3]};
 }
 
 utils::r2_tensor utils::s_product(utils::r2_tensor t1, double x)

@@ -91,7 +91,7 @@ namespace powerhouse
                 examine();
                 break;
             case utils::program_modes::Polarization:
-                calculate_polarizatio();
+                calculate_polarization();
                 break;
             case utils::program_modes::Yield:
                 calculate_yield();
@@ -164,7 +164,7 @@ namespace powerhouse
             return _particle.get();
         }
         virtual void examine();
-        virtual void calculate_polarizatio();
+        virtual void calculate_polarization();
         virtual void calculate_yield();
         virtual void write_examin();
         virtual void write_polarization();
@@ -234,12 +234,6 @@ namespace powerhouse
             throw std::runtime_error("Calculator is not found!");
         }
 
-        // if (_settings.program_mode != utils::program_modes::Examine)
-        // {
-        //     _pT = utils::linspace(0, _pt_max, _size_pt);
-        //     _phi = utils::linspace(0, 2 * M_PI, _size_phi);
-        //     _y_rap = utils::linspace(_y_min, _y_max, _size_y);
-        // }
         _initialized = true;
     }
 
@@ -307,7 +301,7 @@ namespace powerhouse
     }
 
     template <typename C, typename P, typename O>
-    inline void I_engine<C, P, O>::calculate_polarizatio()
+    inline void I_engine<C, P, O>::calculate_polarization()
     {
         if constexpr (is_template_base_of<powerhouse::polarization_output, O>::value)
         {

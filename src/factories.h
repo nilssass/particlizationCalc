@@ -74,7 +74,7 @@ namespace powerhouse
         std::unique_ptr<I_calculator<C, P, O>> create(const utils::program_options &options)
         {
             powerhouse::calculator_key key{options.program_mode, options.polarization_mode, options.yield_mode};
-
+            
             const auto &it = _map.find(key);
             if (it != _map.end())
             {

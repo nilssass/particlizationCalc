@@ -27,6 +27,7 @@
 #include <utility>
 #include <chrono>
 #include <strstream>
+#include <iostream>
 #include <initializer_list>
 #include <algorithm>
 #include <unordered_map>
@@ -107,6 +108,7 @@ namespace utils
         bool decay;   // Use feeddown -d
         bool verbose; // Default is true use -q for quiet mode
         int particle_id;
+        bool binary_file;
     };
 
     // Random engine type
@@ -240,15 +242,6 @@ namespace utils
     /// @return g_{\mu\nu} tensor^{\mu\nu}
     constexpr double trace_ll(const r2_tensor &tensor)
     {
-        // double tr = 0;
-        // for (size_t i = 0; i < 4; i++)
-        // {
-        //     for (size_t j = 0; j < 4; j++)
-        //     {
-        //         tr += utils::gmunu[i][j] * tensor[i][j];
-        //     }
-        // }
-        // return tr;
         return tensor[0][0] - tensor[1][1] - tensor[2][2] - tensor[3][3];
     }
 
@@ -323,6 +316,159 @@ namespace utils
             *number = num;
         }
         return is;
+    }
+
+    inline void show_stream_state(std::istream &is)
+    {
+        if (is.eof())
+        {
+            std::cerr << "Stream state: EOF\n";
+        }
+        else if (is.fail())
+        {
+            std::cerr << "Stream state: Fail\n";
+        }
+        else if (is.bad())
+        {
+            std::cerr << "Stream state: Bad\n";
+        }
+        else
+        {
+            std::cerr << "Stream state: Good\n";
+        }
+    }
+
+    inline void show_chars(std::string line)
+    {
+        for (char c : line)
+        {
+            std::cerr << "[" << c << "]";
+        }
+        std::cerr << std::endl;
+    }
+
+    constexpr std::array<std::array<int, 4>, 24> non_zero_levi_indices()
+    {
+        /// List of arrays of indices for which the Levi Civita symbol is non-zero (Andrea's code)
+        return {{
+            {0, 1, 2, 3},
+            {0, 2, 1, 3},
+            {0, 3, 1, 2},
+            {0, 1, 3, 2},
+            {0, 3, 2, 1},
+            {0, 2, 3, 1},
+            {1, 0, 2, 3},
+            {1, 2, 0, 3},
+            {1, 3, 0, 2},
+            {1, 0, 3, 2},
+            {1, 2, 3, 0},
+            {1, 3, 2, 0},
+            {2, 0, 1, 3},
+            {2, 1, 0, 3},
+            {2, 3, 0, 1},
+            {2, 0, 3, 1},
+            {2, 1, 3, 0},
+            {2, 3, 1, 0},
+            {3, 0, 1, 2},
+            {3, 1, 0, 2},
+            {3, 2, 0, 1},
+            {3, 0, 2, 1},
+            {3, 1, 2, 0},
+            {3, 2, 1, 0},
+        }};
+    }
+
+    constexpr std::array<std::array<int, 5>, 24> non_zero_levi()
+    {
+        /// List of arrays of indices for which the Levi Civita symbol is non-zero (Andrea's code)
+        return {{
+            {0, 1, 2, 3, 1},
+            {0, 2, 1, 3, -1},
+            {0, 3, 1, 2, 1},
+            {0, 1, 3, 2, -1},
+            {0, 3, 2, 1, -1},
+            {0, 2, 3, 1, 1},
+            {1, 0, 2, 3, -1},
+            {1, 2, 0, 3, 1},
+            {1, 3, 0, 2, -1},
+            {1, 0, 3, 2, 1},
+            {1, 2, 3, 0, -1},
+            {1, 3, 2, 0, 1},
+            {2, 0, 1, 3, 1},
+            {2, 1, 0, 3, -1},
+            {2, 3, 0, 1, 1},
+            {2, 0, 3, 1, -1},
+            {2, 1, 3, 0, 1},
+            {2, 3, 1, 0, -1},
+            {3, 0, 1, 2, -1},
+            {3, 1, 0, 2, 1},
+            {3, 2, 0, 1, -1},
+            {3, 0, 2, 1, 1},
+            {3, 1, 2, 0, -1},
+            {3, 2, 1, 0, 1},
+        }};
+    }
+
+    constexpr std::array<std::array<int, 2>, 6> non_zero_anti_symmetric()
+    {
+        return {{
+            {0, 1},
+            {0, 2},
+            {0, 3},
+            {1, 2},
+            {1, 3},
+            {2, 3},
+        }};
+    }
+
+    constexpr std::array<std::array<int, 2>, 10> non_zero_symmetric()
+    {
+        return {{
+            {0, 0},
+            {0, 1},
+            {0, 2},
+            {0, 3},
+            {1, 1},
+            {1, 2},
+            {1, 3},
+            {2, 2},
+            {2, 3},
+            {3, 3},
+        }};
+    }
+
+    constexpr std::array<int, 24> non_zero_levi_values()
+    {
+        /// List of arrays of indices for which the Levi Civita symbol is non-zero (Andrea's code)
+        return {{1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1,
+                 1,
+                 -1}};
+    }
+
+    constexpr double round_to(double value, double precision = 1.0)
+    {
+        return std::round(value / precision) * precision;
     }
 }
 namespace powerhouse

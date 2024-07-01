@@ -83,7 +83,10 @@
         "numeric": "cpp",
         "cfenv": "cpp",
         "source_location": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "typeindex": "cpp",
+        "print": "cpp",
+        "queue": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

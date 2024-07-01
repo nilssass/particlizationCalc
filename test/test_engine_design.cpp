@@ -13,6 +13,7 @@
 #include "../src/I_engine.h"
 #include "../src/factories.h"
 #include "../src/pdg_particle.h"
+#include "../src/surface.h"
 #include "my_test.h"
 namespace ug = utils::geometry;
 
