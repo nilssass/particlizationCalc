@@ -4,9 +4,9 @@ ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
 
-CXX           = /opt/homebrew/Cellar/llvm/16.0.6/bin/clang++
+CXX           = /opt/homebrew/Cellar/llvm/17.0.4/bin/clang++
 CXXFLAGS      = -fPIC -O3 -fopenmp  # Add -fopenmp for OpenMP support
-LD            = /opt/homebrew/Cellar/llvm/16.0.6/bin/clang++
+LD            = /opt/homebrew/Cellar/llvm/17.0.4/bin/clang++
 LDFLAGS       = -O3 -fopenmp -lomp # Add -fopenmp for OpenMP support
 FFLAGS        = -fPIC $(ROOTCFLAGS) -O3
 
