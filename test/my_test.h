@@ -83,6 +83,23 @@ protected:
         }
     }
 
+    void EXPECT_CELLS_NEAR(hydro::fcell lhs, hydro::fcell rhs, double tolerance = abs_error)
+    {
+        EXPECT_ARRAY_NEAR(lhs.thermodynamics().vec(), rhs.thermodynamics().vec(), "", tolerance);
+        EXPECT_ARRAY_NEAR(lhs.four_vel().vec(), rhs.four_vel().vec(), "", tolerance);
+        EXPECT_ARRAY_NEAR(lhs.milne_coords().vec(), rhs.milne_coords().vec(), "", tolerance);
+        EXPECT_ARRAY_NEAR(lhs.dbeta_ll(), rhs.dbeta_ll(), "", tolerance);
+        EXPECT_ARRAY_NEAR(lhs.du_ll(), rhs.du_ll(), "", tolerance);
+    }
+
+    void print(hydro::hypersurface<hydro::fcell> &surface)
+        {
+            std::cout << std::endl
+                      << surface.lines() << " lines " << surface.total()
+                      << " saved " << surface.skipped() << " skipped "
+                      << surface.failed() << " failed " << surface.rejected() << " rejected." << std::endl;
+        }
+
     std::string to_string(utils::four_vec vec)
     {
         std::stringstream ss;

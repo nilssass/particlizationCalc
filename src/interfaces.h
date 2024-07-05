@@ -93,6 +93,19 @@ namespace hydro
             return stream;
         }
 
+        friend bool operator==(const I_cell &lhs, const I_cell &rhs)
+        {
+            return lhs.thermodynamics() == rhs.thermodynamics() 
+            && lhs.four_vel() == rhs.four_vel() && lhs.milne_coords() == rhs.milne_coords()
+            && utils::are_equal(lhs.dbeta_ll(), rhs.dbeta_ll()) && 
+            utils::are_equal(lhs.du_ll() , rhs.du_ll());
+        }
+
+        friend bool operator!=(const I_cell &lhs, const I_cell &rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         virtual size_t size() = 0;
 
     protected:
@@ -573,6 +586,7 @@ namespace hydro
         int threads_count = omp_get_max_threads();
         // Ensure chunk_size is a multiple of cell_size
         std::streampos chunk_size = (file_size / threads_count) / cell_size * cell_size;
+        // std::cout << "chunk size = " << chunk_size << std::endl;
         for (int i = 0; i < std::min(estimated_line_count, threads_count); ++i)
         {
             std::streampos start = i * chunk_size;

@@ -30,13 +30,6 @@ namespace
         void TearDown() override
         {
         }
-        void print(hydro::hypersurface<hydro::fcell> &surface)
-        {
-            std::cout << std::endl
-                      << surface.lines() << " lines " << surface.total()
-                      << " saved " << surface.skipped() << " skipped "
-                      << surface.failed() << " failed " << surface.rejected() << " rejected." << std::endl;
-        }
     };
 
     TEST_F(CellTest, ReadOneCel)
@@ -100,11 +93,27 @@ namespace
         surface.read(i_file, utils::accept_modes::AcceptAll, true, hydro::file_format::Text);
         EXPECT_EQ(surface.data().size(), 60);
         print(surface);
+        std::vector<hydro::fcell> original_cells;
+        original_cells.insert(original_cells.begin(),surface.data().begin(), surface.data().end());
         const std::string o_file = "./input/beta-60-copy.dat";
         surface.write(o_file, true, hydro::file_format::Text);
         surface.clear();
         surface.read(o_file, utils::accept_modes::AcceptAll, true);
         EXPECT_EQ(surface.data().size(), 60);
+
+        for (size_t i = 0; i < surface.data().size(); i++)
+        {
+            const auto &cell = surface[i];
+            auto it = std::find_if(original_cells.begin(), original_cells.end(), [&cell](const auto& c)
+            {
+                return cell.milne_coords() == c.milne_coords();
+            });
+            ASSERT_FALSE(it == original_cells.end());
+            auto found_cell = *it;
+            EXPECT_CELLS_NEAR(surface[i], found_cell);
+        }
+        
+        
         print(surface);
     }
 
@@ -116,11 +125,26 @@ namespace
         surface.read(i_file, utils::accept_modes::AcceptAll, true, hydro::file_format::Text);
         EXPECT_EQ(surface.data().size(), 60);
         print(surface);
+        std::vector<hydro::fcell> original_cells;
+        original_cells.insert(original_cells.begin(),surface.data().begin(), surface.data().end());
         const std::string o_file = "./input/beta-60.bin";
         surface.write(o_file, true, hydro::file_format::Binary);
         surface.clear();
         surface.read(o_file, utils::accept_modes::AcceptAll, true, hydro::file_format::Binary);
         EXPECT_EQ(surface.data().size(), 60);
+
+         for (size_t i = 0; i < surface.data().size(); i++)
+        {
+            const auto &cell = surface[i];
+            auto it = std::find_if(original_cells.begin(), original_cells.end(), [&cell](const auto& c)
+            {
+                return cell.milne_coords() == c.milne_coords();
+            });
+            ASSERT_FALSE(it == original_cells.end());
+            auto found_cell = *it;
+            EXPECT_CELLS_NEAR(surface[i], found_cell);
+        }
+        
         print(surface);
     }
 

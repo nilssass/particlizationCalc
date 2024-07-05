@@ -147,12 +147,14 @@ namespace utils::geometry
             bool res = (_lower == other._lower);
             if (res)
             {
-#ifdef _OPENMP
-#pragma omp simd reduction(& : res)
-#endif
                 for (size_t i = 0; i < 4; i++)
                 {
                     res = res && other._data[i] == _data[i];
+                    if (!res)
+                    {
+                        break;
+                    }
+                    
                 }
             }
             return res;

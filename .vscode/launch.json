@@ -5,7 +5,7 @@
         "name": "(lldb) Launch",
         "type": "lldb",
         "request": "launch",
-        "program": "${workspaceFolder}/build/bench_yield",
+        "program": "${workspaceFolder}/build/test_yield",
         // "args": ["-i", "input/beta.bin", "-o", "output/test.dat", "-y", "-pn", "pi+"],
         "cwd": "${workspaceFolder}",
         "stopOnEntry": false,

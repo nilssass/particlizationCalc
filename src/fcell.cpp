@@ -190,8 +190,8 @@ void hydro::fcell::read_from_binary(std::istream &stream)
     stream.read(reinterpret_cast<char *>(&_y), sizeof(_y));
     stream.read(reinterpret_cast<char *>(&_eta), sizeof(_eta));
 
-    stream.read(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
-    stream.read(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
+    stream.read(reinterpret_cast<char *>(_dsigma.to_array()), _dsigma.vec().size() * sizeof(double));
+    stream.read(reinterpret_cast<char *>(_u.to_array()), _u.vec().size() * sizeof(double));
     stream.read(reinterpret_cast<char *>(&_T), sizeof(_T));
     stream.read(reinterpret_cast<char *>(&_mub), sizeof(_mub));
     stream.read(reinterpret_cast<char *>(&_muq), sizeof(_muq));
@@ -286,8 +286,8 @@ void hydro::fcell::write_to_binary(std::ostream &stream)
     stream.write(reinterpret_cast<char *>(&_y), sizeof(_y));
     stream.write(reinterpret_cast<char *>(&_eta), sizeof(_eta));
 
-    stream.write(reinterpret_cast<char *>(_dsigma.vec().data()), _dsigma.vec().size() * sizeof(double));
-    stream.write(reinterpret_cast<char *>(_u.vec().data()), _u.vec().size() * sizeof(double));
+    stream.write(reinterpret_cast<char *>(_dsigma.to_array()), _dsigma.vec().size() * sizeof(double));
+    stream.write(reinterpret_cast<char *>(_u.to_array()), _u.vec().size() * sizeof(double));
     stream.write(reinterpret_cast<char *>(&_T), sizeof(_T));
     stream.write(reinterpret_cast<char *>(&_mub), sizeof(_mub));
     stream.write(reinterpret_cast<char *>(&_muq), sizeof(_muq));

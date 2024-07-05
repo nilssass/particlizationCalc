@@ -179,7 +179,6 @@ namespace hydro
             _acc_norm = nullptr;
         }
 
-
     protected:
         virtual void read_from_binary(std::istream &stream) override;
 

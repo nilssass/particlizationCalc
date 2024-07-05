@@ -66,6 +66,27 @@ public:
     void create_phase_space_nop_omp();
     void create_phase_space_omp();
     void create_phase_space_sgt();
+    bool pre_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step)
+        {
+            bool reject = false;
+            if (_settings.accept_mode != utils::accept_modes::AcceptAll)
+            {
+                switch (_settings.accept_mode)
+                {
+                case utils::accept_modes::RejectTimelike:
+                    reject = !cell.is_spacelike();
+                    break;
+                case utils::accept_modes::RejectNegativeDuDSigma:
+                    reject = cell.u_dot_n() < 0;
+                    break;
+                case utils::accept_modes::RejectNegativePDSigma:;
+                    const auto &pdotdsigma = previous_step.p * cell.dsigma();
+                    reject = pdotdsigma < 0;
+                    break;
+                }
+            }
+            return !reject;
+        }
     void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step)
     {
         const static auto &mass = _particle->mass();
@@ -237,7 +258,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step_2)
 {
     for (auto _ : state)
     {
-        create_phase_space_omp();
+        create_phase_space_sgt();
         // (1)
         auto total_size = _output.size();
         int threads_count = omp_get_max_threads();
@@ -280,6 +301,58 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step_2)
     }
 }
 BENCHMARK_REGISTER_F(YieldFixture, bm_step_2)->Name("Using pre-calculated p");
+
+BENCHMARK_DEFINE_F(YieldFixture, bm_step_22)
+(benchmark::State &state)
+{
+    for (auto _ : state)
+    {
+        create_phase_space_sgt();
+        // (1)
+        auto total_size = _output.size();
+        int threads_count = omp_get_max_threads();
+        size_t chunk_size = total_size / (double)threads_count;
+        std::atomic<size_t> progress(0);
+        std::vector<std::vector<powerhouse::yield_output<hydro::fcell>>> thread_outputs(threads_count);
+        // (2)
+#pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            thread_outputs[tid].reserve(chunk_size);
+            // (3)
+#pragma omp for schedule(dynamic)
+            for (size_t id_x = 0; id_x < _output.size(); id_x++)
+            {
+                powerhouse::yield_output<hydro::fcell> local_output = _output[id_x];
+                local_output.dNd3p = 0;
+                // (4)
+                for (size_t i = 0; i < _hypersurface.data().size(); i++)
+                {
+                    auto &cell = _hypersurface[i];
+                    // (5)
+                    if(pre_step(cell, local_output))
+                    {
+                    perform_step_3(cell, local_output);
+                    }
+                }
+                thread_outputs[tid].push_back(local_output);
+                // (6)
+            }
+        }
+        // Flatten the thread_outputs into _output
+        _output.clear();
+#pragma omp parallel for schedule(dynamic)
+        for (int tid = 0; tid < threads_count; tid++)
+        {
+            for (size_t i = 0; i < thread_outputs[i].size(); i++)
+            {
+                _output[tid * chunk_size + i] = thread_outputs[tid][i];
+            }
+        }
+        // (7)
+    }
+}
+BENCHMARK_REGISTER_F(YieldFixture, bm_step_22)->Name("Using pre-calculated p with pre-step");
 
 BENCHMARK_DEFINE_F(YieldFixture, bm_step_static)
 (benchmark::State &state)
