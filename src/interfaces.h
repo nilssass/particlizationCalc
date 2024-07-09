@@ -1199,6 +1199,8 @@ namespace powerhouse
     };
 
     /// @brief interface for a particle
+    constexpr int FERMION = 1;
+    constexpr int BOSON = -1;
     class I_particle
     {
     public:
@@ -1222,11 +1224,11 @@ namespace powerhouse
             }
             if ((int)dim_spin % 2 == 0)
             {
-                return 1;
+                return FERMION;
             }
             else if ((int)dim_spin % 2 == 1)
             {
-                return -1;
+                return -BOSON;
             }
             return 0;
         }

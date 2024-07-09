@@ -43,6 +43,7 @@ template <template <typename...> class C, typename T>
 using is_template_base_of = decltype(is_template_base_of_impl<C>(std::declval<T *>()));
 namespace utils
 {
+    constexpr bool dsigma_lower = true;
     const std::string MILNE[4] = {"tau", "x", "y", "eta"};
     const std::string MINKOWSKI[4] = {"t", "x", "y", "z"};
     constexpr int bar_width = 70;

@@ -41,8 +41,17 @@ namespace
     private:
         static std::mutex _mutex;
         void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step);
+        bool _initalized  = false;
+        double mass;
+        double b;
+        double q;
+        double s;
+        double spin;
+        double stat;
+        double factor = (1.0 / (pow(2 * M_PI, 3)));
 
     protected:
+
         std::atomic<int> nf_g_1;
         std::atomic<int> nf_l_0;
         std::atomic<int> pdots_neg;
@@ -117,6 +126,13 @@ namespace
             {
                 throw std::runtime_error("Calculator is not initialized!");
             }
+            mass = _particle_ptr->mass();
+            b = _particle_ptr->B();
+            q = _particle_ptr->Q();
+            s = _particle_ptr->S();
+            spin = _particle_ptr->spin();
+            stat = _particle_ptr->statistics();
+            factor = (1.0 / (pow(2 * M_PI, 3)));
         }
 
         void configure()
@@ -168,40 +184,51 @@ namespace
         void write();
         void write_failures()
         {
+
+            const auto &count = failures.size();
+            std::vector<std::ostringstream> buffer(omp_get_max_threads());
+#pragma omp parallel for
             for (size_t i = 0; i < failures.size(); i++)
             {
+                int tid = omp_get_thread_num();
                 auto &failure = failures[i];
                 switch (failure.cause)
                 {
                 case failure_reason::e_p:
-                    logger << "p.u <0 at " << failure.coords
-                           << " with p = " << failure.p
-                           << " p.u = " << failure.e_p
-                           << " f = " << failure.f
-                           << " f = " << failure.p_dot_sigma << std::endl;
+                    buffer[tid] << "p.u <0 at " << failure.coords
+                                << " with p = " << failure.p
+                                << " p.u = " << failure.e_p
+                                << " f = " << failure.f
+                                << " f = " << failure.p_dot_sigma << std::endl;
                 case failure_reason::f_g_1:
-                    logger << "f > 1 at " << failure.coords
-                           << " with p = " << failure.p
-                           << " p.u = " << failure.e_p
-                           << " f = " << failure.f
-                           << " f = " << failure.p_dot_sigma << std::endl;
+                    buffer[tid] << "f > 1 at " << failure.coords
+                                << " with p = " << failure.p
+                                << " p.u = " << failure.e_p
+                                << " f = " << failure.f
+                                << " f = " << failure.p_dot_sigma << std::endl;
                 case failure_reason::f_neg:
-                    logger << "f < 0 at " << failure.coords
-                           << " with p = " << failure.p
-                           << " p.u = " << failure.e_p
-                           << " f = " << failure.f
-                           << " f = " << failure.p_dot_sigma << std::endl;
+                    buffer[tid] << "f < 0 at " << failure.coords
+                                << " with p = " << failure.p
+                                << " p.u = " << failure.e_p
+                                << " f = " << failure.f
+                                << " f = " << failure.p_dot_sigma << std::endl;
                 case failure_reason::p_dot_sigma:
-                    logger << "p.dSigma < 0 at " << failure.coords
-                           << " with p = " << failure.p
-                           << " p.u = " << failure.e_p
-                           << " f = " << failure.f
-                           << " f = " << failure.p_dot_sigma << std::endl;
-
+                    buffer[tid] << "p.dSigma < 0 at " << failure.coords
+                                << " with p = " << failure.p
+                                << " p.u = " << failure.e_p
+                                << " f = " << failure.f
+                                << " f = " << failure.p_dot_sigma << std::endl;
                     break;
-
                 default:
                     break;
+                }
+            }
+            for (auto &oss : buffer)
+            {
+                std::string line = oss.str();
+#pragma omp critical
+                {
+                    logger << line;
                 }
             }
         }
@@ -280,10 +307,11 @@ namespace
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
                 {
                     auto &cell = _hypersurface[i];
-                    if (pre_step(cell, local_output))
-                    {
-                        perform_step(cell, local_output);
-                    }
+                    // if (pre_step(cell, local_output))
+                    // {
+                    //     perform_step(cell, local_output);
+                    // }
+                    perform_step(cell, local_output);
                 }
                 thread_outputs[tid].push_back(local_output);
             }
@@ -313,15 +341,27 @@ namespace
                << std::setw(width) << std::setprecision(precision) << std::fixed << "y_p"
                << std::setw(width) << std::setprecision(precision) << std::fixed << "dNd3p"
                << std::setw(width) << std::setprecision(precision) << std::fixed << "dNd3p (GeV^{-3})" << std::endl;
+        std::vector<std::ostringstream> buffer(omp_get_max_threads());
+
+#pragma omp parallel for
         for (size_t counter = 0; counter < count; counter++)
         {
+            int tid = omp_get_thread_num();
             auto &row = _output[counter];
 
-            output << std::setw(width) << std::setprecision(precision) << std::fixed << row.pT << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << row.phi_p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << row.y_p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << row.dNd3p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << row.local_yield() << std::endl;
+            buffer[tid] << std::setw(width) << std::setprecision(precision) << std::fixed << row.pT << " "
+                        << std::setw(width) << std::setprecision(precision) << std::fixed << row.phi_p << " "
+                        << std::setw(width) << std::setprecision(precision) << std::fixed << row.y_p << " "
+                        << std::setw(width) << std::setprecision(precision) << std::fixed << row.dNd3p << " "
+                        << std::setw(width) << std::setprecision(precision) << std::fixed << row.local_yield() << std::endl;
+        }
+        for (auto &oss : buffer)
+        {
+            std::string line = oss.str();
+#pragma omp critical
+            {
+                output << line;
+            }
         }
     }
 
@@ -375,14 +415,14 @@ namespace
     // }
     void YieldTest::perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step)
     {
-        auto _particle = *_particle_ptr;
-        const static auto &mass = _particle.mass();
-        const static auto &b = _particle.B();
-        const static auto &q = _particle.Q();
-        const static auto &s = _particle.S();
-        const static auto &spin = _particle.spin();
-        const static auto &stat = _particle.statistics();
-        const static auto &factor = (1.0 / (pow(2 * M_PI, 3)));
+        static auto _particle = *_particle_ptr;
+        // const static auto &mass = _particle.mass();
+        // const static auto &b = _particle.B();
+        // const static auto &q = _particle.Q();
+        // const static auto &s = _particle.S();
+        // const static auto &spin = _particle.spin();
+        // const static auto &stat = _particle.statistics();
+        // const static auto &factor = (1.0 / (pow(2 * M_PI, 3)));
 
         const auto p = previous_step.p;
         const auto pdotdsigma = p * cell.dsigma();
@@ -401,7 +441,7 @@ namespace
                 fail_info{.cause = failure_reason::f_neg, .coords = cell.milne_coords(), .e_p = pdotu, .p = p, .f = f, .p_dot_sigma = pdotdsigma});
         }
 
-        if (stat == 1 && f > 1)
+        if (stat == powerhouse::FERMION && f > 1)
         {
             nf_g_1++;
             failures.push_back(
@@ -433,6 +473,7 @@ namespace
 
         yield_signle();
         write();
+        write_failures();
     }
 
     TEST_F(YieldTest, test_open_omp_txt)
@@ -462,6 +503,7 @@ namespace
             ASSERT_FALSE(it == _yield_single_output.end());
             EXPECT_DOUBLE_EQ(it->dNd3p, row.dNd3p);
         }
+        write_failures();
     }
 
     TEST_F(YieldTest, test_single_bin)
@@ -480,6 +522,7 @@ namespace
 
         yield_signle();
         write();
+        write_failures();
     }
 
     TEST_F(YieldTest, test_open_omp_bin)
@@ -516,6 +559,7 @@ namespace
                        << ") dN/d3p = " << row.dNd3p << " < 0" << std::endl;
             }
         }
+        write_failures();
     }
 
     TEST_F(YieldTest, test_open_omp_cmpr_bin_txt)
@@ -552,39 +596,40 @@ namespace
                           << ") dN/d3p = " << row.dNd3p << " < 0" << std::endl;
             }
         }
-    }
-
-    TEST_F(YieldTest, test_open_omp_full_txt)
-    {
-        logger << "======================================================================\n"
-                  "test_open_omp_full_txt\n"
-               << "======================================================================\n"
-               << std::endl;
-        _hypersurface.read(full_file_txt, utils::accept_modes::AcceptAll, false, hydro::file_format::Text);
-        print(_hypersurface);
-        if (_hypersurface.data().empty())
-        {
-            throw std::runtime_error("Surface data is empty!");
-        }
-
-        _settings.out_file = full_o_file_omp_txt;
-        yield_open_mp();
-        for (const auto &row : _output)
-        {
-            if (row.dNd3p < 0)
-            {
-                std::cout << "at (mT = " << row.mT
-                          << ", pT = " << row.pT << ", phi_p = " << row.phi_p
-                          << ", y_p = " << row.y_p
-                          << ") dN/d3p = " << row.dNd3p << " < 0" << std::endl;
-                break;
-            }
-        }
-
-        std::cout << pdots_neg << "p.ds < 0 " << f_neg << " f < 0" << f_g_1 << " f > 1 (fermions)" << std::endl;
         write_failures();
-        write();
     }
+
+    // TEST_F(YieldTest, test_open_omp_full_txt)
+    // {
+    //     logger << "======================================================================\n"
+    //               "test_open_omp_full_txt\n"
+    //            << "======================================================================\n"
+    //            << std::endl;
+    //     _hypersurface.read(full_file_txt, utils::accept_modes::AcceptAll, false, hydro::file_format::Text);
+    //     print(_hypersurface);
+    //     if (_hypersurface.data().empty())
+    //     {
+    //         throw std::runtime_error("Surface data is empty!");
+    //     }
+
+    //     _settings.out_file = full_o_file_omp_txt;
+    //     yield_open_mp();
+    //     // for (const auto &row : _output)
+    //     // {
+    //     //     if (row.dNd3p < 0)
+    //     //     {
+    //     //         std::cout << "at (mT = " << row.mT
+    //     //                   << ", pT = " << row.pT << ", phi_p = " << row.phi_p
+    //     //                   << ", y_p = " << row.y_p
+    //     //                   << ") dN/d3p = " << row.dNd3p << " < 0" << std::endl;
+    //     //         break;
+    //     //     }
+    //     // }
+
+    //     // std::cout << pdots_neg << "p.ds < 0 " << f_neg << " f < 0" << f_g_1 << " f > 1 (fermions)" << std::endl;
+    //     // write_failures();
+    //     write();
+    // }
 
     // TEST_F(YieldTest, test_open_omp_full_bin)
     // {

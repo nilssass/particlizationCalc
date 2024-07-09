@@ -16,7 +16,7 @@ namespace
     protected:
         void SetUp() override
         {
-           mat[1][1] = 1;
+            mat[1][1] = 1;
             mat[2][2] = 1;
             mat[1][2] = 1;
             mat[2][1] = 1;
@@ -111,24 +111,24 @@ namespace
 
     TEST_F(UtilsTest, LinSpace)
     {
-        const auto& count = 10;
+        const auto &count = 10;
         auto &&data = utils::linspace(0, 2.0, 10);
         EXPECT_EQ(data.size(), count + 1);
         EXPECT_DOUBLE_EQ(data[0], 0);
         EXPECT_DOUBLE_EQ(data[count], 2.0);
         for (auto &&el : data)
         {
-            ASSERT_GE(el , 0);
+            ASSERT_GE(el, 0);
         }
     }
 
     TEST_F(UtilsTest, FurtherProducts)
     {
         utils::r2_tensor tensor = {{{1, 2, 3, 5}, {0, 3, 1, 2}, {4, 0, 3, 1}, {1, 2, 3, 4}}};
-        utils::geometry::four_vector v1({1,0,0,0,0});
-        utils::geometry::four_vector v2({1,3,7,8});
-        
-        utils::geometry::four_vector exp_prod_v1_tensor({1,2,3,5}, true);
+        utils::geometry::four_vector v1({1, 0, 0, 0, 0});
+        utils::geometry::four_vector v2({1, 3, 7, 8});
+
+        utils::geometry::four_vector exp_prod_v1_tensor({1, 2, 3, 5}, true);
         auto actual_prod_v1_tensor = v1 * tensor;
         EXPECT_ARRAY_EQ(actual_prod_v1_tensor.vec(), exp_prod_v1_tensor.vec());
         ASSERT_TRUE(actual_prod_v1_tensor == exp_prod_v1_tensor);

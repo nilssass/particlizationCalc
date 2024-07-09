@@ -14,6 +14,13 @@ namespace powerhouse
         utils::program_options _settings = {};
         const int width = 30;
         const int precision = 16;
+        double mass;
+        double b;
+        double q;
+        double s;
+        double spin;
+        double stat;
+        double factor = (1.0 / (pow(2 * M_PI, 3)));
 
     public:
         yield_calculator() {}
@@ -26,6 +33,14 @@ namespace powerhouse
         {
             _particle = *particle;
             _settings = opts;
+
+            mass = _particle.mass();
+            b = _particle.B();
+            q = _particle.Q();
+            s = _particle.S();
+            spin = _particle.spin();
+            stat = _particle.statistics();
+            factor = (1.0 / (pow(2 * M_PI, 3)));
         }
 
         bool pre_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
@@ -53,25 +68,6 @@ namespace powerhouse
 
         void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
         {
-            const static auto &mass = _particle.mass();
-            const static auto &b = _particle.B();
-            const static auto &q = _particle.Q();
-            const static auto &s = _particle.S();
-            const static auto &spin = _particle.spin();
-            const static auto &stat = _particle.statistics();
-            const static auto &factor = (1.0 / (pow(2 * M_PI, 3)));
-
-            // const double &pT = previous_step.pT;
-            // const double &y = previous_step.y_p;
-            // const double &phi = previous_step.phi_p;
-            // const double &mT = previous_step.mT;
-
-            // const double cosh_y = cosh(y);
-            // const double sinh_y = sinh(y);
-            // const double cos_phi = cos(phi);
-            // const double sin_phi = sin(phi);
-
-            // utils::geometry::four_vector p({mT * cosh_y, pT * cos_phi, pT * sin_phi, mT * sinh_y});
             const auto p = previous_step.p;
             const auto pdotdsigma = p * cell.dsigma();
             const auto pdotu = p * cell.four_vel();
@@ -89,19 +85,20 @@ namespace powerhouse
 
         void pre_write(std::ostream &output) override
         {
-            output << "#" << std::setw(width) << "pT"
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << "phi_p"
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << "y_p"
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << "dNd3p"
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << "dNd3p (GeV^{-3})" << std::endl;
+            output << "#" << std::setw(width) << "mT"
+                   << std::setw(width) << "pT"
+                   << std::setw(width) << "phi_p"
+                   << std::setw(width) << "y_p"
+                   << std::setw(width) << "dNd3p"
+                   << std::setw(width) << "dNd3p (GeV^{-3})" << std::endl;
         }
 
         void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::yield_output<hydro::fcell> *final_output) override
         {
             auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(final_output);
-            // output << yield_output_ptr->pT << '\t' << yield_output_ptr->phi_p << '\t'
-            //        << yield_output_ptr->y_p << '\t' << yield_output_ptr->local_yield() << std::endl;
-            output << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->pT << " "
+
+            output << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->mT << " "
+                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->pT << " "
                    << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->phi_p << " "
                    << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->y_p << " "
                    << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->dNd3p << " "

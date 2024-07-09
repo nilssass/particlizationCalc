@@ -190,7 +190,12 @@ void hydro::fcell::read_from_binary(std::istream &stream)
     stream.read(reinterpret_cast<char *>(&_y), sizeof(_y));
     stream.read(reinterpret_cast<char *>(&_eta), sizeof(_eta));
 
-    stream.read(reinterpret_cast<char *>(_dsigma.to_array()), _dsigma.vec().size() * sizeof(double));
+    utils::four_vec dsigma_vector;
+
+    stream.read(reinterpret_cast<char *>(dsigma_vector.data()), dsigma_vector.size() * sizeof(double));
+    _dsigma = utils::geometry::four_vector(dsigma_vector, utils::dsigma_lower);
+    // stream.read(reinterpret_cast<char *>(_dsigma.to_array()), _dsigma.vec().size() * sizeof(double));
+
     stream.read(reinterpret_cast<char *>(_u.to_array()), _u.vec().size() * sizeof(double));
     stream.read(reinterpret_cast<char *>(&_T), sizeof(_T));
     stream.read(reinterpret_cast<char *>(&_mub), sizeof(_mub));
@@ -211,7 +216,10 @@ void hydro::fcell::read_from_binary(std::istream &stream)
 void hydro::fcell::read_from_text(std::istream &stream)
 {
     stream >> _tau >> _x >> _y >> _eta;
-    stream >> _dsigma;
+    utils::four_vec dsigma_vector;
+    stream >> dsigma_vector[0] >> dsigma_vector[1] >> dsigma_vector[2] >> dsigma_vector[3];
+    _dsigma = utils::geometry::four_vector(dsigma_vector, utils::dsigma_lower);
+    // stream >> _dsigma;
     stream >> _u;
     stream >> _T >> _mub >> _muq >> _mus;
     for (int i = 0; i < 4; i++)
@@ -306,9 +314,9 @@ void hydro::fcell::write_to_binary(std::ostream &stream)
 void hydro::fcell::calculate_shear()
 {
     utils::r2_tensor _ = {{0}};
-    const auto& grad = gradu_ll();
-    const auto& delta = delta_ll();
-    const auto& th = theta() / 3.0;
+    const auto &grad = gradu_ll();
+    const auto &delta = delta_ll();
+    const auto &th = theta() / 3.0;
     for (size_t mu = 0; mu < 4; mu++)
     {
         for (size_t nu = mu; nu < 4; nu++)
