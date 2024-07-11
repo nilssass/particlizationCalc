@@ -297,17 +297,7 @@ double utils::simple_bench(std::function<void(void)> f, int iter)
     return std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
 }
 
-template <typename T>
-inline T utils::absolute_error(const T approx, const T exact)
-{
-    return abs(approx - exact);
-}
 
-template <typename T>
-T utils::relative_error(const T approx, const T exact)
-{
-    return utils::absolute_error(approx, exact) / exact;
-}
 
 void utils::program_options::print()
 {

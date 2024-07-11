@@ -9,6 +9,7 @@
 #pragma once
 namespace ug = utils::geometry;
 using yout = powerhouse::yield_output<hydro::fcell>;
+using solution_creator = hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::solution_creator;
 
 enum failure_reason
 {
@@ -40,6 +41,7 @@ private:
     double _size_y = powerhouse::DEFAULT_SIZE_Y;
     double _size_phi = powerhouse::DEFAULT_SIZE_PHI;
     std::string l_file;
+    bool _initialized = false;
 
 protected:
     const std::string log_file = "test_yield_log.txt";
@@ -66,14 +68,12 @@ protected:
     std::unique_ptr<S> _solution;
     std::unique_ptr<vhlle::I_yield_calculator> _calculator;
     hydro::hypersurface<hydro::fcell> _hypersurface;
-    std::unique_ptr<powerhouse::pdg_particle> _particle_ptr;
+    std::unique_ptr<powerhouse::pdg_particle> _particle;
+    std::vector<yout> _output;
     std::vector<fail_info> failures;
     static std::mutex _mutex;
-    virtual void register_solutiion() = 0;
-    void init(std::string i_file,
-              std::string o_file,
-              std::string l_file,
-              utils::accept_modes mode,
+    // virtual void register_solutiion() = 0;
+    void init(utils::program_options settings,
               size_t t_size_pt = powerhouse::DEFAULT_SIZE_PT,
               size_t t_size_phi = powerhouse::DEFAULT_SIZE_PHI,
               size_t t_size_y = powerhouse::DEFAULT_SIZE_Y,
@@ -83,24 +83,23 @@ protected:
     {
         if (_initialized)
             return;
-
         _size_pt = t_size_pt;
         _size_y = t_size_y;
         _size_phi = t_size_phi;
         _y_min = t_y_min;
         _y_max = t_y_max;
         _pt_max = t_pt_max;
+        _settings = settings;
 
-        if (!_particle && settings.program_mode != utils::program_modes::Examine)
+        if (!_particle)
         {
             std::lock_guard lock(_mutex);
-            _particle = std::make_unique<P>(settings.particle_id);
-            _particle_id = _particle->pdg_id();
+            _particle = std::make_unique<powerhouse::pdg_particle>(settings.particle_id);
         }
         if (!_calculator)
         {
             std::lock_guard lock(_mutex);
-            _calculator = calculator_factory<C, P, O>::factory()->create(_settings);
+            _calculator = std::make_unique<powerhouse::yield_calculator>();
         }
 
         if (!_calculator)
@@ -111,17 +110,9 @@ protected:
         _initialized = true;
     }
 
-    virtual void SetUp() override
-    {
-        register_solutiion();
-        _solution->Populate();
-        _surface = _solution->data();
-    }
+    virtual void SetUp() override{};
+    virtual void TearDown() override{};
 
-    virtual void TearDown() override
-    {
-        _initialized = false;
-    }
     void create_phase_space();
     void calculate_yield_omp();
     void calculate_yield_sgt();
@@ -135,7 +126,7 @@ inline void TestAnalyticalYield<S>::create_phase_space()
     const double &&phi_p_step = 2 * M_PI / (double)_size_phi;
     const double &&y_step = (_y_max - _y_min) / (double)_size_y;
     _output.clear();
-    static const double &mass_sq = particle()->mass() * particle()->mass();
+    static const double &mass_sq = _particle->mass() * _particle->mass();
     for (double pT = 0; pT <= _pt_max; pT += pt_step)
     {
         const auto pT_sq = pT * pT;
@@ -147,7 +138,7 @@ inline void TestAnalyticalYield<S>::create_phase_space()
             const double sinh_y = sinh(normalize_y);
             for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)
             {
-                O pcell;
+                yout pcell;
                 pcell.pT = pT;
                 pcell.y_p = y;
                 pcell.phi_p = phi;
@@ -169,7 +160,7 @@ inline void TestAnalyticalYield<S>::calculate_yield_omp()
     create_phase_space();
     std::cout << "Calculating the yield in phase space ..." << std::endl;
     auto total_size = _output.size();
-    calculator()->init(particle(), settings());
+    _calculator->init(_particle.get(), _settings);
     const auto step_size = (int)ceil((double)total_size / 100.0);
     int threads_count = omp_get_max_threads();
     size_t chunk_size = (total_size + threads_count - 1) / threads_count;
@@ -194,9 +185,9 @@ inline void TestAnalyticalYield<S>::calculate_yield_omp()
             for (size_t i = 0; i < _hypersurface.data().size(); i++)
             {
                 auto &cell = _hypersurface[i];
-                if (calculator()->pre_step(cell, local_output))
+                if (_calculator->pre_step(cell, local_output))
                 {
-                    calculator()->perform_step(cell, local_output);
+                    _calculator->perform_step(cell, local_output);
                 }
             }
             thread_outputs[tid].push_back(local_output);
@@ -220,7 +211,7 @@ inline void TestAnalyticalYield<S>::calculate_yield_sgt()
     create_phase_space();
     std::cout << "Calculating the yield in phase space ..." << std::endl;
     auto total_size = _output.size();
-    calculator()->init(particle(), settings());
+    _calculator->init(_particle.get(), _settings);
     const auto step_size = (int)ceil((double)total_size / 100.0);
     for (size_t id_x = 0; id_x < total_size; id_x++)
     {
@@ -234,9 +225,9 @@ inline void TestAnalyticalYield<S>::calculate_yield_sgt()
         for (size_t i = 0; i < _hypersurface.total(); i++)
         {
             auto &cell = _hypersurface[i];
-            if (calculator()->pre_step(cell, local_output))
+            if (_calculator->pre_step(cell, local_output))
             {
-                calculator()->perform_step(cell, local_output);
+                _calculator->perform_step(cell, local_output);
             }
         }
 
@@ -257,7 +248,7 @@ inline void TestAnalyticalYield<S>::write()
     const auto &count = _output.size();
     int lastperc = -1;
 
-    calculator()->pre_write(output);
+    _calculator->pre_write(output);
 
     std::vector<std::ostringstream> buffer(omp_get_max_threads());
 
@@ -266,7 +257,7 @@ inline void TestAnalyticalYield<S>::write()
     {
         int tid = omp_get_thread_num();
         auto &row = _output[counter];
-        calculator()->write(buffer[tid], nullptr, &row);
+        _calculator->write(buffer[tid], nullptr, &row);
 #pragma omp critical
         if (_settings.verbose)
         {

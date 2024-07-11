@@ -12,8 +12,7 @@ namespace powerhouse
         double _pdotdsigma;
         double _pdotu;
         utils::program_options _settings = {};
-        const int width = 30;
-        const int precision = 16;
+        
         double mass;
         double b;
         double q;
@@ -85,24 +84,19 @@ namespace powerhouse
 
         void pre_write(std::ostream &output) override
         {
-            output << "#" << std::setw(width) << "mT"
-                   << std::setw(width) << "pT"
-                   << std::setw(width) << "phi_p"
-                   << std::setw(width) << "y_p"
-                   << std::setw(width) << "dNd3p"
-                   << std::setw(width) << "dNd3p (GeV^{-3})" << std::endl;
+            output << "#" << std::setw(utils::DOUBLE_WIDTH) << "mT"
+                   << std::setw(utils::DOUBLE_WIDTH) << "pT"
+                   << std::setw(utils::DOUBLE_WIDTH) << "phi_p"
+                   << std::setw(utils::DOUBLE_WIDTH) << "y_p"
+                   << std::setw(utils::DOUBLE_WIDTH) << "dNd3p"
+                   << std::setw(utils::DOUBLE_WIDTH) << "dNd3p (GeV^{-3})" << std::endl;
         }
 
         void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::yield_output<hydro::fcell> *final_output) override
         {
             auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(final_output);
 
-            output << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->mT << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->pT << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->phi_p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->y_p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->dNd3p << " "
-                   << std::setw(width) << std::setprecision(precision) << std::fixed << yield_output_ptr->local_yield() << std::endl;
+            output << *yield_output_ptr << std::endl;
         }
     };
 }

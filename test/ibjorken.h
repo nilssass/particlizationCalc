@@ -21,6 +21,7 @@ public:
                            _T_f(T_f),
                            _T_0(T_0),
                            _vs2(vs2) {
+                            _deta = coordsteps[3];
                            }
     int count() const override { return _count; }
     ~ibjorken() override {
@@ -59,6 +60,7 @@ private:
     double _T_f;
     double _T_0;
     double _vs2;
+    double _deta;
     double dotT(double tau) const
     {
         return -_T_0 * _vs2 * pow(_mincoords[0] / tau, _vs2) / tau;

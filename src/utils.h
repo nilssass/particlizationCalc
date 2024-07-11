@@ -43,6 +43,8 @@ template <template <typename...> class C, typename T>
 using is_template_base_of = decltype(is_template_base_of_impl<C>(std::declval<T *>()));
 namespace utils
 {
+    constexpr int DOUBLE_WIDTH = 30;
+    constexpr int DOUBLE_PRECISION = 16;
     constexpr bool dsigma_lower = true;
     const std::string MILNE[4] = {"tau", "x", "y", "eta"};
     const std::string MINKOWSKI[4] = {"t", "x", "y", "z"};
@@ -141,10 +143,16 @@ namespace utils
     }
 
     template <typename T>
-    T absolute_error(const T approx, const T exact);
+    constexpr T absolute_error(const T approx, const T exact)
+    {
+        return abs(approx - exact);
+    }
 
     template <typename T>
-    T relative_error(const T approx, const T exact);
+    constexpr T relative_error(const T approx, const T exact)
+    {
+        return abs(approx - exact) / exact;
+    }
 
     program_options read_cmd(int argc, char **argv);
     void show_progress(int perc);

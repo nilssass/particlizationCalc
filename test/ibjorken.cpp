@@ -10,9 +10,8 @@ void ibjorken::populate()
     const auto &t_f = pow(_T_f / _T_0, -1 / _vs2) * _mincoords[0];
     const double &x = 0;
     const double &y = 0;
-    for (double eta = _mincoords[3]; eta <= _maxcoords[3]; eta += _coordsteps[3])
+    for (double eta = _mincoords[3]; eta <= _maxcoords[3]; eta += _deta)
     {
-
         hydro::fcell cell(
             ug::four_vector(t_f, x, y, eta, false),
             ug::four_vector(_T_f, 0, 0, 0, false),
@@ -128,7 +127,7 @@ hydro::fcell ibjorken::solve(const hydro::fcell &pcell)
     auto cell = hydro::fcell(
         ug::four_vector({tau, pcell.x(), pcell.y(), pcell.eta()}),
         ug::four_vector({T, 0, 0, 0}),
-        ug::four_vector({tau * ch, 0, 0, -tau * sh}, true),
+        ug::four_vector({tau * ch * _deta, 0, 0, -tau * sh * _deta}, true),
         ug::four_vector({ch, 0, 0, sh}),
         dbeta,
         du);

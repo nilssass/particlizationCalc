@@ -95,10 +95,8 @@ namespace hydro
 
         friend bool operator==(const I_cell &lhs, const I_cell &rhs)
         {
-            return lhs.thermodynamics() == rhs.thermodynamics() 
-            && lhs.four_vel() == rhs.four_vel() && lhs.milne_coords() == rhs.milne_coords()
-            && utils::are_equal(lhs.dbeta_ll(), rhs.dbeta_ll()) && 
-            utils::are_equal(lhs.du_ll() , rhs.du_ll());
+            return lhs.thermodynamics() == rhs.thermodynamics() && lhs.four_vel() == rhs.four_vel() && lhs.milne_coords() == rhs.milne_coords() && utils::are_equal(lhs.dbeta_ll(), rhs.dbeta_ll()) &&
+                   utils::are_equal(lhs.du_ll(), rhs.du_ll());
         }
 
         friend bool operator!=(const I_cell &lhs, const I_cell &rhs)
@@ -1187,6 +1185,17 @@ namespace powerhouse
         }
         utils::geometry::four_vector p;
         ~yield_output() override {}
+
+        friend std::ostream &operator<<(std::ostream &stream, yield_output<C> &output)
+        {
+            stream << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.mT << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.pT << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.phi_p << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.y_p << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.dNd3p << " "
+                   << std::setw(utils ::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << output.local_yield();
+            return stream;
+        }
     };
 
     template <typename C>

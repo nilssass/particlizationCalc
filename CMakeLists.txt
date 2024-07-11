@@ -170,6 +170,35 @@ endif()
 
 #
 
+#
+
+add_executable(
+    test_bjorken_yield
+    test/test_bjorken_yield.cpp 
+    src/utils.cpp   
+    src/fcell.cpp
+    test/ibjorken.cpp
+)
+target_link_libraries(
+    test_bjorken_yield
+    PUBLIC
+    ${ROOT_LIBRARIES}
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_bjorken_yield)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_bjorken_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_bjorken_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+#
+
 add_executable(
     test_engine_vhlle
     test/test_engine_vhlle.cpp 
