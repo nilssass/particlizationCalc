@@ -540,9 +540,12 @@ namespace powerhouse
             {
                 const auto pT_sq = pT * pT;
                 const auto mT = sqrt(mass_sq + pT_sq);
+
                 for (double y = _y_min; y <= _y_max; y += y_step)
                 {
+                    
                     double normalize_y = utils::round_to(y, 1e-9);
+                    
                     const double cosh_y = cosh(normalize_y);
                     const double sinh_y = sinh(normalize_y);
                     for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)

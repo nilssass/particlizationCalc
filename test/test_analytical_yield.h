@@ -110,8 +110,8 @@ protected:
         _initialized = true;
     }
 
-    virtual void SetUp() override{};
-    virtual void TearDown() override{};
+    virtual void SetUp() override {};
+    virtual void TearDown() override {};
 
     void create_phase_space();
     void calculate_yield_omp();
@@ -131,9 +131,12 @@ inline void TestAnalyticalYield<S>::create_phase_space()
     {
         const auto pT_sq = pT * pT;
         const auto mT = sqrt(mass_sq + pT_sq);
+        int y_counter = 0;
         for (double y = _y_min; y <= _y_max; y += y_step)
         {
-            double normalize_y = utils::round_to(y, 1e-9);
+
+            double normalize_y = y_counter == _size_y / 2 ? 0.0 : y;
+            y_counter++;
             const double cosh_y = cosh(normalize_y);
             const double sinh_y = sinh(normalize_y);
             for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)

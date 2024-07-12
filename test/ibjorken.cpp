@@ -118,6 +118,9 @@ hydro::fcell ibjorken::solve(const hydro::fcell &pcell)
     du[3][0] = du[0][3] = ch * sh / tau;
     du[3][3] = -ch * ch / tau;
 
+    static const auto dx = _coordsteps[1];
+    static const auto dy = _coordsteps[2];
+
     utils::r2_tensor dbeta = {{0}};
 
     dbeta[0][0] = -sh * sh * T / tau + ch * ch * dT;
@@ -127,7 +130,7 @@ hydro::fcell ibjorken::solve(const hydro::fcell &pcell)
     auto cell = hydro::fcell(
         ug::four_vector({tau, pcell.x(), pcell.y(), pcell.eta()}),
         ug::four_vector({T, 0, 0, 0}),
-        ug::four_vector({tau * ch * _deta, 0, 0, -tau * sh * _deta}, true),
+        ug::four_vector({tau * ch * _deta * dx * dy, 0, 0, -tau * sh * _deta * dx * dy}, true),
         ug::four_vector({ch, 0, 0, sh}),
         dbeta,
         du);

@@ -94,7 +94,7 @@ namespace
         std::vector<double> unique_pt;
         yout last_row;
         last_row.pT = -10;
-        for (const auto &row : _output)
+        for (auto &row : _output)
         {
             if (row.dNd3p < 0)
             {
@@ -109,10 +109,18 @@ namespace
             auto it = std::find_if(sgt_output.begin(), sgt_output.end(), [&](yout &rhs)
                                    { return rhs.pT == row.pT && rhs.phi_p == row.phi_p && rhs.y_p == row.y_p; });
             ASSERT_FALSE(it == sgt_output.end());
+            
             EXPECT_DOUBLE_EQ(it->dNd3p, row.dNd3p);
 
+            double change = 0 ;
+            if (row.local_yield() != 0 && abs(row.y_p) < abs_error)
+            {
+                change = utils::relative_error(last_row.local_yield(), row.local_yield());
+            }
+            
+
             // Test if results are y and phi invariant
-            if (row.dNd3p != last_row.dNd3p)
+            if (change > abs_error)
             {
                 last_row = row;
                 unique_output.push_back(last_row);
@@ -121,7 +129,7 @@ namespace
         std::sort(_output.begin(), _output.end(), [&](yout row1, yout row2)
                   { return row1.mT < row2.mT; });
         write();
-        _settings.out_file = "output/unique_bjorken_yield.dat";
+        _settings.out_file = "./output/bjorken_midrap.dat";
 
         std::sort(unique_output.begin(), unique_output.end(), [&](yout row1, yout row2)
                   { return row1.mT < row2.mT; });
