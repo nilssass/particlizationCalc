@@ -1,32 +1,32 @@
 #include "test_polarization.h"
-#include "../src/geq_polarization_calculator.h"
+#include "../src/leq_du_polarization_calculator.h"
 #include "../src/vhll_engine_helper.h"
 namespace
 {
-    using calculator = powerhouse::geq_polarization_calculator;
-    class GeqPolarizationTest : public PolarizationTest<calculator>
+    using calculator = powerhouse::leq_du_polarization_calculator;
+    class LeqDuPolarizationTest : public PolarizationTest<calculator>
     {
     protected:
-        GeqPolarizationTest()
+        LeqDuPolarizationTest()
         {
-            log_file = "test_geq_polarization.txt";
+            log_file = "test_leq_db_polarization.txt";
 
-            short_o_file_sgt_txt = "./output/p-geq-lambda-short-test-sgt-txt.dat";
-            short_o_file_sgt_bin = "./output/p-geq-lambda-short-test-sgt-bin.dat";
-            full_o_file_sgt_txt = "./output/p-geq-lambda-full-test-sgt-txt.dat";
-            full_o_file_sgt_bin = "./output/p-geq-lambda-full-test-sgt-bin.dat";
+            short_o_file_sgt_txt = "./output/p-leq-du-lambda-short-test-sgt-txt.dat";
+            short_o_file_sgt_bin = "./output/p-leq-du-lambda-short-test-sgt-bin.dat";
+            full_o_file_sgt_txt = "./output/p-leq-du-lambda-full-test-sgt-txt.dat";
+            full_o_file_sgt_bin = "./output/p-leq-du-lambda-full-test-sgt-bin.dat";
 
-            short_o_file_omp_txt = "./output/p-geq-lambda-short-test-omp-txt.dat";
-            short_o_file_omp_bin = "./output/p-geq-lambda-short-test-omp-bin.dat";
-            full_o_file_omp_txt = "./output/p-geq-lambda-full-test-omp-txt.dat";
-            full_o_file_omp_bin = "./output/p-geq-lambda-full-test-omp-bin.dat";
+            short_o_file_omp_txt = "./output/p-leq-du-lambda-short-test-omp-txt.dat";
+            short_o_file_omp_bin = "./output/p-leq-du-lambda-short-test-omp-bin.dat";
+            full_o_file_omp_txt = "./output/p-leq-du-lambda-full-test-omp-txt.dat";
+            full_o_file_omp_bin = "./output/p-leq-du-lambda-full-test-omp-bin.dat";
         }
         void configure() override
         {
             auto settings = utils::program_options{
                 .accept_mode = utils::accept_modes::AcceptAll,
                 .particle_id = powerhouse::particle_names::LAMBDA,
-                .polarization_mode = utils::polarization_modes::GlobalEq,
+                .polarization_mode = utils::polarization_modes::LocalEqDu,
                 .program_mode = utils::program_modes::Polarization,
                 .yield_mode = utils::yield_modes::NA};
             init(settings);
@@ -52,7 +52,7 @@ namespace
         }
     };
 
-    TEST_F(GeqPolarizationTest, test_single_txt)
+    TEST_F(LeqDuPolarizationTest, test_single_txt)
     {
         int fails = 0;
         logger << "----------------------" << std::endl;
@@ -100,7 +100,7 @@ namespace
         write();
     }
 
-    TEST_F(GeqPolarizationTest, test_open_omp_txt)
+    TEST_F(LeqDuPolarizationTest, test_open_omp_txt)
     {
         int fails = 0;
         logger << "----------------------" << std::endl;

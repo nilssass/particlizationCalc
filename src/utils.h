@@ -135,11 +135,11 @@ namespace utils
     const double hbarC = 1. / 5.067728853; //=0.197 Gev*fm
     const double PI = std::acos(-1);
 
-    constexpr bool is_zero(double v) { return abs(v) > TOLERANCE; };
+    constexpr bool is_zero(double v, double abs_error = TOLERANCE) { return abs(v) > abs_error; };
 
-    constexpr bool equals(double a, double b)
+    constexpr bool equals(double a, double b, double abs_error = TOLERANCE)
     {
-        return is_zero(a - b);
+        return is_zero(a - b, abs_error);
     }
 
     template <typename T>
@@ -254,12 +254,12 @@ namespace utils
         return tensor[0][0] - tensor[1][1] - tensor[2][2] - tensor[3][3];
     }
 
-    constexpr bool is_zero(four_vec v)
+    constexpr bool is_zero(four_vec v, double abs_error = TOLERANCE)
     {
         bool r = true;
         for (size_t i = 0; i < v.size(); i++)
         {
-            r = r && is_zero(v[i]);
+            r = r && is_zero(v[i], abs_error);
         }
         return r;
     }
@@ -278,7 +278,7 @@ namespace utils
             return ((i - j) * (i - k) * (i - l) * (j - k) * (j - l) * (k - l) / 12);
     }
 
-    constexpr bool are_equal(r2_tensor t1, r2_tensor t2)
+    constexpr bool are_equal(r2_tensor t1, r2_tensor t2, double abs_error = TOLERANCE)
     {
         bool equal = true;
 
@@ -286,19 +286,19 @@ namespace utils
         {
             for (size_t j = 0; j < 4; j++)
             {
-                equal = equal && utils::equals(t1[i][j], t2[i][j]);
+                equal = equal && utils::equals(t1[i][j], t2[i][j], abs_error);
             }
         }
         return equal;
     }
 
-    constexpr bool are_equal(four_vec v1, four_vec v2)
+    constexpr bool are_equal(four_vec v1, four_vec v2, double abs_error = TOLERANCE)
     {
         bool equal = true;
 
         for (size_t i = 0; i < 4; i++)
         {
-            equal = equal & equals(v1[i], v2[i]);
+            equal = equal & equals(v1[i], v2[i], abs_error);
         }
         return equal;
     }
@@ -503,6 +503,7 @@ namespace powerhouse
         PROTON = 2212,
         NEUTRON = 2112
     };
+
     static std::unordered_map<std::string, particle_names> string_to_particle_map =
         {
             {"lambda", particle_names::LAMBDA},

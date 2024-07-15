@@ -45,6 +45,8 @@ namespace hydro
         virtual T fluid_vort_ll() = 0;
         virtual T thermal_vort_ll() = 0;
         virtual T thermal_shear_ll() = 0;
+        virtual T asym_du_ll() = 0;
+        virtual T sym_du_ll() = 0;
         virtual double theta() = 0;
         virtual double b_theta() = 0;
         virtual double normal_sq() = 0;
@@ -1160,12 +1162,15 @@ namespace powerhouse
     struct polarization_output : public I_output<C>
     {
         /// @brief names of different terms
+        double mT;
         double pT;
         double phi_p;
         double y_p;
-        double dNdpT;
-        /// @brief the pauli lubanski which can be written in pieces
-        std::vector<utils::four_vec> pauli_lubanski;
+        double dNd3p;
+        utils::geometry::four_vector vorticity_term;
+        utils::geometry::four_vector shear_term;
+        utils::geometry::four_vector dissipative_term;
+        utils::geometry::four_vector p;
         ~polarization_output() override {}
     };
 

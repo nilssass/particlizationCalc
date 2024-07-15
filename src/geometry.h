@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <algorithm>
 #include <numeric>
+#include <iomanip>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -49,6 +50,12 @@ namespace utils::geometry
         const double *to_array() const { return _data.data(); }
         double operator[](int i) const { return _data[i]; }
         double &operator[](int i) { return _data[i]; }
+
+        
+        friend bool operator!=(const four_vector &rhs, const four_vector &lhs)
+        {
+            return !(rhs == lhs);
+        }
 
         // Vector addition
         four_vector &operator+=(const four_vector &rhs)
@@ -139,7 +146,7 @@ namespace utils::geometry
         // Scalar multiplication
         four_vector operator*(double x) const
         {
-            return four_vector ({x * _data[0], x* _data[1], x* _data[2], x* _data[3]}, _lower);
+            return four_vector({x * _data[0], x * _data[1], x * _data[2], x * _data[3]}, _lower);
         }
 
         bool operator==(const four_vector &other) const
@@ -154,7 +161,6 @@ namespace utils::geometry
                     {
                         break;
                     }
-                    
                 }
             }
             return res;
@@ -266,8 +272,12 @@ namespace utils::geometry
 
         friend std::ostream &operator<<(std::ostream &stream, const four_vector &vector)
         {
-            stream << "(" << vector[0] << "," << vector[1] << ","
-                   << vector[2] << "," << vector[3] << ")";
+            // stream << "(" << vector[0] << "," << vector[1] << ","
+            //        << vector[2] << "," << vector[3] << ")";
+            stream << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << vector[0] << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << vector[1] << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << vector[2] << " "
+                   << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << vector[3];
             return stream;
         }
 

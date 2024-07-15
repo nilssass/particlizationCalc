@@ -138,6 +138,7 @@ namespace
                     pcell.mT = mT;
                     const double cos_phi = cos(phi);
                     const double sin_phi = sin(phi);
+                    pcell.dNd3p = 0;
                     pcell.p = utils::geometry::four_vector(pcell.mT * cosh_y, pT * cos_phi, pT * sin_phi, pcell.mT * sinh_y, false);
                     _output.push_back(pcell);
                 }

@@ -1,38 +1,50 @@
-#include <gtest/gtest.h>
-#include "my_test.h"
-#include "../src//factories.h"
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
+#include "../src/fcell.h"
+#include "../src/I_engine.h"
+#include "../src/yield_calculator.h"
 #include "../src/pdg_particle.h"
+#include "my_test.h"
 #include "../src/vhll_engine_helper.h"
+#include <omp.h>
 #pragma once
 namespace ug = utils::geometry;
-using yout = powerhouse::yield_output<hydro::fcell>;
-using solution_creator = hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::solution_creator;
+using pout = powerhouse::polarization_output<hydro::fcell>;
 
-enum failure_reason
+template <typename C>
+class PolarizationTest : public my_test
 {
-    p_dot_sigma,
-    e_p,
-    f_neg,
-    f_g_1,
-};
 
-struct fail_info
-{
-    ug::four_vector coords;
-    ug::four_vector p;
-    double e_p;
-    double p_dot_sigma;
-    double f;
-    failure_reason cause;
-};
+protected:
+    static std::mutex _mutex;
+    bool _initialized = false;
 
-template <typename S>
-class TestAnalyticalYield : public my_test
-{
-private:
+    double mass;
+    double b;
+    double q;
+    double s;
+    double spin;
+    double stat;
+    double factor = (1.0 / (pow(2 * M_PI, 3)));
+    std::ofstream logger;
+    const std::string short_file_txt = "./input/beta-60.dat";
+    const std::string short_file_bin = "./input/beta-60.bin";
+    const std::string full_file_txt = "./input/beta.dat";
+    const std::string full_file_bin = "./input/beta.bin";
+
+    std::string log_file;
+
+    std::string short_o_file_sgt_txt;
+    std::string short_o_file_sgt_bin;
+    std::string full_o_file_sgt_txt;
+    std::string full_o_file_sgt_bin;
+
+    std::string short_o_file_omp_txt;
+    std::string short_o_file_omp_bin;
+    std::string full_o_file_omp_txt;
+    std::string full_o_file_omp_bin ;
+
     double _y_min = powerhouse::DEFAULT_Y_MIN;
     double _y_max = powerhouse::DEFAULT_Y_MAX;
     double _pt_min = 0;
@@ -40,39 +52,12 @@ private:
     double _size_pt = powerhouse::DEFAULT_SIZE_PT;
     double _size_y = powerhouse::DEFAULT_SIZE_Y;
     double _size_phi = powerhouse::DEFAULT_SIZE_PHI;
-    std::string l_file;
-    bool _initialized = false;
 
-protected:
-    const std::string log_file = "test_yield_log.txt";
-    const std::string short_file_txt = "./input/beta-60.dat";
-    const std::string short_file_bin = "./input/beta-60.bin";
-    const std::string full_file_txt = "./input/beta.dat";
-    const std::string full_file_bin = "./input/beta.bin";
-
-    const std::string short_o_file_sgt_txt = "./output/y-short-test-sgt-txt.dat";
-    const std::string short_o_file_sgt_bin = "./output/y-short-test-sgt-bin.dat";
-    const std::string full_o_file_sgt_txt = "./output/y-full-test-sgt-txt.dat";
-    const std::string full_o_file_sgt_bin = "./output/y-full-test-sgt-bin.dat";
-
-    const std::string short_o_file_omp_txt = "./output/y-short-test-omp-txt.dat";
-    const std::string short_o_file_omp_bin = "./output/y-short-test-omp-bin.dat";
-    const std::string full_o_file_omp_txt = "./output/y-full-test-omp-txt.dat";
-    const std::string full_o_file_omp_bin = "./output/y-full-test-omp-bin.dat";
-    std::atomic<int> nf_g_1;
-    std::atomic<int> nf_l_0;
-    std::atomic<int> pdots_neg;
     utils::program_options _settings;
-    std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
-        hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
-    std::unique_ptr<S> _solution;
-    std::unique_ptr<vhlle::I_yield_calculator> _calculator;
-    hydro::hypersurface<hydro::fcell> _hypersurface;
+    std::vector<pout> _output;
+    std::unique_ptr<C> _calculator;
+    vhlle::surface _hypersurface;
     std::unique_ptr<powerhouse::pdg_particle> _particle;
-    std::vector<yout> _output;
-    std::vector<fail_info> failures;
-    static std::mutex _mutex;
-    // virtual void register_solutiion() = 0;
     void init(utils::program_options settings,
               size_t t_size_pt = powerhouse::DEFAULT_SIZE_PT,
               size_t t_size_phi = powerhouse::DEFAULT_SIZE_PHI,
@@ -96,10 +81,16 @@ protected:
             std::lock_guard lock(_mutex);
             _particle = std::make_unique<powerhouse::pdg_particle>(settings.particle_id);
         }
+
+        if (!_particle)
+        {
+            throw std::runtime_error("Particle is not found!");
+        }
+        
         if (!_calculator)
         {
             std::lock_guard lock(_mutex);
-            _calculator = std::make_unique<powerhouse::yield_calculator>();
+            create_calculator();
         }
 
         if (!_calculator)
@@ -109,18 +100,18 @@ protected:
 
         _initialized = true;
     }
-
-    virtual void SetUp() override {};
-    virtual void TearDown() override {};
-
+    virtual void configure() = 0;
+    virtual void create_calculator() = 0;
     void create_phase_space();
-    void calculate_yield_omp();
-    void calculate_yield_sgt();
+    void calculate_polarization_omp();
+    void calculate_polarization_sgt();
     void write();
 };
+template<typename C>
+std::mutex PolarizationTest<C>::_mutex;
 
-template <typename S>
-inline void TestAnalyticalYield<S>::create_phase_space()
+template <typename C>
+void PolarizationTest<C>::create_phase_space()
 {
     const double &&pt_step = (_pt_max - 0.) / (double)_size_pt;
     const double &&phi_p_step = 2 * M_PI / (double)_size_phi;
@@ -141,35 +132,37 @@ inline void TestAnalyticalYield<S>::create_phase_space()
             const double sinh_y = sinh(normalize_y);
             for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)
             {
-                yout pcell;
+                pout pcell;
                 pcell.pT = pT;
                 pcell.y_p = y;
                 pcell.phi_p = phi;
                 pcell.mT = mT;
                 const double cos_phi = cos(phi);
                 const double sin_phi = sin(phi);
+                pcell.p = utils::geometry::four_vector(pcell.mT * cosh_y, pT * cos_phi, pT * sin_phi, pcell.mT * sinh_y, false);
                 pcell.dNd3p = 0;
-                pcell.p = utils::geometry::four_vector(mT * cosh_y, pT * cos_phi, pT * sin_phi, mT * sinh_y, false);
+                pcell.dissipative_term = ug::four_vector(false);
+                pcell.shear_term = ug::four_vector(false);
+                pcell.vorticity_term = ug::four_vector(false);
                 _output.push_back(pcell);
             }
         }
     }
     std::cout << "phase space size: " << _output.size() << std::endl;
 }
-
-template <typename S>
-inline void TestAnalyticalYield<S>::calculate_yield_omp()
+template <typename C>
+void PolarizationTest<C>::calculate_polarization_omp()
 {
     std::cout << "Building the phase space ..." << std::endl;
     create_phase_space();
-    std::cout << "Calculating the yield in phase space ..." << std::endl;
+    std::cout << "Calculating the polarization in phase space ..." << std::endl;
     auto total_size = _output.size();
     _calculator->init(_particle.get(), _settings);
     const auto step_size = (int)ceil((double)total_size / 100.0);
     int threads_count = omp_get_max_threads();
     size_t chunk_size = (total_size + threads_count - 1) / threads_count;
     std::atomic<size_t> progress(-1);
-    std::vector<std::vector<yout>> thread_outputs(threads_count);
+    std::vector<std::vector<pout>> thread_outputs(threads_count);
 #pragma omp parallel
     {
         int tid = omp_get_thread_num();
@@ -177,8 +170,7 @@ inline void TestAnalyticalYield<S>::calculate_yield_omp()
 #pragma omp for schedule(dynamic)
         for (size_t id_x = 0; id_x < _output.size(); id_x++)
         {
-            yout local_output = _output[id_x];
-            local_output.dNd3p = 0;
+            pout local_output = _output[id_x];
 
             size_t current_progress = ++progress;
             if (tid == 0 && (current_progress % step_size == 0))
@@ -207,13 +199,12 @@ inline void TestAnalyticalYield<S>::calculate_yield_omp()
     utils::show_progress(100);
     std::cout << std::endl;
 }
-
-template <typename S>
-inline void TestAnalyticalYield<S>::calculate_yield_sgt()
+template <typename C>
+void PolarizationTest<C>::calculate_polarization_sgt()
 {
     std::cout << "Building the phase space ..." << std::endl;
     create_phase_space();
-    std::cout << "Calculating the yield in phase space ..." << std::endl;
+    std::cout << "Calculating the polarization in phase space ..." << std::endl;
     auto total_size = _output.size();
     _calculator->init(_particle.get(), _settings);
     const auto step_size = (int)ceil((double)total_size / 100.0);
@@ -240,9 +231,8 @@ inline void TestAnalyticalYield<S>::calculate_yield_sgt()
     utils::show_progress(100);
     std::cout << std::endl;
 }
-
-template <typename S>
-inline void TestAnalyticalYield<S>::write()
+template <typename C>
+void PolarizationTest<C>::write()
 {
     std::ofstream output(_settings.out_file);
     if (!output.is_open())
@@ -285,5 +275,3 @@ inline void TestAnalyticalYield<S>::write()
         }
     }
 }
-template <typename S>
-std::mutex TestAnalyticalYield<S>::_mutex;

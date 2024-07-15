@@ -163,6 +163,61 @@ utils::r2_tensor hydro::fcell::thermal_shear_ll()
     return *_th_shear;
 }
 
+utils::r2_tensor hydro::fcell::asym_du_ll()
+{
+    if (!_asym_du)
+    {
+        const auto _01 = (0.5 * _du[0][1] * utils::hbarC - 0.5 * _du[1][0] * utils::hbarC);
+        const auto _02 = (0.5 * _du[0][2] * utils::hbarC - 0.5 * _du[2][0] * utils::hbarC);
+        const auto _03 = (0.5 * _du[0][3] * utils::hbarC - 0.5 * _du[3][0] * utils::hbarC);
+        const auto _12 = (0.5 * _du[1][2] * utils::hbarC - 0.5 * _du[2][1] * utils::hbarC);
+        const auto _13 = (0.5 * _du[1][3] * utils::hbarC - 0.5 * _du[3][1] * utils::hbarC);
+        const auto _23 = (0.5 * _du[2][3] * utils::hbarC - 0.5 * _du[3][2] * utils::hbarC);
+
+        utils::r2_tensor _ = {{{
+                                   0,
+                                   _01,
+                                   _02,
+                                   _03,
+                               },
+                               {
+                                   -_01,
+                                   0,
+                                   _12,
+                                   _13,
+                               },
+                               {
+                                   -_02,
+                                   -_12,
+                                   0,
+                                   _23,
+                               },
+                               {-_03, -_13, -_23, 0}
+
+        }};
+        _asym_du = std::make_unique<utils::r2_tensor>(_);
+    }
+    return *_asym_du;
+}
+
+utils::r2_tensor hydro::fcell::sym_du_ll()
+{
+    if (!_sym_du)
+    {
+        utils::r2_tensor _;
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = i; j < 4; j++)
+            {
+                _[i][j] = (0.5 * _du[i][j] + 0.5 * _du[j][i]);
+                _[j][i] = _[i][j];
+            }
+        }
+        _sym_du = std::make_unique<utils::r2_tensor>(_);
+    }
+    return *_sym_du;
+}
+
 double hydro::fcell::theta()
 {
     if (!_theta)

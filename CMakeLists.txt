@@ -222,6 +222,91 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(test_engine_vhlle PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
+#
+
+add_executable(
+    test_geq
+    test/test_geq_polarization.cpp 
+    src/utils.cpp   
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_geq
+    PUBLIC
+    ${ROOT_LIBRARIES}
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_geq)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_geq PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_geq PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+#
+
+#
+
+add_executable(
+    test_leq_db
+    test/test_leq_db_polarization.cpp 
+    src/utils.cpp   
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_leq_db
+    PUBLIC
+    ${ROOT_LIBRARIES}
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_leq_db)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_leq_db PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_leq_db PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+#
+#
+
+add_executable(
+    test_leq_du
+    test/test_leq_du_polarization.cpp 
+    src/utils.cpp   
+    src/fcell.cpp
+)
+target_link_libraries(
+    test_leq_du
+    PUBLIC
+    ${ROOT_LIBRARIES}
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_leq_du)
+
+#Check if OpenMP is found
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(test_leq_du PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(test_leq_du PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+#
+
+
+########
 find_package(benchmark REQUIRED)
 
 add_executable(

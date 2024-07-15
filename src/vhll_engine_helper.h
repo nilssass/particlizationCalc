@@ -23,11 +23,14 @@ namespace vhlle
 
     using yield_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>;
 
+    using polarization_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
+
     using exam_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::exam_output<hydro::fcell>>;
 
     using polarization_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
 
     using I_yield_calculator = powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>;
+    using I_polarization_calculator = powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
 
     using surface = hydro::hypersurface<hydro::fcell>;
     // Helper class to manage the engine variant

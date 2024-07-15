@@ -5,7 +5,7 @@
         "name": "(lldb) Launch",
         "type": "lldb",
         "request": "launch",
-        "program": "${workspaceFolder}/build/test_bjorken_yield",
+        "program": "${workspaceFolder}/build/test_geq",
         // "args": ["-i", "input/beta.bin", "-o", "output/test.dat", "-y", "-pn", "pi+"],
         "cwd": "${workspaceFolder}",
         "stopOnEntry": false,

@@ -558,6 +558,7 @@ namespace powerhouse
                         const double cos_phi = cos(phi);
                         const double sin_phi = sin(phi);
                         pcell.p = utils::geometry::four_vector(mT * cosh_y, pT * cos_phi, pT * sin_phi, mT * sinh_y, false);
+                        pcell.dNd3p = 0;
                         _output.push_back(pcell);
                     }
                 }

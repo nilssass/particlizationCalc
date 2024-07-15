@@ -119,6 +119,8 @@ namespace hydro
         utils::r2_tensor fluid_vort_ll() override;
         utils::r2_tensor thermal_vort_ll() override;
         utils::r2_tensor thermal_shear_ll() override;
+         utils::r2_tensor asym_du_ll() override;
+         utils::r2_tensor sym_du_ll() override;
         double theta() override;
         double b_theta() override;
 
@@ -241,6 +243,8 @@ namespace hydro
         std::unique_ptr<utils::geometry::four_vector> _acc;
         std::unique_ptr<utils::r2_tensor> _th_vorticity;
         std::unique_ptr<utils::r2_tensor> _th_shear;
+        std::unique_ptr<utils::r2_tensor> _sym_du;
+        std::unique_ptr<utils::r2_tensor> _asym_du;
         std::unique_ptr<utils::r2_tensor> _shear;
         std::unique_ptr<utils::geometry::four_vector> _f_vorticity_vec;
         std::unique_ptr<utils::r2_tensor> _f_vorticity;
