@@ -8,8 +8,8 @@
 #include "../src/vhll_engine_helper.h"
 #pragma once
 namespace ug = utils::geometry;
-using yout = powerhouse::yield_output<hydro::fcell>;
-using solution_creator = hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::solution_creator;
+using yout = powerhouse::yield_output<vhlle::fcell>;
+using solution_creator = hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>::solution_creator;
 
 enum failure_reason
 {
@@ -63,11 +63,11 @@ protected:
     std::atomic<int> nf_l_0;
     std::atomic<int> pdots_neg;
     utils::program_options _settings;
-    std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
-        hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
+    std::shared_ptr<hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>> factory =
+        hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>::factory();
     std::unique_ptr<S> _solution;
     std::unique_ptr<vhlle::I_yield_calculator> _calculator;
-    hydro::hypersurface<hydro::fcell> _hypersurface;
+    hydro::hypersurface<vhlle::fcell> _hypersurface;
     std::unique_ptr<powerhouse::pdg_particle> _particle;
     std::vector<yout> _output;
     std::vector<fail_info> failures;

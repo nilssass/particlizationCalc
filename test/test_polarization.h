@@ -1,7 +1,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/I_engine.h"
 #include "../src/yield_calculator.h"
 #include "../src/pdg_particle.h"
@@ -10,7 +10,7 @@
 #include <omp.h>
 #pragma once
 namespace ug = utils::geometry;
-using pout = powerhouse::polarization_output<hydro::fcell>;
+using pout = powerhouse::polarization_output<vhlle::fcell>;
 
 template <typename C>
 class PolarizationTest : public my_test

@@ -1,11 +1,11 @@
 #include "interfaces.h"
-#include "fcell.h"
+#include "vhlle_fcell.h"
 #include "geometry.h"
 #include "pdg_particle.h"
 #pragma once
 namespace powerhouse
 {
-    class yield_calculator : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>
+    class yield_calculator : public powerhouse::I_calculator<vhlle::fcell, powerhouse::pdg_particle, powerhouse::yield_output<vhlle::fcell>>
     {
     private:
         powerhouse::pdg_particle _particle;
@@ -42,7 +42,7 @@ namespace powerhouse
             factor = (1.0 / (pow(2 * M_PI, 3)));
         }
 
-        bool pre_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
+        bool pre_step(vhlle::fcell &cell, powerhouse::yield_output<vhlle::fcell> &previous_step) override
         {
             bool reject = false;
             if (_settings.accept_mode != utils::accept_modes::AcceptAll)
@@ -65,7 +65,7 @@ namespace powerhouse
             return !reject;
         }
 
-        void perform_step(hydro::fcell &cell, powerhouse::yield_output<hydro::fcell> &previous_step) override
+        void perform_step(vhlle::fcell &cell, powerhouse::yield_output<vhlle::fcell> &previous_step) override
         {
             const auto p = previous_step.p;
             const auto pdotdsigma = p * cell.dsigma();
@@ -78,7 +78,7 @@ namespace powerhouse
             previous_step.dNd3p += pdotdsigma * f;
         }
 
-        void process_output(powerhouse::yield_output<hydro::fcell> &output) override
+        void process_output(powerhouse::yield_output<vhlle::fcell> &output) override
         {
         }
 
@@ -92,9 +92,9 @@ namespace powerhouse
                    << std::setw(utils::DOUBLE_WIDTH) << "dNd3p (GeV^{-3})" << std::endl;
         }
 
-        void write(std::ostream &output, hydro::fcell *cell_ptr, powerhouse::yield_output<hydro::fcell> *final_output) override
+        void write(std::ostream &output, vhlle::fcell *cell_ptr, powerhouse::yield_output<vhlle::fcell> *final_output) override
         {
-            auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<hydro::fcell> *>(final_output);
+            auto yield_output_ptr = dynamic_cast<powerhouse::yield_output<vhlle::fcell> *>(final_output);
 
             output << *yield_output_ptr << std::endl;
         }

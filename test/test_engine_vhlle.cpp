@@ -1,7 +1,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/I_engine.h"
 #include "../src/yield_calculator.h"
 #include "../src/pdg_particle.h"
@@ -46,7 +46,7 @@ namespace
         EXPECT_DOUBLE_EQ(pion->S(), 0);
         ASSERT_TRUE(pion->isparticle());
         EXPECT_DOUBLE_EQ(pion->spin(), 0);
-        EXPECT_EQ(pion->statistics(), -1);
+        EXPECT_EQ(pion->statistics(), powerhouse::BOSON);
 
         int id = powerhouse::particle_names::PION_MINUS;
         auto apion = std::make_unique<powerhouse::pdg_particle>(id);
@@ -58,7 +58,7 @@ namespace
         EXPECT_DOUBLE_EQ(apion->B(), 0);
         ASSERT_FALSE(apion->isparticle());
         EXPECT_DOUBLE_EQ(apion->spin(), 0);
-        EXPECT_EQ(apion->statistics(), -1);
+        EXPECT_EQ(apion->statistics(), powerhouse::BOSON);
 
         auto lambda = std::make_unique<powerhouse::pdg_particle>(powerhouse::particle_names::LAMBDA);
         EXPECT_DOUBLE_EQ(lambda->mass(), 1.115683);
@@ -109,7 +109,7 @@ namespace
     // TEST_F(YieldTest, TestIfResultsAreUnique)
     // {
     //     int lines;
-    //     auto surface = read_cells<hydro::fcell>(opts.in_file, 100, lines);
+    //     auto surface = read_cells<vhlle::fcell>(opts.in_file, 100, lines);
     //     opts.particle_id = powerhouse::particle_names::PION_PLUS;
     //     EXPECT_EQ(surface.total(), surface.data().size());
     //     EXPECT_NO_THROW(engine->init(opts, surface));
@@ -117,7 +117,7 @@ namespace
     //     const auto& output = engine->yield_output();
     //     for (auto &&row : output)
     //     {
-    //         auto count = std::count_if(output.begin(), output.end(), [&row](const powerhouse::yield_output<hydro::fcell>& yo)
+    //         auto count = std::count_if(output.begin(), output.end(), [&row](const powerhouse::yield_output<vhlle::fcell>& yo)
     //         {
     //             return row.phi_p == yo.phi_p && row.pT == yo.pT && row.y_p == yo.y_p;
     //         });

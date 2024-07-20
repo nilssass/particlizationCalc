@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include "interfaces.h"
-#include "fcell.h"
+#include "vhlle_fcell.h"
 #include "cmdparser.hpp"
 
 int main(int argc, char **argv)
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     std::string i_file = parser.get<std::string>("i");
     std::string o_file = parser.get<std::string>("o");
 
-    hydro::hypersurface<hydro::fcell> surface;
+    hydro::hypersurface<vhlle::fcell> surface;
     std::cout << "Reading text file " << i_file << " ..." << std::endl;
     surface.read(i_file, utils::accept_modes::AcceptAll, false, hydro::file_format::Text);
     std::cout << "Writing to the binary file " << o_file << " ..." << std::endl;

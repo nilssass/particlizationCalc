@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "../src/utils.h"
 #include "../src/geometry.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/interfaces.h"
 
 const std::string PATH = "./input/beta.dat";
@@ -210,7 +210,7 @@ BENCHMARK(bm_read_t_vector);
 
 static void bm_multiply_vectors_1(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -227,7 +227,7 @@ BENCHMARK(bm_multiply_vectors_1)->Name("u * a : loop");
 
 static void bm_multiply_vectors_2(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -247,7 +247,7 @@ BENCHMARK(bm_multiply_vectors_2)->Name("u * a : loop simd");
 
 static void bm_multiply_vectors_3(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -267,7 +267,7 @@ BENCHMARK(bm_multiply_vectors_3)->Name("u * a : 3 loop no simd");
 
 static void bm_multiply_vectors_4(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -287,7 +287,7 @@ BENCHMARK(bm_multiply_vectors_4)->Name("u * a : 3 loop simd");
 
 static void bm_multiply_vectors_5(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -302,7 +302,7 @@ BENCHMARK(bm_multiply_vectors_5)->Name("u * a : no loop");
 
 static void bm_multiply_vectors_6(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();
@@ -317,7 +317,7 @@ BENCHMARK(bm_multiply_vectors_6)->Name("u * a : no loop bitwise");
 
 static void bm_multiply_vectors_7(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     auto _data = cell.four_vel().vec();
     auto vec2 = cell.acceleration();
     auto _lower = cell.four_vel().is_lower();

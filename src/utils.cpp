@@ -249,7 +249,7 @@ utils::program_options utils::read_cmd(int argc, char **argv)
             break;
         }
         opts.particle_id = get_particle_id(parser);
-        if (opts.program_mode == program_modes::Polarization || opts.program_mode == program_modes::Yield && opts.particle_id == 0)
+        if ((opts.program_mode == program_modes::Polarization || opts.program_mode == program_modes::Yield) && opts.particle_id == 0)
         {
             opts.program_mode = program_modes::Invalid;
             what_stream << "A known particle id must be provided for the chosen program mode!" << std::endl;

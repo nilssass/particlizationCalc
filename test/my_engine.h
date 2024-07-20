@@ -1,7 +1,7 @@
 #ifndef MY_ENGINE_H
 #define MY_ENGINE_H
 #include "../src/utils.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/interfaces.h"
 #include "../src/surface.h"
 #include "../src/I_engine.h"
@@ -12,7 +12,7 @@
 #include <mutex>
 #pragma once
 
-class my_engine : public powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle>
+class my_engine : public powerhouse::I_engine<vhlle::fcell, powerhouse::pdg_particle>
 {
 public:
     ~my_engine() override
@@ -22,7 +22,7 @@ public:
     void run() override;
     void write() override;
 };
-class mock_calculator : public powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle>
+class mock_calculator : public powerhouse::I_calculator<vhlle::fcell, powerhouse::pdg_particle>
 {
 private:
     size_t _count;
@@ -35,13 +35,13 @@ public:
     ~mock_calculator() override
     {
     }
-    powerhouse::I_output<hydro::fcell> *perform_step(hydro::fcell &cell, powerhouse::I_output<hydro::fcell> *previous_step) override
+    powerhouse::I_output<vhlle::fcell> *perform_step(vhlle::fcell &cell, powerhouse::I_output<vhlle::fcell> *previous_step) override
     {
 
-        powerhouse::exam_output<hydro::fcell> data;
+        powerhouse::exam_output<vhlle::fcell> data;
         if (previous_step)
         {
-            auto exam_output_ptr = dynamic_cast<powerhouse::exam_output<hydro::fcell> *>(previous_step);
+            auto exam_output_ptr = dynamic_cast<powerhouse::exam_output<vhlle::fcell> *>(previous_step);
             if (exam_output_ptr)
             {
                 data = *exam_output_ptr;
@@ -84,7 +84,7 @@ public:
         _perc = 0;
         _local_cell_counter = 0;
     }
-    bool pre_step(hydro::fcell& cell, powerhouse::I_output<hydro::fcell> * ptr) override
+    bool pre_step(vhlle::fcell& cell, powerhouse::I_output<vhlle::fcell> * ptr) override
     {
         if (_local_cell_counter % _step_size == 0)
         {
@@ -93,7 +93,7 @@ public:
         }
         _local_cell_counter++;
     }
-    void process_output(powerhouse::I_output<hydro::fcell> *output) override
+    void process_output(powerhouse::I_output<vhlle::fcell> *output) override
     {
     }
 
@@ -101,7 +101,7 @@ public:
     {
     }
 
-    void write(std::ostream &output, hydro::fcell *cell, powerhouse::I_output<hydro::fcell> *final_output) override
+    void write(std::ostream &output, vhlle::fcell *cell, powerhouse::I_output<vhlle::fcell> *final_output) override
     {
     }
 };

@@ -9,7 +9,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "rigidcylinder.h"
 #include <type_traits>
 #include "../src/factories.h"
@@ -27,8 +27,8 @@ namespace
         const double T_0 = 0.160;
         const double t_0 = 0.6;
         const double o0 = 0.006 / utils::hbarC;
-        std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
-            hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
+        std::shared_ptr<hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>> factory =
+            hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>::factory();
         void SetUp() override
         {
             const double T_f = 0.167;
@@ -58,7 +58,7 @@ namespace
         std::ofstream soloutput(RIGID_CYL);
         rigid->write(soloutput);
         int lines;
-        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(RIGID_CYL, 100, lines);
+        hydro::hypersurface<vhlle::fcell> surface = read_cells<vhlle::fcell>(RIGID_CYL, 100, lines);
         auto &cell = rigid->data()[0];
         auto exp_delta_ll = rigid->exp_delta_ll(cell);
         auto u = cell.four_vel();

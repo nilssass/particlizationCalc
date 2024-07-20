@@ -67,7 +67,7 @@ add_executable(
     test_cells
     test/test_cells.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_cells
@@ -92,7 +92,7 @@ add_executable(
     test/test_bjorken.cpp 
     test/ibjorken.cpp
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_bjorken
@@ -108,7 +108,7 @@ add_executable(
     test/test_rigid.cpp 
     test/rigidcylinder.cpp
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_rigid
@@ -123,7 +123,7 @@ add_executable(
     test_engine_design
     test/test_static_engine_design.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_engine_design
@@ -148,7 +148,7 @@ add_executable(
     test_yield
     test/test_yield.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_yield
@@ -176,7 +176,7 @@ add_executable(
     test_bjorken_yield
     test/test_bjorken_yield.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
     test/ibjorken.cpp
 )
 target_link_libraries(
@@ -203,7 +203,7 @@ add_executable(
     test_engine_vhlle
     test/test_engine_vhlle.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_engine_vhlle
@@ -228,7 +228,7 @@ add_executable(
     test_geq
     test/test_geq_polarization.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_geq
@@ -256,7 +256,7 @@ add_executable(
     test_leq_db
     test/test_leq_db_polarization.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_leq_db
@@ -283,7 +283,7 @@ add_executable(
     test_leq_du
     test/test_leq_du_polarization.cpp 
     src/utils.cpp   
-    src/fcell.cpp
+    
 )
 target_link_libraries(
     test_leq_du
@@ -313,7 +313,7 @@ add_executable(
     bench_utils
     test/bench_utils.cpp
     src/utils.cpp
-    src/fcell.cpp
+    
 )
 target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
 
@@ -329,7 +329,7 @@ add_executable(
     bench_cells
     test/bench_cells.cpp
     src/utils.cpp
-    src/fcell.cpp
+    
 )
 target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
 
@@ -346,7 +346,7 @@ add_executable(
     bench_yield
     test/bench_yield.cpp
     src/utils.cpp
-    src/fcell.cpp
+    
 )
 target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
 
@@ -364,7 +364,7 @@ add_executable(
     bench_static_yield
     test/bench_static_yield.cpp
     src/utils.cpp
-    src/fcell.cpp
+    
 )
 target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
 
@@ -380,7 +380,7 @@ add_executable(
     calc  # Name of the executable
     src/main.cpp  # Source files for the main executable
     # Add other necessary source files here
-    src/fcell.cpp
+    
     src/utils.cpp
 )
 
@@ -405,7 +405,7 @@ add_executable(
     calc_sgt  # Name of the executable
     src/main.cpp  # Source files for the main executable
     # Add other necessary source files here
-    src/fcell.cpp
+    
     src/utils.cpp
 )
 
@@ -433,7 +433,7 @@ add_executable(
     txt_to_bin  # Name of the executable
     src/txt_to_bin.cpp  # Source files for the main executable
     # Add other necessary source files here
-    src/fcell.cpp
+    
     src/utils.cpp
 )
 

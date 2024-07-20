@@ -5,34 +5,37 @@
 #include <memory>
 #include "I_engine.h"
 #include "factories.h"
-#include "fcell.h"
+#include "vhlle_fcell.h"
 #include "pdg_particle.h"
 #include "interfaces.h"
 #include "utils.h"
 #include "yield_calculator.h"
 #include "examiner.h"
+#include "geq_polarization_calculator.h"
+#include "leq_db_polarization_calculator.h"
+#include "leq_du_polarization_calculator.h"
 #pragma once
 
 namespace vhlle
 {
-    using exam_engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle, powerhouse::exam_output<hydro::fcell>>;
-    using polarization_engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
-    using yield_engine = powerhouse::I_engine<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>;
+    using exam_engine = powerhouse::I_engine<vhlle::fcell, powerhouse::pdg_particle, powerhouse::exam_output<vhlle::fcell>>;
+    using polarization_engine = powerhouse::I_engine<vhlle::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<vhlle::fcell>>;
+    using yield_engine = powerhouse::I_engine<vhlle::fcell, powerhouse::pdg_particle, powerhouse::yield_output<vhlle::fcell>>;
 
     using engine_variant = std::variant<std::shared_ptr<exam_engine>, std::shared_ptr<polarization_engine>, std::shared_ptr<yield_engine>>;
 
-    using yield_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>;
+    using yield_factory = powerhouse::calculator_factory<vhlle::fcell, powerhouse::pdg_particle, powerhouse::yield_output<vhlle::fcell>>;
 
-    using polarization_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
+    using polarization_factory = powerhouse::calculator_factory<vhlle::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<vhlle::fcell>>;
 
-    using exam_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::exam_output<hydro::fcell>>;
+    using exam_factory = powerhouse::calculator_factory<vhlle::fcell, powerhouse::pdg_particle, powerhouse::exam_output<vhlle::fcell>>;
 
-    using polarization_factory = powerhouse::calculator_factory<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
+    using polarization_factory = powerhouse::calculator_factory<vhlle::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<vhlle::fcell>>;
 
-    using I_yield_calculator = powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::yield_output<hydro::fcell>>;
-    using I_polarization_calculator = powerhouse::I_calculator<hydro::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<hydro::fcell>>;
+    using I_yield_calculator = powerhouse::I_calculator<vhlle::fcell, powerhouse::pdg_particle, powerhouse::yield_output<vhlle::fcell>>;
+    using I_polarization_calculator = powerhouse::I_calculator<vhlle::fcell, powerhouse::pdg_particle, powerhouse::polarization_output<vhlle::fcell>>;
 
-    using surface = hydro::hypersurface<hydro::fcell>;
+    using surface = hydro::hypersurface<vhlle::fcell>;
     // Helper class to manage the engine variant
     class engine_helper
     {
@@ -123,9 +126,30 @@ namespace vhlle
                 {.program_mode = utils::program_modes::Yield, .polarization_mode = utils::polarization_modes::NA, .yield_mode = utils::yield_modes::GlobalEq},
                 []()
                 { return std::make_unique<powerhouse::yield_calculator>(); });
+
+            polarization_factory::factory()->register_calculator(
+                {.program_mode = utils::program_modes::Polarization,
+                 .polarization_mode = utils::polarization_modes::GlobalEq,
+                 .yield_mode = utils::yield_modes::NA},
+                []()
+                { return std::make_unique<powerhouse::geq_polarization_calculator>(); });
+
+            polarization_factory::factory()->register_calculator(
+                {.program_mode = utils::program_modes::Polarization,
+                 .polarization_mode = utils::polarization_modes::LocalEqDb,
+                 .yield_mode = utils::yield_modes::NA},
+                []()
+                { return std::make_unique<powerhouse::leq_db_polarization_calculator>(); });
+
+            polarization_factory::factory()->register_calculator(
+                {.program_mode = utils::program_modes::Polarization,
+                 .polarization_mode = utils::polarization_modes::LocalEqDu,
+                 .yield_mode = utils::yield_modes::NA},
+                []()
+                { return std::make_unique<powerhouse::leq_du_polarization_calculator>(); });
         }
 
-        void inline init(hydro::hypersurface<hydro::fcell> &hypersurface)
+        void inline init(hydro::hypersurface<vhlle::fcell> &hypersurface)
         {
             std::visit([&](auto &eng)
                        { eng->init(_settings, hypersurface); }, _engine);
@@ -151,7 +175,7 @@ namespace vhlle
                        { eng->reset(_settings); }, _engine);
         }
 
-        inline std::vector<powerhouse::yield_output<hydro::fcell>> yield_output()
+        inline std::vector<powerhouse::yield_output<vhlle::fcell>> yield_output()
         {
             if (std::holds_alternative<std::shared_ptr<yield_engine>>(_engine))
             {

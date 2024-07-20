@@ -9,7 +9,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "ibjorken.h"
 #include <type_traits>
 #include "../src/factories.h"
@@ -43,7 +43,7 @@ namespace
         }
 
         std::string line;
-        hydro::fcell cell;
+        vhlle::fcell cell;
         do
         {
             std::getline(file, line);
@@ -55,7 +55,7 @@ namespace
 
     TEST_F(CellTest, Test_Read_Surface_Text_1)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read("./input/beta-1.dat", utils::accept_modes::AcceptAll, true);
         EXPECT_EQ(surface.total(), 1);
 
@@ -64,7 +64,7 @@ namespace
 
     TEST_F(CellTest, Test_Read_Surface_Text_6)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read("./input/beta-6.dat", utils::accept_modes::AcceptAll, true);
         EXPECT_EQ(surface.total(), 6);
         print(surface);
@@ -72,7 +72,7 @@ namespace
 
     TEST_F(CellTest, Test_Read_Surface_Text_8)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read("./input/beta-8.dat", utils::accept_modes::AcceptAll, true);
         EXPECT_EQ(surface.total(), 8);
         print(surface);
@@ -80,7 +80,7 @@ namespace
 
     TEST_F(CellTest, Test_Read_Surface_Text_10)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read("./input/beta-10.dat", utils::accept_modes::AcceptAll, true);
         EXPECT_EQ(surface.total(), 10);
         print(surface);
@@ -89,11 +89,11 @@ namespace
     TEST_F(CellTest, WriteRead60Cells_Text)
     {
         const std::string i_file = "./input/beta-60.dat";
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read(i_file, utils::accept_modes::AcceptAll, true, hydro::file_format::Text);
         EXPECT_EQ(surface.data().size(), 60);
         print(surface);
-        std::vector<hydro::fcell> original_cells;
+        std::vector<vhlle::fcell> original_cells;
         original_cells.insert(original_cells.begin(),surface.data().begin(), surface.data().end());
         const std::string o_file = "./input/beta-60-copy.dat";
         surface.write(o_file, true, hydro::file_format::Text);
@@ -121,11 +121,11 @@ namespace
     TEST_F(CellTest, ReadWrite60Cells_Bin)
     {
         const std::string i_file = "./input/beta-60.dat";
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read(i_file, utils::accept_modes::AcceptAll, true, hydro::file_format::Text);
         EXPECT_EQ(surface.data().size(), 60);
         print(surface);
-        std::vector<hydro::fcell> original_cells;
+        std::vector<vhlle::fcell> original_cells;
         original_cells.insert(original_cells.begin(),surface.data().begin(), surface.data().end());
         const std::string o_file = "./input/beta-60.bin";
         surface.write(o_file, true, hydro::file_format::Binary);
@@ -150,7 +150,7 @@ namespace
 
     TEST_F(CellTest, Test_Read_Surface_Bin_Verbose)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read("./input/beta.bin", utils::accept_modes::AcceptAll, false, hydro::file_format::Binary);
         print(surface);
         EXPECT_EQ(surface.total(), 751493);
@@ -160,7 +160,7 @@ namespace
     
 //     TEST_F(CellTest, Hypersurface_ReadCells_Single_Text)
 //     {
-//         std::vector<hydro::fcell> _cells;
+//         std::vector<vhlle::fcell> _cells;
 //         const std::string i_file = "./input/beta-60.dat";
 
 //         std::vector<std::streampos> file_positions;
@@ -216,7 +216,7 @@ namespace
 //                 }
 
 //                 std::istringstream iss(line);
-//                 hydro::fcell cell;
+//                 vhlle::fcell cell;
 //                 iss >> cell;
 //                 if (iss.fail())
 //                 {
@@ -266,7 +266,7 @@ namespace
 //                     file.seekg(pos);
 //                     std::getline(file, line);
 //                     std::istringstream iss(line);
-//                     hydro::fcell cell;
+//                     vhlle::fcell cell;
 //                     iss >> cell;
 //                     if (!iss.fail())
 //                     {
@@ -285,7 +285,7 @@ namespace
 
 //     TEST_F(CellTest, Hypersurface_ReadCells_Text_omp)
 //     {
-//         std::vector<hydro::fcell> _cells;
+//         std::vector<vhlle::fcell> _cells;
 //         const std::string i_file = "./input/beta-60.dat";
 
 //         std::vector<std::streampos> file_positions;
@@ -341,7 +341,7 @@ namespace
 //             int local_perc = 0;
 //             int local_last_perc = -1;
 //             std::ifstream local_file(i_file);
-//             std::vector<hydro::fcell> thread_cells;
+//             std::vector<vhlle::fcell> thread_cells;
 
 //             if (!local_file.is_open())
 //             {
@@ -370,7 +370,7 @@ namespace
 //                     }
 
 //                     std::istringstream iss(line);
-//                     hydro::fcell cell;
+//                     vhlle::fcell cell;
 //                     iss >> cell;
 //                     if (iss.fail())
 //                     {
@@ -435,7 +435,7 @@ namespace
 //                     file.seekg(pos);
 //                     std::getline(file, line);
 //                     std::istringstream iss(line);
-//                     hydro::fcell cell;
+//                     vhlle::fcell cell;
 //                     iss >> cell;
 //                     if (!iss.fail())
 //                     {
@@ -454,7 +454,7 @@ namespace
 
 //     TEST_F(CellTest, Hypersurface_ReadCells_Single_Bin)
 //     {
-//         std::vector<hydro::fcell> _cells;
+//         std::vector<vhlle::fcell> _cells;
 //         const std::string i_file = "./input/beta-70.bin";
 
 //         std::ifstream file(i_file);
@@ -463,7 +463,7 @@ namespace
 //         {
 //             throw std::runtime_error("Input file cannot be opened!");
 //         }
-//         hydro::fcell cell;
+//         vhlle::fcell cell;
 //         file.seekg(0, std::ios::end);
 //         std::streamsize file_size = file.tellg();
 //         file.seekg(0, std::ios::beg);
@@ -527,7 +527,7 @@ namespace
 
 //     TEST_F(CellTest, Hypersurface_ReadCells_Bin_omp)
 //     {
-//         std::vector<hydro::fcell> _cells;
+//         std::vector<vhlle::fcell> _cells;
 //         const std::string i_file = "./input/beta-70.bin";
 
 //         std::vector<std::streampos> file_positions;
@@ -543,7 +543,7 @@ namespace
 //         file.seekg(0, std::ios::end);
 //         std::streampos file_size = file.tellg();
 //         file.seekg(0, std::ios::beg);
-//         hydro::fcell empty_cell;
+//         vhlle::fcell empty_cell;
 //         const int estimated_line_count = file_size / empty_cell.size();
 //         const int step_size = (int)ceil((double)estimated_line_count / 100.0);
 //         int threads_count = omp_get_max_threads();
@@ -579,7 +579,7 @@ namespace
 //             int local_perc = 0;
 //             int local_last_perc = -1;
 //             std::ifstream local_file(i_file);
-//             std::vector<hydro::fcell> thread_cells;
+//             std::vector<vhlle::fcell> thread_cells;
 
 //             if (!local_file.is_open())
 //             {
@@ -596,7 +596,7 @@ namespace
 //                         break;
 //                     }
 
-//                     hydro::fcell cell;
+//                     vhlle::fcell cell;
 //                     cell.read(local_file, hydro::file_format::Binary);
 //                     if (local_file)
 //                     {
@@ -671,7 +671,7 @@ namespace
 //                 for (auto &&pos : failed_positions)
 //                 {
 //                     file.seekg(pos);
-//                     hydro::fcell cell;
+//                     vhlle::fcell cell;
 //                     cell.read(file, hydro::file_format::Binary);
 //                     if (!file.fail())
 //                     {

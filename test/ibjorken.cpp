@@ -1,7 +1,7 @@
 #include "ibjorken.h"
 #include <array>
 #include "../src/utils.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 
 void ibjorken::populate()
 {
@@ -12,7 +12,7 @@ void ibjorken::populate()
     const double &y = 0;
     for (double eta = _mincoords[3]; eta <= _maxcoords[3]; eta += _deta)
     {
-        hydro::fcell cell(
+        vhlle::fcell cell(
             ug::four_vector(t_f, x, y, eta, false),
             ug::four_vector(_T_f, 0, 0, 0, false),
             0,
@@ -34,7 +34,7 @@ void ibjorken::write(std::ostream &output)
     }
 }
 
-utils::r2_tensor ibjorken::exp_shear_ll(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_shear_ll(const vhlle::fcell &cell) const
 {
     const auto &sh = sinh(cell.eta());
     const auto &ch = cosh(cell.eta());
@@ -47,12 +47,12 @@ utils::r2_tensor ibjorken::exp_shear_ll(const hydro::fcell &cell) const
     return sigma;
 }
 
-utils::r2_tensor ibjorken::exp_th_shear_ll(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_th_shear_ll(const vhlle::fcell &cell) const
 {
     return utils::s_product(cell.dbeta_ll(), utils::hbarC);
 }
 
-utils::r2_tensor ibjorken::exp_gradu_ll(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_gradu_ll(const vhlle::fcell &cell) const
 {
     const auto &sh = sinh(cell.eta());
     const auto &ch = cosh(cell.eta());
@@ -64,7 +64,7 @@ utils::r2_tensor ibjorken::exp_gradu_ll(const hydro::fcell &cell) const
     return gradu;
 }
 
-utils::r2_tensor ibjorken::exp_delta_ll(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_delta_ll(const vhlle::fcell &cell) const
 {
     const auto &sh = sinh(cell.eta());
     const auto &ch = cosh(cell.eta());
@@ -78,7 +78,7 @@ utils::r2_tensor ibjorken::exp_delta_ll(const hydro::fcell &cell) const
     return delta;
 }
 
-utils::r2_tensor ibjorken::exp_delta_ul(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_delta_ul(const vhlle::fcell &cell) const
 {
     const auto &sh = sinh(cell.eta());
     const auto &ch = cosh(cell.eta());
@@ -91,7 +91,7 @@ utils::r2_tensor ibjorken::exp_delta_ul(const hydro::fcell &cell) const
     delta[3][3] = ch * ch;
     return delta;
 }
-utils::r2_tensor ibjorken::exp_delta_uu(const hydro::fcell &cell) const
+utils::r2_tensor ibjorken::exp_delta_uu(const vhlle::fcell &cell) const
 {
     const auto &sh = sinh(cell.eta());
     const auto &ch = cosh(cell.eta());
@@ -104,7 +104,7 @@ utils::r2_tensor ibjorken::exp_delta_uu(const hydro::fcell &cell) const
     return delta;
 }
 
-hydro::fcell ibjorken::solve(const hydro::fcell &pcell)
+vhlle::fcell ibjorken::solve(const vhlle::fcell &pcell)
 {
     const auto &tau = pcell.tau();
     utils::r2_tensor du = {{0}};
@@ -127,7 +127,7 @@ hydro::fcell ibjorken::solve(const hydro::fcell &pcell)
     dbeta[0][3] = ch * sh * (T - dT * tau) / tau;
     dbeta[3][0] = ch * sh * (T - dT * tau) / tau;
     dbeta[3][3] = -ch * ch * T / tau + sh * sh * dT;
-    auto cell = hydro::fcell(
+    auto cell = vhlle::fcell(
         ug::four_vector({tau, pcell.x(), pcell.y(), pcell.eta()}),
         ug::four_vector({T, 0, 0, 0}),
         ug::four_vector({tau * ch * _deta * dx * dy, 0, 0, -tau * sh * _deta * dx * dy}, true),

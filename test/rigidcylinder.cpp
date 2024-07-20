@@ -16,7 +16,7 @@ void rigid_cylinder::populate()
             const auto &y = sqrt(y2);
             const auto &u = ug::four_vector(_gf, -_gf * _om_0 * y, _gf * _om_0 * x, 0, false);
             const auto &dsigma = ug::four_vector(0, -x, -y, 0, true); // This is tenative
-            hydro::fcell cell(
+            vhlle::fcell cell(
                 ug::four_vector(t, x, y, 0, false),
                 ug::four_vector(_T_f, 0, 0, 0, false),
                 dsigma,
@@ -39,14 +39,14 @@ void rigid_cylinder::write(std::ostream &output)
     }
 }
 
-ug::four_vector rigid_cylinder::exp_acc_u(const hydro::fcell &cell) const
+ug::four_vector rigid_cylinder::exp_acc_u(const vhlle::fcell &cell) const
 {
     const auto &a = ug::four_vector(0, -_gf * _gf * cell.x() * _om_0 * _om_0,
                                     -_gf * _gf * cell.y() * _om_0 * _om_0, 0, false);
     return a;
 }
 
-hydro::fcell rigid_cylinder::solve(const hydro::fcell &cell)
+vhlle::fcell rigid_cylinder::solve(const vhlle::fcell &cell)
 {
     utils::r2_tensor du = {{0}};
     const auto &x = cell.x();
@@ -61,7 +61,7 @@ hydro::fcell rigid_cylinder::solve(const hydro::fcell &cell)
     utils::r2_tensor dbeta = {{0}};
     dbeta[2][1] = _om_0 / _T_0;
     dbeta[1][2] = -_om_0 / _T_0;
-    auto mcell = hydro::fcell(
+    auto mcell = vhlle::fcell(
         ug::four_vector({cell.tau(), cell.x(), cell.y(), cell.eta()}),
         ug::four_vector({cell.T(), 0, 0, 0}),
         cell.dsigma(),
@@ -71,22 +71,22 @@ hydro::fcell rigid_cylinder::solve(const hydro::fcell &cell)
     return mcell;
 }
 
-ug::four_vector rigid_cylinder::exp_f_vorticity_u(const hydro::fcell &cell) const
+ug::four_vector rigid_cylinder::exp_f_vorticity_u(const vhlle::fcell &cell) const
 {
     return ug::four_vector({0, 0, 0, _gf * _gf * _om_0}, false);
 }
 
-utils::r2_tensor rigid_cylinder::exp_f_vorticity_ll(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_f_vorticity_ll(const vhlle::fcell &cell) const
 {
     return exp_gradu_ll(cell);
 }
 
-utils::r2_tensor rigid_cylinder::exp_th_vorticity_ll(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_th_vorticity_ll(const vhlle::fcell &cell) const
 {
     return utils::s_product(cell.dbeta_ll(), -utils::hbarC);
 }
 
-utils::r2_tensor rigid_cylinder::exp_gradu_ll(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_gradu_ll(const vhlle::fcell &cell) const
 {
     utils::r2_tensor _ = {{0}};
     const auto &x = cell.x();
@@ -100,7 +100,7 @@ utils::r2_tensor rigid_cylinder::exp_gradu_ll(const hydro::fcell &cell) const
     return _;
 }
 
-utils::r2_tensor rigid_cylinder::exp_delta_ll(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_delta_ll(const vhlle::fcell &cell) const
 {
     utils::r2_tensor delta = {0};
     const auto &x = cell.x();
@@ -117,7 +117,7 @@ utils::r2_tensor rigid_cylinder::exp_delta_ll(const hydro::fcell &cell) const
     return delta;
 }
 
-utils::r2_tensor rigid_cylinder::exp_delta_ul(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_delta_ul(const vhlle::fcell &cell) const
 {
     utils::r2_tensor delta = {0};
     const auto &x = cell.x();
@@ -137,7 +137,7 @@ utils::r2_tensor rigid_cylinder::exp_delta_ul(const hydro::fcell &cell) const
     return delta;
 }
 
-utils::r2_tensor rigid_cylinder::exp_delta_uu(const hydro::fcell &cell) const
+utils::r2_tensor rigid_cylinder::exp_delta_uu(const vhlle::fcell &cell) const
 {
     utils::r2_tensor delta = {0};
     const auto &x = cell.x();

@@ -1,7 +1,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/I_engine.h"
 #include "../src/yield_calculator.h"
 #include "../src/pdg_particle.h"
@@ -12,7 +12,7 @@
 namespace
 {
     namespace ug = utils::geometry;
-    using yout = powerhouse::yield_output<hydro::fcell>;
+    using yout = powerhouse::yield_output<vhlle::fcell>;
     class YieldTest : public my_test
     {
         static std::mutex _mutex;
@@ -131,7 +131,7 @@ namespace
                 const double sinh_y = sinh(normalize_y);
                 for (double phi = 0; phi < 2 * M_PI; phi += phi_p_step)
                 {
-                    powerhouse::yield_output<hydro::fcell> pcell;
+                    powerhouse::yield_output<vhlle::fcell> pcell;
                     pcell.pT = pT;
                     pcell.y_p = y;
                     pcell.phi_p = phi;

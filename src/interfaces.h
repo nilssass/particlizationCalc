@@ -1242,7 +1242,7 @@ namespace powerhouse
             }
             else if ((int)dim_spin % 2 == 1)
             {
-                return -BOSON;
+                return BOSON;
             }
             return 0;
         }

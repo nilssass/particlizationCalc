@@ -1,14 +1,14 @@
 #ifndef RIGIDCYLINDER_H
 #define RIGIDCYLINDER_H
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/geometry.h"
 #include "../src/utils.h"
 
 #pragma once
 namespace ug = utils::geometry;
 /// @brief See, e,g,, https://arxiv.org/abs/2309.07003
-class rigid_cylinder : public hydro::I_solution<hydro::fcell, ug::four_vector, utils::r2_tensor>
+class rigid_cylinder : public hydro::I_solution<vhlle::fcell, ug::four_vector, utils::r2_tensor>
 {
 public:
     rigid_cylinder(utils::geometry::four_vector coordsteps,
@@ -39,28 +39,28 @@ public:
 
     void populate() override;
     void write(std::ostream &output) override;
-    ug::four_vector exp_acc_u(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_shear_ll(const hydro::fcell &cell) const override
+    ug::four_vector exp_acc_u(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_shear_ll(const vhlle::fcell &cell) const override
     {
         return {0};
     }
-    ug::four_vector exp_f_vorticity_u(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_f_vorticity_ll(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_th_vorticity_ll(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_th_shear_ll(const hydro::fcell &cell) const override
+    ug::four_vector exp_f_vorticity_u(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_f_vorticity_ll(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_th_vorticity_ll(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_th_shear_ll(const vhlle::fcell &cell) const override
     {
         return {0};
     }
-    utils::r2_tensor exp_gradu_ll(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_delta_ll(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_delta_ul(const hydro::fcell &cell) const override;
-    utils::r2_tensor exp_delta_uu(const hydro::fcell &cell) const override;
-    double exp_theta(const hydro::fcell &cell) const override { return 0.0; }
-    double exp_b_theta(const hydro::fcell &cell) const override
+    utils::r2_tensor exp_gradu_ll(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_delta_ll(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_delta_ul(const vhlle::fcell &cell) const override;
+    utils::r2_tensor exp_delta_uu(const vhlle::fcell &cell) const override;
+    double exp_theta(const vhlle::fcell &cell) const override { return 0.0; }
+    double exp_b_theta(const vhlle::fcell &cell) const override
     {
         return 0.0;
     }
-    hydro::hypersurface<hydro::fcell> data() const override
+    hydro::hypersurface<vhlle::fcell> data() const override
     {
         return _cells;
     }
@@ -71,18 +71,18 @@ public:
     }
 
 private:
-    hydro::fcell solve(const hydro::fcell &cell) override;
+    vhlle::fcell solve(const vhlle::fcell &cell) override;
     size_t _count;
     utils::geometry::four_vector _mincoords;
     utils::geometry::four_vector _maxcoords;
     utils::geometry::four_vector _coordsteps;
-    hydro::hypersurface<hydro::fcell> _cells;
+    hydro::hypersurface<vhlle::fcell> _cells;
     double _T_f;
     double _T_0;
     double _rf;
     double _gf;
     double _om_0;
-    constexpr double r(const hydro::fcell &cell)
+    constexpr double r(const vhlle::fcell &cell)
     {
         return sqrt(cell.x() * cell.x() + cell.y() * cell.y());
     }
@@ -92,11 +92,11 @@ private:
         return sqrt((T * T - _T_0 * _T_0) / (_om_0 * _om_0 * T * T));
     }
 
-    constexpr double phi(const hydro::fcell &cell) const
+    constexpr double phi(const vhlle::fcell &cell) const
     {
         return atan(cell.y() / cell.x());
     }
-    constexpr double gamma(const hydro::fcell &cell)
+    constexpr double gamma(const vhlle::fcell &cell)
     {
         const auto &rho = r(cell);
         return 1. / sqrt(1 - rho * rho * _om_0 * _om_0);

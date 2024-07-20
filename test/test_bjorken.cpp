@@ -9,7 +9,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "ibjorken.h"
 #include <type_traits>
 #include "../src/factories.h"
@@ -27,8 +27,8 @@ namespace
         const double T_0 = 0.3;
         const double vs2 = 1. / 3.;
         const double t_0 = 0.6;
-        std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
-            hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
+        std::shared_ptr<hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>> factory =
+            hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>::factory();
         void SetUp() override
         {
             const double T_f = 0.167;
@@ -66,7 +66,7 @@ namespace
         std::ofstream soloutput(BJORKEN);
         bjorken->write(soloutput);
         int lines;
-        hydro::hypersurface<hydro::fcell> surface = read_cells<hydro::fcell>(BJORKEN, 100, lines);
+        hydro::hypersurface<vhlle::fcell> surface = read_cells<vhlle::fcell>(BJORKEN, 100, lines);
         EXPECT_EQ(lines, bjorken->count());
     }
 
@@ -172,7 +172,7 @@ namespace
     }
     TEST_F(BjorkenTest, NilsShearAgBjorken)
     {
-        auto nils_shear = [](hydro::fcell &cell, const int &mu, const int &nu)
+        auto nils_shear = [](vhlle::fcell &cell, const int &mu, const int &nu)
         {
             const auto &u = cell.four_vel().to_lower().to_array();
             const double u_[4] = {u[0], -u[1], -u[2], -u[3]};
@@ -197,7 +197,7 @@ namespace
 
             return shear;
         };
-        auto nils_shear_tensor = [&nils_shear](hydro::fcell& cell)
+        auto nils_shear_tensor = [&nils_shear](vhlle::fcell& cell)
         {
             utils::r2_tensor _ = {0};
             for (size_t i = 0; i < 4; i++)

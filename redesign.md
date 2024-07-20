@@ -122,11 +122,11 @@ gtest_discover_tests(test_utils)
 2. `hydro::I_solution< C, V, T >`: interface for an analytical solution for testing purpsoes. `C` is the cell type that must be inherited from `I_cell`, `V` is the four vector's type, and `T` is the rank-2 tensor's type.
 Two implementations can be found in ./test folder: the ideal Bjorken flow `ibjorken` and the rigidly rotating cylinder `rigid_cylinder`:
 ```cpp
-class ibjorken : public hydro::I_solution<hydro::fcell, ug::four_vector, utils::r2_tensor>
+class ibjorken : public hydro::I_solution<vhlle::fcell, ug::four_vector, utils::r2_tensor>
 {
     ...
 }
-class rigid_cylinder : public hydro::I_solution<hydro::fcell, ug::four_vector, utils::r2_tensor>
+class rigid_cylinder : public hydro::I_solution<vhlle::fcell, ug::four_vector, utils::r2_tensor>
 {
     ...
 }
@@ -138,8 +138,8 @@ An example of the usage in `./test/test_bjorken.cpp` is:
 ```cpp
 namespace ug = utils::geometry;
 ...
-std::shared_ptr<hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>> factory =
-            hydro::solution_factory<hydro::fcell, ug::four_vector, utils::r2_tensor>::factory();
+std::shared_ptr<hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>> factory =
+            hydro::solution_factory<vhlle::fcell, ug::four_vector, utils::r2_tensor>::factory();
 factory->regsiter_solution(ibjorken::get_name(),
                                        [...]()
                                        {
@@ -151,7 +151,7 @@ auto bjorken = factory->create(ibjorken::get_name());
 bjorken->populate();
 ...
 ```
-6. `hydro::fcell`: a concrete implementation of `I_cell`.
+6. `vhlle::fcell`: a concrete implementation of `I_cell`.
 7. Legacy: `element`, `fsurface`, `hypersurface`, `hypersurface_wrapper`, `surface_info`, `t_surface_info`: kept only for testing
 
 ### `namespace powerhouse`
@@ -161,7 +161,7 @@ bjorken->populate();
 4. `powerhouse::I_engine`: A singlton factory that takes care of the calculations:
 ```cpp
 ...
-auto engine = powerhouse::I_engine<hydro::fcell>::get(settings);
+auto engine = powerhouse::I_engine<vhlle::fcell>::get(settings);
 engine->init(hypersurface);
 ...
 engine->run();
@@ -170,7 +170,7 @@ engine->write();
 ```
 5. `powerhouse::calculator_factory< C >`: singleton factory that is used for registeration and creation of calculators. Calculators are registered, in `main.cpp`, as:
 ```cpp
-powerhouse::calculator_factory<hydro::fcell>::factory()
+powerhouse::calculator_factory<vhlle::fcell>::factory()
         ->register_calculator(settings,
                               []()
                               {

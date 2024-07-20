@@ -4,7 +4,7 @@
 #include "../src/utils.h"
 #include "../src/geometry.h"
 #include "../src/interfaces.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #pragma once
 
 class my_test : public testing::Test
@@ -83,7 +83,7 @@ protected:
         }
     }
 
-    void EXPECT_CELLS_NEAR(hydro::fcell lhs, hydro::fcell rhs, double tolerance = abs_error)
+    void EXPECT_CELLS_NEAR(vhlle::fcell lhs, vhlle::fcell rhs, double tolerance = abs_error)
     {
         EXPECT_ARRAY_NEAR(lhs.thermodynamics().vec(), rhs.thermodynamics().vec(), "", tolerance);
         EXPECT_ARRAY_NEAR(lhs.four_vel().vec(), rhs.four_vel().vec(), "", tolerance);
@@ -92,7 +92,7 @@ protected:
         EXPECT_ARRAY_NEAR(lhs.du_ll(), rhs.du_ll(), "", tolerance);
     }
 
-    void print(hydro::hypersurface<hydro::fcell> &surface)
+    void print(hydro::hypersurface<vhlle::fcell> &surface)
         {
             std::cout << std::endl
                       << surface.lines() << " lines " << surface.total()

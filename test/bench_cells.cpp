@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "../src/utils.h"
 #include "../src/geometry.h"
-#include "../src/fcell.h"
+#include "../src/vhlle_fcell.h"
 #include "../src/interfaces.h"
 const std::string PATH = "./input/beta-60.dat";
 const std::string PATH_BIN = "./input/beta-60.bin";
@@ -40,7 +40,7 @@ static C read_cell()
 //     auto _q = !utils::are_equal(rhs, cell.du_ll());
 // }
 
-static void examine_fcell(hydro::fcell &cell)
+static void examine_fcell(vhlle::fcell &cell)
 {
     auto u = cell.four_vel();
     auto udota = u * cell.acceleration();
@@ -77,7 +77,7 @@ static void bm_read_fcell(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        auto cell = read_cell<hydro::fcell>();
+        auto cell = read_cell<vhlle::fcell>();
     }
 }
 BENCHMARK(bm_read_fcell);
@@ -85,7 +85,7 @@ BENCHMARK(bm_read_fcell);
 static void bm_examine_fcell(benchmark::State &state)
 {
 
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     for (auto _ : state)
     {
         examine_fcell(cell);
@@ -96,7 +96,7 @@ BENCHMARK(bm_examine_fcell);
 
 static void bm_thermal_shear_1(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     const auto _dbeta = cell.dbeta_ll();
 
     for (auto _s : state)
@@ -115,7 +115,7 @@ BENCHMARK(bm_thermal_shear_1)->Name("th-shear: Full loop");
 
 static void bm_thermal_shear_2(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     const auto _dbeta = cell.dbeta_ll();
 
     for (auto _s : state)
@@ -135,7 +135,7 @@ BENCHMARK(bm_thermal_shear_2)->Name("th-shear: half loop");
 
 static void bm_thermal_shear_22(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     const auto _dbeta = cell.dbeta_ll();
 
     for (auto _s : state)
@@ -158,7 +158,7 @@ BENCHMARK(bm_thermal_shear_22)->Name("th-shear: half loop + pragma");
 
 static void bm_thermal_shear_3(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     const auto _dbeta = cell.dbeta_ll();
 
     for (auto _s : state)
@@ -176,7 +176,7 @@ BENCHMARK(bm_thermal_shear_3)->Name("th-shear: smart loop");
 
 static void bm_thermal_shear_4(benchmark::State &state)
 {
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     const auto _dbeta = cell.dbeta_ll();
 
     for (auto _s : state)
@@ -203,7 +203,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_1(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -236,7 +236,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_2(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -273,7 +273,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_3(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -310,7 +310,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_4(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -333,7 +333,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_pt(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -359,7 +359,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_5(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -385,7 +385,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_6(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -416,7 +416,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_7(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -444,7 +444,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_8(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -474,7 +474,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_9(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -498,7 +498,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvort_10(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     auto u_l = cell.four_vel().to_lower();
 //     auto _du = cell.du_ll();
@@ -522,7 +522,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvor_t_1(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     const auto &grad = cell.gradu_ll();
 
@@ -546,7 +546,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvor_t_2(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     const auto &grad = cell.gradu_ll();
 
@@ -566,7 +566,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvor_t_3(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     const auto &grad = cell.gradu_ll();
 
@@ -591,7 +591,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvor_t_4(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     const auto &grad = cell.gradu_ll();
 
@@ -613,7 +613,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_calculate_fvor_t_5(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     const auto &grad = cell.gradu_ll();
 
@@ -650,7 +650,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_1(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _u = cell.four_vel();
 //     for (auto _ : state)
 //     {
@@ -661,7 +661,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_2(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _u = cell.four_vel();
 //     for (auto _ : state)
 //     {
@@ -679,7 +679,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_3(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _u = cell.four_vel().to_lower();
 //     for (auto _ : state)
 //     {
@@ -697,7 +697,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_4(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     for (auto _ : state)
 //     {
@@ -716,7 +716,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_5(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     for (auto _ : state)
 //     {
@@ -735,7 +735,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_delta_ll_6(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 
 //     for (auto _ : state)
 //     {
@@ -764,7 +764,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_thermal_vorticity_1(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _dbeta = cell.dbeta_ll();
 //     for (auto __ : state)
 //     {
@@ -786,7 +786,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_thermal_vorticity_2(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _dbeta = cell.dbeta_ll();
 //     for (auto __ : state)
 //     {
@@ -805,7 +805,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_thermal_vorticity_3(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _dbeta = cell.dbeta_ll();
 //     for (auto __ : state)
 //     {
@@ -823,7 +823,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_thermal_vorticity_4(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _dbeta = cell.dbeta_ll();
 //     for (auto __ : state)
 //     {
@@ -859,7 +859,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 
 // static void bm_thermal_vorticity_5(benchmark::State &state)
 // {
-//     auto cell = read_cell<hydro::fcell>();
+//     auto cell = read_cell<vhlle::fcell>();
 //     auto _dbeta = cell.dbeta_ll();
 //     for (auto __ : state)
 //     {
@@ -915,7 +915,7 @@ BENCHMARK(bm_thermal_shear_4)->Name("th-shear: no loop");
 static void bm_fcell_shear(benchmark::State &state)
 {
 
-    auto cell = read_cell<hydro::fcell>();
+    auto cell = read_cell<vhlle::fcell>();
     for (auto _ : state)
     {
         auto __ = cell.shear_ll();
@@ -955,7 +955,7 @@ static void bm_read_cells_text(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read(PATH, utils::accept_modes::AcceptAll, true);
     }
 }
@@ -966,7 +966,7 @@ static void bm_read_cells_bin(benchmark::State &state)
 {
     for (auto _ : state)
     {
-        hydro::hypersurface<hydro::fcell> surface;
+        hydro::hypersurface<vhlle::fcell> surface;
         surface.read(PATH_BIN, utils::accept_modes::AcceptAll, true, hydro::file_format::Binary);
     }
 }
