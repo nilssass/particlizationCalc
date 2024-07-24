@@ -24,6 +24,11 @@ namespace powerhouse
     public:
         geq_polarization_calculator() {}
 
+        void prepare_cell(vhlle::fcell &cell) override
+        {
+            auto _1 = cell.thermal_vort_ll();
+        }
+
         void init(const powerhouse::pdg_particle *particle, const utils::program_options &opts) override
         {
             _particle = *particle;

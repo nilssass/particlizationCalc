@@ -1263,6 +1263,7 @@ namespace powerhouse
         /// @param previous_step the output from the previous step
         /// @return the output from this step
         virtual void perform_step(C &cell, O &previous_step) = 0;
+        virtual void prepare_cell(C &cell) {}
         /// @brief happens before entering the loop
         virtual void init(int t_count) {}
         /// @brief happens before entering the loop

@@ -43,7 +43,7 @@ protected:
     std::string short_o_file_omp_txt;
     std::string short_o_file_omp_bin;
     std::string full_o_file_omp_txt;
-    std::string full_o_file_omp_bin ;
+    std::string full_o_file_omp_bin;
 
     double _y_min = powerhouse::DEFAULT_Y_MIN;
     double _y_max = powerhouse::DEFAULT_Y_MAX;
@@ -86,7 +86,7 @@ protected:
         {
             throw std::runtime_error("Particle is not found!");
         }
-        
+
         if (!_calculator)
         {
             std::lock_guard lock(_mutex);
@@ -105,9 +105,10 @@ protected:
     void create_phase_space();
     void calculate_polarization_omp();
     void calculate_polarization_sgt();
+    void pre_calculate_cells();
     void write();
 };
-template<typename C>
+template <typename C>
 std::mutex PolarizationTest<C>::_mutex;
 
 template <typename C>
@@ -204,6 +205,13 @@ void PolarizationTest<C>::calculate_polarization_sgt()
 {
     std::cout << "Building the phase space ..." << std::endl;
     create_phase_space();
+    std::cout << "Preparing the cells ..." << std::endl;
+    #pragma omp for
+    for (size_t i = 0; i < _hypersurface.data().size(); i++)
+    {
+        auto &cell = _hypersurface[i];
+        _calculator->prepare_cell(cell);
+    }
     std::cout << "Calculating the polarization in phase space ..." << std::endl;
     auto total_size = _output.size();
     _calculator->init(_particle.get(), _settings);
@@ -230,6 +238,16 @@ void PolarizationTest<C>::calculate_polarization_sgt()
     }
     utils::show_progress(100);
     std::cout << std::endl;
+}
+template <typename C>
+inline void PolarizationTest<C>::pre_calculate_cells()
+{
+#pragma omp for
+    for (size_t i = 0; i < _hypersurface.data().size(); i++)
+    {
+        auto &cell = _hypersurface[i];
+        _calculator->prepare_cell(cell);
+    }
 }
 template <typename C>
 void PolarizationTest<C>::write()

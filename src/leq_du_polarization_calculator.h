@@ -24,6 +24,12 @@ namespace powerhouse
     public:
         leq_du_polarization_calculator() {}
 
+        void prepare_cell(vhlle::fcell &cell) override
+        {
+            auto _1 = cell.asym_du_ll();
+            auto _2 = cell.sym_du_ll();
+        }
+
         void init(const powerhouse::pdg_particle *particle, const utils::program_options &opts) override
         {
             _particle = *particle;

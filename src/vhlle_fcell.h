@@ -16,7 +16,7 @@ namespace vhlle
     {
     public:
         using base_fcell::base_fcell;
-        ~fcell() override {}
+        // ~fcell() override {}
         std::ostream &write_info(std::ostream &output, const char delim) override
         {
             output << _tau << delim << _x << delim << _y << delim << _eta

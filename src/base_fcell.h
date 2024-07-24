@@ -20,7 +20,7 @@ namespace hydro
         base_fcell()
         {
         }
-        virtual ~base_fcell() override = default;
+        // virtual ~base_fcell() override = default;
         base_fcell(utils::geometry::four_vector coords,
                    utils::geometry::four_vector thermo,
                    utils::geometry::four_vector dsigma,
@@ -90,7 +90,7 @@ namespace hydro
         void print()
         {
             std::cout << "Printing hypersurface element:" << std::endl
-              << *this << std::endl;
+                      << *this << std::endl;
         }
         utils::geometry::four_vector four_vel() const override { return _u; }
         const utils::geometry::four_vector dsigma() const override { return _dsigma; }
@@ -235,13 +235,31 @@ namespace hydro
             }
             return *_f_vorticity;
         }
+        // utils::r2_tensor thermal_vort_ll() override
+        // {
+        //     if (!_th_vorticity)
+        //     {
+        //         std::lock_guard<std::mutex> lock(_th_vorticity_mutex);
+        //         if (!_th_vorticity)
+        //         {
+        //             calculate_th_vorticity();
+        //         }
+        //     }
+        //     return *_th_vorticity;
+        // }
         utils::r2_tensor thermal_vort_ll() override
         {
-            if (!_th_vorticity)
+            if (!_th_vorticity_flag)
             {
                 calculate_th_vorticity();
+                _th_vorticity_flag = true;
             }
-            return *_th_vorticity;
+
+            // std::call_once(_th_vorticity_once_flag, [&]()
+            //                {
+            //     calculate_th_vorticity();
+            //     _th_vorticity_flag.store(true, std::memory_order_release); });
+            return _th_vorticity_value;
         }
         utils::r2_tensor thermal_shear_ll() override
         {
@@ -397,7 +415,8 @@ namespace hydro
             _delta_ul = nullptr;
             _delta_uu = nullptr;
             _acc = nullptr;
-            _th_vorticity = nullptr;
+            // _th_vorticity = nullptr;
+            _th_vorticity_flag = false;
             _th_shear = nullptr;
             _shear = nullptr;
             _f_vorticity_vec = nullptr;
@@ -424,7 +443,14 @@ namespace hydro
         std::unique_ptr<utils::r2_tensor> _delta_ul;
         std::unique_ptr<utils::r2_tensor> _delta_uu;
         std::unique_ptr<utils::geometry::four_vector> _acc;
-        std::unique_ptr<utils::r2_tensor> _th_vorticity;
+
+        // std::unique_ptr<utils::r2_tensor> _th_vorticity;
+        // std::mutex _th_vorticity_mutex;
+
+        utils::r2_tensor _th_vorticity_value;
+        std::atomic<bool> _th_vorticity_flag{false};
+        std::once_flag _th_vorticity_once_flag;
+
         std::unique_ptr<utils::r2_tensor> _th_shear;
         std::unique_ptr<utils::r2_tensor> _sym_du;
         std::unique_ptr<utils::r2_tensor> _asym_du;
@@ -497,6 +523,38 @@ namespace hydro
             }};
             _f_vorticity = std::make_unique<utils::r2_tensor>(_);
         }
+        // void calculate_th_vorticity()
+        // {
+        //     const auto _01 = (-0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
+        //     const auto _02 = (-0.5 * _dbeta[0][2] * utils::hbarC + 0.5 * _dbeta[2][0] * utils::hbarC);
+        //     const auto _03 = (-0.5 * _dbeta[0][3] * utils::hbarC + 0.5 * _dbeta[3][0] * utils::hbarC);
+        //     const auto _12 = (-0.5 * _dbeta[1][2] * utils::hbarC + 0.5 * _dbeta[2][1] * utils::hbarC);
+        //     const auto _13 = (-0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
+        //     const auto _23 = (-0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
+
+        //     utils::r2_tensor _ = {{{
+        //                                0,
+        //                                _01,
+        //                                _02,
+        //                                _03,
+        //                            },
+        //                            {
+        //                                -_01,
+        //                                0,
+        //                                _12,
+        //                                _13,
+        //                            },
+        //                            {
+        //                                -_02,
+        //                                -_12,
+        //                                0,
+        //                                _23,
+        //                            },
+        //                            {-_03, -_13, -_23, 0}
+
+        //     }};
+        //     _th_vorticity = std::make_unique<utils::r2_tensor>(_);
+        // }
         void calculate_th_vorticity()
         {
             const auto _01 = (-0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
@@ -506,28 +564,27 @@ namespace hydro
             const auto _13 = (-0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
             const auto _23 = (-0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
 
-            utils::r2_tensor _ = {{{
-                                       0,
-                                       _01,
-                                       _02,
-                                       _03,
-                                   },
-                                   {
-                                       -_01,
-                                       0,
-                                       _12,
-                                       _13,
-                                   },
-                                   {
-                                       -_02,
-                                       -_12,
-                                       0,
-                                       _23,
-                                   },
-                                   {-_03, -_13, -_23, 0}
+            _th_vorticity_value = {{{
+                                        0,
+                                        _01,
+                                        _02,
+                                        _03,
+                                    },
+                                    {
+                                        -_01,
+                                        0,
+                                        _12,
+                                        _13,
+                                    },
+                                    {
+                                        -_02,
+                                        -_12,
+                                        0,
+                                        _23,
+                                    },
+                                    {-_03, -_13, -_23, 0}
 
             }};
-            _th_vorticity = std::make_unique<utils::r2_tensor>(_);
         }
         void calculate_th_shear()
         {

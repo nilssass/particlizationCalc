@@ -6,7 +6,7 @@
         "type": "lldb",
         "request": "launch",
         "program": "${workspaceFolder}/build/calc",
-        "args": ["-i", "input/beta.bin", "-o", "output/test.dat", "-p", "-pn", "lambda"],
+        "args": ["-i", "input/beta.dat", "-o", "output/test.dat", "-p", "-pn", "lambda"],
         "cwd": "${workspaceFolder}",
         "stopOnEntry": false,
         "preLaunchTask": "build",
