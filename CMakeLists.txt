@@ -19,11 +19,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # ROOT
 
-find_package(ROOT REQUIRED)
+# find_package(ROOT REQUIRED)
 
-include(${ROOT_USE_FILE})
+# include(${ROOT_USE_FILE})
 
-include_directories(${ROOT_INCLUDE_DIRS})
+# include_directories(${ROOT_INCLUDE_DIRS})
 
 # Find OpenMP package
 find_package(OpenMP REQUIRED)
