@@ -3,6 +3,7 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include "utils.h"
 #include "geometry.h"
 #include "interfaces.h"

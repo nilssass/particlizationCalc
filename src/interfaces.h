@@ -8,6 +8,8 @@
 #include "geometry.h"
 #include <type_traits>
 #include <tuple>
+#include <atomic>
+#include <memory>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
