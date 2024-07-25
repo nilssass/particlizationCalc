@@ -307,73 +307,74 @@ endif()
 
 
 ########
-find_package(benchmark REQUIRED)
+# find_package(benchmark REQUIRED)
 
-add_executable(
-    bench_utils
-    test/bench_utils.cpp
-    src/utils.cpp
+# add_executable(
+#     bench_utils
+#     test/bench_utils.cpp
+#     src/utils.cpp
     
-)
-target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
+# )
+# target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
 
-if(OpenMP_CXX_FOUND)
-    # If OpenMP is found, add the OpenMP flags to the compiler options
-    target_compile_options(bench_utils PUBLIC ${OpenMP_CXX_FLAGS})
-    # Link the OpenMP library to the test executable
-    target_link_libraries(bench_utils PUBLIC OpenMP::OpenMP_CXX)
-endif()
+# if(OpenMP_CXX_FOUND)
+#     # If OpenMP is found, add the OpenMP flags to the compiler options
+#     target_compile_options(bench_utils PUBLIC ${OpenMP_CXX_FLAGS})
+#     # Link the OpenMP library to the test executable
+#     target_link_libraries(bench_utils PUBLIC OpenMP::OpenMP_CXX)
+# endif()
 
-# bench cells
-add_executable(
-    bench_cells
-    test/bench_cells.cpp
-    src/utils.cpp
+# # bench cells
+# add_executable(
+#     bench_cells
+#     test/bench_cells.cpp
+#     src/utils.cpp
     
-)
-target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
+# )
+# target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
 
-if(OpenMP_CXX_FOUND)
-    # If OpenMP is found, add the OpenMP flags to the compiler options
-    target_compile_options(bench_cells PUBLIC ${OpenMP_CXX_FLAGS})
-    # Link the OpenMP library to the test executable
-    target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
-endif()
+# if(OpenMP_CXX_FOUND)
+#     # If OpenMP is found, add the OpenMP flags to the compiler options
+#     target_compile_options(bench_cells PUBLIC ${OpenMP_CXX_FLAGS})
+#     # Link the OpenMP library to the test executable
+#     target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
+# endif()
 
-# bench yield
+# # bench yield
 
-add_executable(
-    bench_yield
-    test/bench_yield.cpp
-    src/utils.cpp
+# add_executable(
+#     bench_yield
+#     test/bench_yield.cpp
+#     src/utils.cpp
     
-)
-target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
+# )
+# target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
 
-if(OpenMP_CXX_FOUND)
-    # If OpenMP is found, add the OpenMP flags to the compiler options
-    target_compile_options(bench_yield PUBLIC ${OpenMP_CXX_FLAGS})
-    # Link the OpenMP library to the test executable
-    target_link_libraries(bench_yield PUBLIC OpenMP::OpenMP_CXX)
-endif()
+# if(OpenMP_CXX_FOUND)
+#     # If OpenMP is found, add the OpenMP flags to the compiler options
+#     target_compile_options(bench_yield PUBLIC ${OpenMP_CXX_FLAGS})
+#     # Link the OpenMP library to the test executable
+#     target_link_libraries(bench_yield PUBLIC OpenMP::OpenMP_CXX)
+# endif()
 
 
-# bench yield static
+# # bench yield static
 
-add_executable(
-    bench_static_yield
-    test/bench_static_yield.cpp
-    src/utils.cpp
+# add_executable(
+#     bench_static_yield
+#     test/bench_static_yield.cpp
+#     src/utils.cpp
     
-)
-target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
+# )
+# target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
 
-if(OpenMP_CXX_FOUND)
-    # If OpenMP is found, add the OpenMP flags to the compiler options
-    target_compile_options(bench_static_yield PUBLIC ${OpenMP_CXX_FLAGS})
-    # Link the OpenMP library to the test executable
-    target_link_libraries(bench_static_yield PUBLIC OpenMP::OpenMP_CXX)
-endif()
+# if(OpenMP_CXX_FOUND)
+#     # If OpenMP is found, add the OpenMP flags to the compiler options
+#     target_compile_options(bench_static_yield PUBLIC ${OpenMP_CXX_FLAGS})
+#     # Link the OpenMP library to the test executable
+#     target_link_libraries(bench_static_yield PUBLIC OpenMP::OpenMP_CXX)
+# endif()
+# # end of bench
 
 # Add the main executable target
 add_executable(
