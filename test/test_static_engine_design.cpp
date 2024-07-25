@@ -78,64 +78,55 @@ namespace
 
     TEST_F(StaticEngineTest, TestExam)
     {
-        utils::program_options opts = {.accept_mode = utils::accept_modes::AcceptAll,
-                                       .decay = false,
-                                       .in_file = "./input/beta.dat",
-                                       .out_file = "./output/stat_exam_test.csv",
-                                       .particle_id = 0,
-                                       .polarization_mode = utils::polarization_modes::NA,
-                                       .program_mode = utils::program_modes::Examine,
-                                       .yield_mode = utils::yield_modes::NA};
+        utils::program_options opts = {
+            .program_mode = utils::program_modes::Examine,
+            .accept_mode = utils::accept_modes::AcceptAll,
+            .polarization_mode = utils::polarization_modes::NA,
+            .yield_mode = utils::yield_modes::NA,
+            .in_file = "./input/beta.dat",
+            .out_file = "./output/stat_exam_test.csv",
+            .decay = false,
+            .particle_id = 0,
+        };
         auto engine = get_engine(opts);
         int lines;
 
         auto &&cells = read_cells<vhlle::fcell>(opts.in_file, 10, lines);
-        
+
         EXPECT_NO_THROW(std::visit([&opts, &cells](auto &eng)
-        {
-            eng->init(opts, cells);
-        }, engine));
+                                   { eng->init(opts, cells); }, engine));
 
         EXPECT_NO_THROW(std::visit([&](auto &eng)
-        {
-            eng->run();
-        }, engine));
+                                   { eng->run(); }, engine));
 
         EXPECT_NO_THROW(std::visit([&](auto &eng)
-        {
-            eng->write();
-        }, engine));
+                                   { eng->write(); }, engine));
     }
-
 
     TEST_F(StaticEngineTest, TestYield)
     {
-        utils::program_options opts = {.accept_mode = utils::accept_modes::AcceptAll,
-                                       .decay = false,
-                                       .in_file = "./input/beta.dat",
-                                       .out_file = "./output/stat_yield_test.csv",
-                                       .particle_id = powerhouse::particle_names::PION_PLUS,
-                                       .polarization_mode = utils::polarization_modes::NA,
-                                       .program_mode = utils::program_modes::Yield,
-                                       .yield_mode = utils::yield_modes::GlobalEq};
+        utils::program_options opts = {
+            .program_mode = utils::program_modes::Yield,
+            .accept_mode = utils::accept_modes::AcceptAll,
+            .polarization_mode = utils::polarization_modes::NA,
+            .yield_mode = utils::yield_modes::GlobalEq,
+            .in_file = "./input/beta.dat",
+            .out_file = "./output/stat_yield_test.csv",
+            .particle_id = powerhouse::particle_names::PION_PLUS,
+        };
+
         auto engine = get_engine(opts);
         int lines;
 
         auto &&cells = read_cells<vhlle::fcell>(opts.in_file, 10, lines);
-        
+
         EXPECT_NO_THROW(std::visit([&opts, &cells](auto &eng)
-        {
-            eng->init(opts, cells);
-        }, engine));
+                                   { eng->init(opts, cells); }, engine));
 
         EXPECT_NO_THROW(std::visit([&](auto &eng)
-        {
-            eng->run();
-        }, engine));
+                                   { eng->run(); }, engine));
 
         EXPECT_NO_THROW(std::visit([&](auto &eng)
-        {
-            eng->write();
-        }, engine));
+                                   { eng->write(); }, engine));
     }
 }
