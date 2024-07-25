@@ -73,16 +73,16 @@ namespace hydro
             this->_du = other._du;
             return *this;
         }
-        double tau() const { return _tau; }
-        double t() const { return _tau * cosh(_eta); }
-        double x() const { return _x; }
-        double y() const { return _y; }
-        double eta() const { return _eta; }
-        double z() const { return _tau * sinh(_eta); }
-        double T() const { return _T; }
-        double muq() const { return _muq; }
-        double mub() const { return _mub; }
-        double mus() const { return _mus; }
+        constexpr double tau() const { return _tau; }
+        constexpr double t() const { return _tau * cosh(_eta); }
+        constexpr double x() const { return _x; }
+        constexpr double y() const { return _y; }
+        constexpr double eta() const { return _eta; }
+        constexpr double z() const { return _tau * sinh(_eta); }
+        constexpr double T() const { return _T; }
+        constexpr double muq() const { return _muq; }
+        constexpr double mub() const { return _mub; }
+        constexpr double mus() const { return _mus; }
         utils::geometry::four_vector milne_coords() const override { return utils::geometry::four_vector({_tau, _x, _y, _eta}, false); }
         utils::geometry::four_vector thermodynamics() const override { return utils::geometry::four_vector({_T, _mub, _muq, _mus}, false); }
         utils::geometry::four_vector mink_coords() const { return utils::geometry::four_vector({t(), _x, _y, z()}, false); }
