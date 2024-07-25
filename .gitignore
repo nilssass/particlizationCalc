@@ -135,3 +135,5 @@ googlemock/gtest
 *.dat
 *.cmake
 *.png
+/benchmark
+/mathematica
