@@ -1,4 +1,4 @@
-export CMAKE_PREFIX_PATH=/benchmark/build-benchmark:$CMAKE_PREFIX_PATH
+export CMAKE_PREFIX_PATH=benchmark/build:$CMAKE_PREFIX_PATH
 
-cmake -S . -B build -Dbenchmark_DIR=/benchmark/build-benchmark
+cmake -S . -B build -Dbenchmark_DIR=benchmark/build
 cmake --build build
