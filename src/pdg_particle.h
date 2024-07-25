@@ -5,7 +5,7 @@
 // A modified version of Andrea's code
 #include <string>
 #include "interfaces.h"
-#include "util.h"
+#include "utils.h"
 namespace powerhouse
 {
     const std::string DATABASE = "pdg_database/baryons_mesons.dat";
