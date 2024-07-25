@@ -12,7 +12,7 @@ namespace powerhouse
         double _pdotdsigma;
         double _pdotu;
         utils::program_options _settings = {};
-        
+
         double mass;
         double b;
         double q;

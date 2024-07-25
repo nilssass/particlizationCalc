@@ -559,7 +559,14 @@ BENCHMARK_MAIN();
 
 void YieldFixture::init()
 {
-    _settings = utils::program_options{.accept_mode = utils::accept_modes::AcceptAll, .polarization_mode = utils::polarization_modes::NA, .in_file = PATH, .out_file = "./output/bench_yield.dat", .particle_id = powerhouse::particle_names::PION_PLUS, .yield_mode = utils::yield_modes::GlobalEq, .program_mode = utils::program_modes::Yield};
+    _settings = utils::program_options{
+        .program_mode = utils::program_modes::Yield,
+        .accept_mode = utils::accept_modes::AcceptAll, 
+        .polarization_mode = utils::polarization_modes::NA, 
+        .yield_mode = utils::yield_modes::GlobalEq, 
+        .in_file = PATH, .out_file = "./output/bench_yield.dat", 
+        .particle_id = powerhouse::particle_names::PION_PLUS, 
+        };
     if (!_particle)
     {
         std::lock_guard lock(_mutex);

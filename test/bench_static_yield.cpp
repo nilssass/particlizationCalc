@@ -37,9 +37,8 @@ public:
         _hypersurface.clear();
         for (size_t i = 0; i < 10; i++)
         {
-             _hypersurface.add(cell, utils::accept_modes::AcceptAll);
+            _hypersurface.add(cell, utils::accept_modes::AcceptAll);
         }
-       
     }
     void TearDown(::benchmark::State &state)
     {
@@ -117,7 +116,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_Benchmark)
             int tid = omp_get_thread_num();
             std::vector<powerhouse::yield_output<vhlle::fcell>> thread_output;
             thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
                 auto &&local_output = _yield_output[id_x];
@@ -126,9 +125,8 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_Benchmark)
         }
     }
 }
-BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_Benchmark)->Name("(3) Iterating the phase space doing nothing");;
-
-
+BENCHMARK_REGISTER_F(YieldFixture, bm_phase_loop_Benchmark)->Name("(3) Iterating the phase space doing nothing");
+;
 
 BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
 (benchmark::State &state)
@@ -146,7 +144,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_loop_prog_Benchmark)
             int tid = omp_get_thread_num();
             std::vector<powerhouse::yield_output<vhlle::fcell>> thread_output;
             thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
                 auto &&local_output = _yield_output[id_x];
@@ -180,14 +178,14 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
             int tid = omp_get_thread_num();
             std::vector<powerhouse::yield_output<vhlle::fcell>> thread_output;
             thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
                 auto &&local_output = _yield_output[id_x];
                 local_output.dNd3p = 0;
 
                 size_t current_progress = ++progress;
-                if (tid == 0 &&  current_progress % (chunk_size / 100) == 0)
+                if (tid == 0 && current_progress % (chunk_size / 100) == 0)
                 {
                     auto prog = 100 * current_progress / chunk_size;
                 }
@@ -195,7 +193,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
                 for (size_t i = 0; i < _hypersurface.data().size(); i++)
                 {
                     auto &cell = _hypersurface[i];
-                } 
+                }
 
                 thread_output.push_back(local_output);
             }
@@ -203,7 +201,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_phase_and_space_loop)
     }
 }
 BENCHMARK_REGISTER_F(YieldFixture, bm_phase_and_space_loop)->Name("(6) Iterating the phase space and a small hypersurface");
-
 
 BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
 (benchmark::State &state)
@@ -221,7 +218,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
             int tid = omp_get_thread_num();
             std::vector<powerhouse::yield_output<vhlle::fcell>> thread_output;
             thread_output.reserve(chunk_size);
-            #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
                 auto &&local_output = _yield_output[id_x];
@@ -248,7 +245,6 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_pre_step)
 }
 BENCHMARK_REGISTER_F(YieldFixture, bm_pre_step)->Name("(7) Iterating and performing pre step");
 
-
 BENCHMARK_DEFINE_F(YieldFixture, bm_step)
 (benchmark::State &state)
 {
@@ -264,7 +260,7 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
         {
             int tid = omp_get_thread_num();
             std::vector<powerhouse::yield_output<vhlle::fcell>> thread_output(chunk_size);
-            #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
             for (size_t id_x = 0; id_x < _yield_output.size(); id_x++)
             {
                 auto &&local_output = _yield_output[id_x];
@@ -292,14 +288,19 @@ BENCHMARK_DEFINE_F(YieldFixture, bm_step)
 }
 BENCHMARK_REGISTER_F(YieldFixture, bm_step)->Name("(9) Iterating and performing the step and storing it");
 
-
-
 BENCHMARK_MAIN();
 
 void YieldFixture::init()
 {
-    _settings = utils::program_options{.accept_mode = utils::accept_modes::AcceptAll, .polarization_mode = utils::polarization_modes::NA,
-    .in_file = PATH, .out_file = "./output/bench_yield.dat", .particle_id = powerhouse::particle_names::PION_PLUS, .yield_mode = utils::yield_modes::GlobalEq, .program_mode = utils::program_modes::Yield};
+    _settings = utils::program_options{
+        .program_mode = utils::program_modes::Yield,
+        .accept_mode = utils::accept_modes::AcceptAll,
+        .polarization_mode = utils::polarization_modes::NA,
+        .yield_mode = utils::yield_modes::GlobalEq,
+        .in_file = PATH,
+        .out_file = "./output/bench_yield.dat",
+        .particle_id = powerhouse::particle_names::PION_PLUS,
+    };
     if (!_particle)
     {
         std::lock_guard lock(_mutex);

@@ -24,11 +24,12 @@ namespace
         void configure() override
         {
             auto settings = utils::program_options{
-                .accept_mode = utils::accept_modes::AcceptAll,
-                .particle_id = powerhouse::particle_names::LAMBDA,
-                .polarization_mode = utils::polarization_modes::LocalEqDu,
                 .program_mode = utils::program_modes::Polarization,
-                .yield_mode = utils::yield_modes::NA};
+                .accept_mode = utils::accept_modes::AcceptAll,
+                .polarization_mode = utils::polarization_modes::LocalEqDu,
+                .yield_mode = utils::yield_modes::NA,
+                .particle_id = powerhouse::particle_names::LAMBDA,
+            };
             init(settings);
             vhlle::polarization_factory::factory()
                 ->register_calculator(_settings, [&]

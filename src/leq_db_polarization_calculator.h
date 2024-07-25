@@ -6,8 +6,8 @@
 namespace powerhouse
 {
     class leq_db_polarization_calculator : public powerhouse::I_calculator<vhlle::fcell,
-                                                                        powerhouse::pdg_particle,
-                                                                        powerhouse::polarization_output<vhlle::fcell>>
+                                                                           powerhouse::pdg_particle,
+                                                                           powerhouse::polarization_output<vhlle::fcell>>
     {
     private:
         powerhouse::pdg_particle _particle;
@@ -145,28 +145,27 @@ namespace powerhouse
                    << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << row->phi_p << " "
                    << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << row->y_p << " "
                    << std::setw(utils::DOUBLE_WIDTH) << std::setprecision(utils::DOUBLE_PRECISION) << std::fixed << row->dNd3p << " ";
-            output << 
-            row->vorticity_term << row->shear_term << std::endl;
+            output << row->vorticity_term << row->shear_term << std::endl;
         }
 
-    constexpr double aux(double spin, double pu, double T, double mutot, double abs_theta)
-    {
-        double num = 0;
-        double den = 1e-20;
-
-        for (double k = -spin; k <= spin; k++)
+        constexpr double aux(double spin, double pu, double T, double mutot, double abs_theta)
         {
-            num += k / (exp((pu - mutot) / T - k * abs_theta) + stat);
-            den += 1 / (exp((pu - mutot) / T - k * abs_theta) + stat);
-        }
+            double num = 0;
+            double den = 1e-20;
 
-        if (num / den != num / den)
-        {
-            throw std::runtime_error("NaN in aux_exact_polarization!");
-        }
+            for (double k = -spin; k <= spin; k++)
+            {
+                num += k / (exp((pu - mutot) / T - k * abs_theta) + stat);
+                den += 1 / (exp((pu - mutot) / T - k * abs_theta) + stat);
+            }
 
-        return num / den;
-    }
+            if (num / den != num / den)
+            {
+                throw std::runtime_error("NaN in aux_exact_polarization!");
+            }
+
+            return num / den;
+        }
     };
 
     double leq_db_polarization_calculator::mass;

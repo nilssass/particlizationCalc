@@ -67,9 +67,10 @@ namespace
         {
             logger = std::ofstream(log_file, std::ios::out | std::ios::app);
             _settings = {.program_mode = utils::program_modes::Yield,
+                         .accept_mode = utils::accept_modes::AcceptAll,
                          .polarization_mode = utils::polarization_modes::NA,
                          .yield_mode = utils::yield_modes::GlobalEq,
-                         .accept_mode = utils::accept_modes::AcceptAll,
+
                          .particle_id = powerhouse::particle_names::PION_PLUS};
             configure();
             init();
