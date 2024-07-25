@@ -26,7 +26,7 @@
 #include <random>
 #include <utility>
 #include <chrono>
-#include <strstream>
+#include <sstream>
 #include <iostream>
 #include <initializer_list>
 #include <algorithm>
