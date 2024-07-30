@@ -973,4 +973,117 @@ static void bm_read_cells_bin(benchmark::State &state)
 
 BENCHMARK(bm_read_cells_text)->Name("read surface from binary file");
 
+static void bm_thermal_shear_sp(benchmark::State &state)
+{
+    auto cell = read_cell<vhlle::fcell>();
+    const auto _dbeta = cell.dbeta_ll();
+    std::unique_ptr<utils::r2_tensor> t_shear;
+
+    for (auto _s : state)
+    {
+        #pragma omp parallel for
+        for (size_t i = 0; i < 10; i++)
+        {
+            if (!t_shear)
+            {
+                const auto _00 = (0.5 * _dbeta[0][0] * utils::hbarC + 0.5 * _dbeta[0][0] * utils::hbarC);
+                const auto _01 = (0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
+                const auto _02 = (0.5 * _dbeta[0][2] * utils::hbarC + 0.5 * _dbeta[2][0] * utils::hbarC);
+                const auto _03 = (0.5 * _dbeta[0][3] * utils::hbarC + 0.5 * _dbeta[3][0] * utils::hbarC);
+                const auto _11 = (0.5 * _dbeta[1][1] * utils::hbarC + 0.5 * _dbeta[1][1] * utils::hbarC);
+                const auto _12 = (0.5 * _dbeta[1][2] * utils::hbarC + 0.5 * _dbeta[2][1] * utils::hbarC);
+                const auto _13 = (0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
+                const auto _22 = (0.5 * _dbeta[2][2] * utils::hbarC + 0.5 * _dbeta[2][2] * utils::hbarC);
+                const auto _23 = (0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
+                const auto _33 = (0.5 * _dbeta[3][3] * utils::hbarC + 0.5 * _dbeta[3][3] * utils::hbarC);
+                utils::r2_tensor _ = {{
+                    {_00, _01, _02, _03},
+                    {_01, _11, _12, _13},
+                    {_02, _12, _22, _23},
+                    {_03, _13, _23, _33},
+                }};
+                t_shear = std::make_unique<utils::r2_tensor>(_);
+            }
+        }
+        t_shear = nullptr;
+    }
+}
+BENCHMARK(bm_thermal_shear_sp)->Name("th-shear: no loop - smart pointer");
+
+static void bm_thermal_shear_bf(benchmark::State &state)
+{
+    auto cell = read_cell<vhlle::fcell>();
+    const auto _dbeta = cell.dbeta_ll();
+    bool flag = false;
+
+    for (auto _s : state)
+    {
+        #pragma omp parallel for
+        for (size_t i = 0; i < 10; i++)
+        {
+            if (!flag)
+            {
+                const auto _00 = (0.5 * _dbeta[0][0] * utils::hbarC + 0.5 * _dbeta[0][0] * utils::hbarC);
+                const auto _01 = (0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
+                const auto _02 = (0.5 * _dbeta[0][2] * utils::hbarC + 0.5 * _dbeta[2][0] * utils::hbarC);
+                const auto _03 = (0.5 * _dbeta[0][3] * utils::hbarC + 0.5 * _dbeta[3][0] * utils::hbarC);
+                const auto _11 = (0.5 * _dbeta[1][1] * utils::hbarC + 0.5 * _dbeta[1][1] * utils::hbarC);
+                const auto _12 = (0.5 * _dbeta[1][2] * utils::hbarC + 0.5 * _dbeta[2][1] * utils::hbarC);
+                const auto _13 = (0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
+                const auto _22 = (0.5 * _dbeta[2][2] * utils::hbarC + 0.5 * _dbeta[2][2] * utils::hbarC);
+                const auto _23 = (0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
+                const auto _33 = (0.5 * _dbeta[3][3] * utils::hbarC + 0.5 * _dbeta[3][3] * utils::hbarC);
+                utils::r2_tensor _ = {{
+                    {_00, _01, _02, _03},
+                    {_01, _11, _12, _13},
+                    {_02, _12, _22, _23},
+                    {_03, _13, _23, _33},
+                }};
+                flag = true;
+            }
+        }
+        flag = false;
+    }
+}
+BENCHMARK(bm_thermal_shear_bf)->Name("th-shear: no loop - bool");
+
+static void bm_thermal_shear_of(benchmark::State &state)
+{
+    auto cell = read_cell<vhlle::fcell>();
+    const auto _dbeta = cell.dbeta_ll();
+    std::once_flag o_flag;
+    std::atomic<bool> flag{false};
+
+    for (auto _s : state)
+    {
+        #pragma omp parallel for
+        for (size_t i = 0; i < 10; i++)
+        {
+            std::call_once(o_flag, [&]()
+
+                           {
+                const auto _00 = (0.5 * _dbeta[0][0] * utils::hbarC + 0.5 * _dbeta[0][0] * utils::hbarC);
+                const auto _01 = (0.5 * _dbeta[0][1] * utils::hbarC + 0.5 * _dbeta[1][0] * utils::hbarC);
+                const auto _02 = (0.5 * _dbeta[0][2] * utils::hbarC + 0.5 * _dbeta[2][0] * utils::hbarC);
+                const auto _03 = (0.5 * _dbeta[0][3] * utils::hbarC + 0.5 * _dbeta[3][0] * utils::hbarC);
+                const auto _11 = (0.5 * _dbeta[1][1] * utils::hbarC + 0.5 * _dbeta[1][1] * utils::hbarC);
+                const auto _12 = (0.5 * _dbeta[1][2] * utils::hbarC + 0.5 * _dbeta[2][1] * utils::hbarC);
+                const auto _13 = (0.5 * _dbeta[1][3] * utils::hbarC + 0.5 * _dbeta[3][1] * utils::hbarC);
+                const auto _22 = (0.5 * _dbeta[2][2] * utils::hbarC + 0.5 * _dbeta[2][2] * utils::hbarC);
+                const auto _23 = (0.5 * _dbeta[2][3] * utils::hbarC + 0.5 * _dbeta[3][2] * utils::hbarC);
+                const auto _33 = (0.5 * _dbeta[3][3] * utils::hbarC + 0.5 * _dbeta[3][3] * utils::hbarC);
+                utils::r2_tensor _ = {{
+                    {_00, _01, _02, _03},
+                    {_01, _11, _12, _13},
+                    {_02, _12, _22, _23},
+                    {_03, _13, _23, _33},
+                }};
+             flag.store(true, std::memory_order_release); });
+        }
+        flag = false;
+    }
+}
+
+BENCHMARK(bm_thermal_shear_of)->Name("th-shear: no loop - atmoic bool");
+
 BENCHMARK_MAIN();

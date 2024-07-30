@@ -15,6 +15,23 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 # Alternatively, you can set debug and release flags together
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
 
+# Enable verbose makefile output
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
+# Boost
+
+set(BOOST_ROOT "/opt/homebrew/opt/boost/1.85.0") # Change this to the actual Boost path on your machine
+
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+
+if(Boost_FOUND)
+    message(STATUS "Boost found!")
+    message(STATUS "Boost Include: ${Boost_INCLUDE_DIRS}")
+    message(STATUS "Boost Libraries: ${Boost_LIBRARIES}")
+else()
+    message(FATAL_ERROR "Boost not found!")
+endif()
+
 
 
 # ROOT
@@ -307,74 +324,74 @@ endif()
 
 
 ########
-# find_package(benchmark REQUIRED)
+find_package(benchmark REQUIRED)
 
-# add_executable(
-#     bench_utils
-#     test/bench_utils.cpp
-#     src/utils.cpp
+add_executable(
+    bench_utils
+    test/bench_utils.cpp
+    src/utils.cpp
     
-# )
-# target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
+)
+target_link_libraries(bench_utils PUBLIC benchmark::benchmark)
 
-# if(OpenMP_CXX_FOUND)
-#     # If OpenMP is found, add the OpenMP flags to the compiler options
-#     target_compile_options(bench_utils PUBLIC ${OpenMP_CXX_FLAGS})
-#     # Link the OpenMP library to the test executable
-#     target_link_libraries(bench_utils PUBLIC OpenMP::OpenMP_CXX)
-# endif()
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_utils PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_utils PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
-# # bench cells
-# add_executable(
-#     bench_cells
-#     test/bench_cells.cpp
-#     src/utils.cpp
+# bench cells
+add_executable(
+    bench_cells
+    test/bench_cells.cpp
+    src/utils.cpp
     
-# )
-# target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
+)
+target_link_libraries(bench_cells PUBLIC benchmark::benchmark)
 
-# if(OpenMP_CXX_FOUND)
-#     # If OpenMP is found, add the OpenMP flags to the compiler options
-#     target_compile_options(bench_cells PUBLIC ${OpenMP_CXX_FLAGS})
-#     # Link the OpenMP library to the test executable
-#     target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
-# endif()
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_cells PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_cells PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
-# # bench yield
+# bench yield
 
-# add_executable(
-#     bench_yield
-#     test/bench_yield.cpp
-#     src/utils.cpp
+add_executable(
+    bench_yield
+    test/bench_yield.cpp
+    src/utils.cpp
     
-# )
-# target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
+)
+target_link_libraries(bench_yield PUBLIC benchmark::benchmark)
 
-# if(OpenMP_CXX_FOUND)
-#     # If OpenMP is found, add the OpenMP flags to the compiler options
-#     target_compile_options(bench_yield PUBLIC ${OpenMP_CXX_FLAGS})
-#     # Link the OpenMP library to the test executable
-#     target_link_libraries(bench_yield PUBLIC OpenMP::OpenMP_CXX)
-# endif()
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 
-# # bench yield static
+# bench yield static
 
-# add_executable(
-#     bench_static_yield
-#     test/bench_static_yield.cpp
-#     src/utils.cpp
+add_executable(
+    bench_static_yield
+    test/bench_static_yield.cpp
+    src/utils.cpp
     
-# )
-# target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
+)
+target_link_libraries(bench_static_yield PUBLIC benchmark::benchmark)
 
-# if(OpenMP_CXX_FOUND)
-#     # If OpenMP is found, add the OpenMP flags to the compiler options
-#     target_compile_options(bench_static_yield PUBLIC ${OpenMP_CXX_FLAGS})
-#     # Link the OpenMP library to the test executable
-#     target_link_libraries(bench_static_yield PUBLIC OpenMP::OpenMP_CXX)
-# endif()
-# # end of bench
+if(OpenMP_CXX_FOUND)
+    # If OpenMP is found, add the OpenMP flags to the compiler options
+    target_compile_options(bench_static_yield PUBLIC ${OpenMP_CXX_FLAGS})
+    # Link the OpenMP library to the test executable
+    target_link_libraries(bench_static_yield PUBLIC OpenMP::OpenMP_CXX)
+endif()
+# end of bench
 
 # Add the main executable target
 add_executable(
@@ -384,6 +401,7 @@ add_executable(
     
     src/utils.cpp
 )
+
 
 # Check if OpenMP is found
 if(OpenMP_CXX_FOUND)
@@ -398,7 +416,12 @@ target_include_directories(
     calc
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
+    ${Boost_INCLUDE_DIRS}  # Include Boost directory
 )
+
+if(Boost_FOUND)
+    target_link_libraries(calc PUBLIC Boost::filesystem Boost::system)
+endif()
 
 
 # Add the main executable target (without omp)
@@ -416,18 +439,13 @@ target_include_directories(
     calc_sgt
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src  # Include src/main directory
+    ${Boost_INCLUDE_DIRS}  # Include Boost directory
 )
 
-# Boost
+if(Boost_FOUND)
+    target_link_libraries(calc_sgt PUBLIC Boost::filesystem Boost::system)
+endif()
 
-# set(BOOST_ROOT "/opt/homebrew/Cellar/boost/1.85.0/include/boost/")
-# find_package(Boost 1.85.0 COMPONENTS program_options REQUIRED)
-# include_directories(${Boost_INCLUDE_DIRS})
-
-
-# message(STATUS "Boost version: ${Boost_VERSION}")
-# message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
-# message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
 
 # Add the txt_to_bin executable target
 add_executable(
